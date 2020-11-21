@@ -12,7 +12,10 @@ warp = "0.2"
 log = "0.4"
 pretty_env_logger = "0.4"
 askama = "0.10"
-askama_warp = "0.10" #{ version = "0.10", features = ["with-warp"] }
+askama_warp = "0.10"
 
 [profile.release]
 lto = true
+
+# Separate repos for client and server
+# or maybe a client subdirectory...

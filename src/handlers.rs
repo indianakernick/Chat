@@ -14,14 +14,14 @@ impl HelloTemplate {
     }
 }
 
-pub fn read_database() -> Result<Vec<String>, std::io::Error> {
+pub fn read_database() -> std::io::Result<Vec<String>> {
     Ok(fs::read_to_string("database.txt")?
         .lines()
         .map(String::from)
         .collect::<Vec<String>>())
 }
 
-pub fn append_to_database(item: String) -> Result<(), std::io::Error> {
+pub fn append_to_database(item: String) -> std::io::Result<()> {
     fs::OpenOptions::new()
         .write(true)
         .append(true)

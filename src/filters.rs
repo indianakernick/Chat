@@ -15,7 +15,7 @@ pub fn get_messages() -> impl Filter<Extract = impl warp::Reply, Error = warp::R
         .map(move || {
             match handlers::read_database() {
                 Ok(val) => warp::reply::json(&val),
-                Err(e) => warp::reply::json(&format!("{:?}", e))
+                Err(e) => warp::reply::json(&format!("{}", e))
             }
         })
 }
@@ -27,7 +27,7 @@ pub fn post_message() -> impl Filter<Extract = impl warp::Reply, Error = warp::R
         .map(move |message: String| {
             match handlers::append_to_database(message) {
                 Ok(_) => String::new(),
-                Err(e) => format!("{:?}", e)
+                Err(e) => format!("{}", e)
             }
         })
 }

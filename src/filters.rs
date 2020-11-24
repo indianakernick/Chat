@@ -1,6 +1,6 @@
 use warp::Filter;
-use deadpool_postgres::Pool;
 use super::handlers;
+use deadpool_postgres::Pool;
 
 fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || pool.clone())

@@ -2,8 +2,8 @@ mod filters;
 mod handlers;
 
 use warp::Filter;
-use deadpool_postgres::tokio_postgres::{Config, NoTls};
 use deadpool_postgres::{Pool, Manager};
+use deadpool_postgres::tokio_postgres::{Config, NoTls};
 
 // Why are strings not fixed size?
 // let _a: &[u8; 5] = b"hello";

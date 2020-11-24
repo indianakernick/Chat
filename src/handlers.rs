@@ -1,6 +1,8 @@
 use askama::Template;
-use std::convert::Infallible;
+use serde::Serialize;
+use std::time::SystemTime;
 use deadpool_postgres::Pool;
+use std::convert::Infallible;
 
 #[derive(Template)]
 #[template(path = "hello.html")]
@@ -27,16 +29,32 @@ macro_rules! try_reply {
     };
 }
 
+#[derive(Serialize)]
+struct Message {
+    content: String,
+    creation_time: u64
+}
+
+impl Message {
+    fn from_row(row: &deadpool_postgres::tokio_postgres::Row) -> Message {
+        let time: SystemTime = row.get(1);
+        Message {
+            content: row.get(0),
+            creation_time: time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
+        }
+    }
+}
+
 pub async fn get_messages(pool: Pool) -> Result<impl warp::Reply, Infallible> {
     let client = try_reply!(pool.get().await);
     let rows = try_reply!(client.query(
-        "SELECT content FROM Message",
+        "SELECT content, creation_time FROM Message",
         &[]
     ).await);
-    let messages = rows
+    let messages: Vec<_> = rows
         .iter()
-        .map(|row| -> String { row.get(0) })
-        .collect::<Vec<String>>();
+        .map(Message::from_row)
+        .collect();
     Ok(warp::reply::json(&messages))
 }
 

@@ -1,0 +1,12 @@
+Create the postgres user
+/usr/local/opt/postgres/bin/createuser -s postgres
+
+Create the postgres database
+/usr/local/opt/postgres/bin/createdb -U postgres -w -O postgres chat
+
+Start/stop the PostgreSQL database
+pg_ctl start -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log
+pg_ctl stop -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log
+
+Open an interactive database console (the one built into CLion is broken or something)
+psql -U postgres chat

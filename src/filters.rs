@@ -1,5 +1,10 @@
 use warp::Filter;
+use deadpool_postgres::Pool;
 use super::handlers;
+
+fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || pool.clone())
+}
 
 pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
@@ -7,15 +12,17 @@ pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .and_then(handlers::hello)
 }
 
-pub fn get_messages() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn get_messages(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
         .and(warp::path!("api" / "messages"))
+        .and(with_pool(pool))
         .and_then(handlers::get_messages)
 }
 
-pub fn post_message() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn post_message(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::post()
         .and(warp::path!("api" / "post_message"))
         .and(warp::body::json())
+        .and(with_pool(pool))
         .and_then(handlers::post_message)
 }

@@ -1,5 +1,6 @@
 <template>
   <div id="message-list">
+    <!-- Should use key with v-for -->
     <Message
         v-for="message in messages"
         v-bind:content="message.content"
@@ -36,7 +37,7 @@ export default {
     req.open("GET", "/api/messages");
     req.send();
   }
-}
+};
 </script>
 
 <style scoped>

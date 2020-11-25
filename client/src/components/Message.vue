@@ -16,6 +16,10 @@ export default {
   },
 
   computed: {
+    // This depends on the current time.
+    // I could recompute every minute or half-minute.
+    // Or maybe do a setTimeout to update at the right time.
+
     formattedCreationTime() {
       const timeFormatter = new Intl.DateTimeFormat([], {
         hour: "2-digit",
@@ -52,7 +56,7 @@ export default {
       return yearDateTimeFormatter.format(creation);
     }
   }
-}
+};
 </script>
 
 <style scoped>

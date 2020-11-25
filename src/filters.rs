@@ -26,3 +26,21 @@ pub fn post_message(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error
         .and(with_pool(pool))
         .and_then(handlers::post_message)
 }
+
+pub fn home() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path::end())
+        .and(warp::fs::file("client/public/index.html"))
+}
+
+pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path("favicon.ico"))
+        .and(warp::fs::file("client/public/favicon.ico"))
+}
+
+pub fn src_dir() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path("src"))
+        .and(warp::fs::dir("client/src"))
+}

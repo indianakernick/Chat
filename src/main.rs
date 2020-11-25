@@ -33,7 +33,10 @@ async fn main() {
 
     let routes = filters::hello()
         .or(filters::get_messages(pool.clone()))
-        .or(filters::post_message(pool.clone()));
+        .or(filters::post_message(pool.clone()))
+        .or(filters::home())
+        .or(filters::favicon())
+        .or(filters::src_dir());
 
     warp::serve(routes.with(warp::log("chat")))
         .run(([127, 0, 0, 1], 3030))

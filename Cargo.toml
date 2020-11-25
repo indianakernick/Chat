@@ -25,6 +25,3 @@ serde = { version = "1.0", features = ["derive"] }
 
 [profile.release]
 lto = true
-
-# Separate repos for client and server
-# or maybe a client subdirectory...

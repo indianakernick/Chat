@@ -14,13 +14,22 @@ psql -U postgres chat
 Install vue
 npm install -g @vue/cli
 
-Configure vue using ui (really should have used cli)
-Used typescript and vue 3
-Disabled babel and eslint
-Also, vue doesn't seem to be in the $PATH
-/usr/local/Cellar/node/15.2.1/bin/vue ui
+Create project (vue doesn't seem to be in the $PATH)
+/usr/local/Cellar/node/15.2.1/bin/vue create --no-git client
+Vue CLI v4.5.9
+? Please pick a preset: Manually select features
+? Check the features needed for your project: Choose Vue version, Babel
+? Choose a version of Vue.js that you want to start the project with 3.x (Preview)
+? Where do you prefer placing config for Babel, ESLint, etc.? In dedicated config files
 
-Inside the client directory
+After creating the project, edited package.json
+"name": "chat",
+"scripts": {
+  "build-dev": "vue-cli-service build --mode development",
+  "build-prod": "vue-cli-service build --mode production --modern"
+}
+
+Update package-lock.json
 npm install
 
 Compile the client

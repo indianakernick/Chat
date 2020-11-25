@@ -10,3 +10,18 @@ pg_ctl stop -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log
 
 Open an interactive database console (the one built into CLion is broken or something)
 psql -U postgres chat
+
+Install vue
+npm install -g @vue/cli
+
+Configure vue using ui (really should have used cli)
+Used typescript and vue 3
+Disabled babel and eslint
+Also, vue doesn't seem to be in the $PATH
+/usr/local/Cellar/node/15.2.1/bin/vue ui
+
+Inside the client directory
+npm install
+
+Compile the client
+npm run build

@@ -19,6 +19,7 @@ askama_warp = "0.10"
 tokio-postgres = { version = "0.5", features = ["with-chrono-0_4"] }
 deadpool-postgres = { version = "0.5" }
 serde = { version = "1.0", features = ["derive"] }
+futures = "0.3"
 
 # I'm considering using rocket due to the amount of boilerplate required to
 # get the database working.

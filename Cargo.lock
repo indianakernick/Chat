@@ -214,6 +214,7 @@ dependencies = [
  "askama",
  "askama_warp",
  "deadpool-postgres",
+ "futures",
  "log",
  "pretty_env_logger",
  "serde",

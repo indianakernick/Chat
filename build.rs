@@ -1,6 +1,14 @@
 fn main() {
-    println!("cargo:rerun-if-changed=client/src");
-    println!("cargo:rerun-if-changed=client/public");
+    // This is so sad ;-(
+    // https://github.com/rust-lang/cargo/issues/2599
+    // Having to update this script every time I add a component is probably not
+    // worth the effort to be honest.
+
+    println!("cargo:rerun-if-changed=client/public/index.html");
+    println!("cargo:rerun-if-changed=client/src/App.vue");
+    println!("cargo:rerun-if-changed=client/src/main.js");
+    println!("cargo:rerun-if-changed=client/src/components/Message.vue");
+    println!("cargo:rerun-if-changed=client/src/components/MessageList.vue");
 
     let build = match std::env::var("PROFILE").unwrap().as_str() {
         "debug" => "build-dev",

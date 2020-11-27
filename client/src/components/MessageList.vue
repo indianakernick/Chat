@@ -3,11 +3,14 @@
     <!-- Should use key with v-for. Forgot why... -->
     <Message
         v-for="message in messages"
-        v-bind:content="message.content"
-        v-bind:creation_time="message.creation_time"
+        :content="message.content"
+        :creation_time="message.creation_time"
     ></Message>
   </div>
-  <button v-on:click="sendHello">Send Hello</button>
+  <input
+      type="text"
+      @keypress.enter="sendMessage($event.target.value), $event.target.value = ''"
+  />
 </template>
 
 <script>
@@ -47,11 +50,11 @@ export default {
   },
 
   methods: {
-    sendHello() {
+    sendMessage(message) {
       // TODO: Timestamps
       // TODO: Indicate where the message was received by the server
-      this.messages.push({content: "<You>: Hello!", creation_time: 0});
-      this.socket.send("Hello!");
+      this.messages.push({content: "<You>: " + message, creation_time: 0});
+      this.socket.send(message);
     }
   }
 };

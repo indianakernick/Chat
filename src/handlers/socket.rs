@@ -1,4 +1,6 @@
+use serde::{Serialize, Deserialize};
 use tokio::sync::mpsc;
+use std::time::SystemTime;
 use warp::ws::{WebSocket, Message};
 use futures::{FutureExt, StreamExt};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
@@ -70,26 +72,81 @@ async fn disconnected(conn_id: usize, connections: &Connections) {
     connections.write().await.remove(&conn_id);
 }
 
+#[derive(Deserialize)]
+#[serde(tag="type")]
+enum ClientMessage {
+    #[serde(rename="send message")]
+    SendMessage { content: String }
+}
+
+#[derive(Serialize)]
+#[serde(tag="type")]
+enum ServerMessage {
+    #[serde(rename="error")]
+    Error { message: String },
+    #[serde(rename="message sent")]
+    MessageSent { timestamp: u64 },
+    #[serde(rename="new message")]
+    NewMessage { timestamp: u64, content: String, from: usize },
+}
+
+fn as_timestamp(time: SystemTime) -> u64 {
+    time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
+}
+
+fn send_message(ch_tx: &mpsc::UnboundedSender<Result<Message, warp::Error>>, message: String) {
+    if let Err(_) = ch_tx.send(Ok(Message::text(message))) {
+        // disconnected will handle the possible error
+    }
+}
+
+async fn parse_client_message(conn_id: usize, message: Message, connections: &Connections) -> Result<ClientMessage, ()> {
+    let message = message.to_str()?;
+    match serde_json::from_str::<ClientMessage>(message) {
+        Ok(m) => Ok(m),
+        Err(e) => {
+            let hashmap = connections.read().await;
+            if let Some(ch_tx) = hashmap.get(&conn_id) {
+                let response = serde_json::to_string(&ServerMessage::Error {
+                    message: e.to_string()
+                }).unwrap();
+                send_message(ch_tx, response);
+            }
+            Err(())
+        }
+    }
+}
+
 async fn message_received(conn_id: usize, message: Message, connections: &Connections) {
-    // Discarding messages that aren't Text
-    let body = if let Ok(s) = message.to_str() {
-        s
-    } else {
-        return;
+    let receive_timestamp = as_timestamp(SystemTime::now());
+    let client_message = match parse_client_message(conn_id, message, connections).await {
+        Ok(m) => m,
+        Err(_) => return
+    };
+    let client_message_content = match client_message {
+        ClientMessage::SendMessage{ content: c } => c,
     };
 
-    // Sending the message back over every other connection except the one that
-    // sent the message.
+    let echo_response = serde_json::to_string(&ServerMessage::MessageSent {
+        timestamp: receive_timestamp
+    }).unwrap();
 
-    let response = format!("<{}>: {}", conn_id, body);
+    let peer_response = serde_json::to_string(&ServerMessage::NewMessage {
+        timestamp: receive_timestamp,
+        content: client_message_content,
+        from: conn_id
+    }).unwrap();
+
+    // Artificial delay for testing
+    // tokio::time::delay_for(std::time::Duration::from_secs(1)).await;
 
     for (&other_conn_id, ch_tx) in connections.read().await.iter() {
-        if other_conn_id != conn_id {
-            println!("Forwarding message from ({}) to ({}): {}", conn_id, other_conn_id, response);
-
-            if let Err(_) = ch_tx.send(Ok(Message::text(response.clone()))) {
-                // disconnected will handle this so do nothing here.
-            }
+        if other_conn_id == conn_id {
+            println!("Echoing back to ({}): {}", conn_id, echo_response);
+            send_message(ch_tx, echo_response.clone());
+        } else {
+            println!("Forwarding message from ({}) to ({}): {}", conn_id, other_conn_id, peer_response);
+            send_message(ch_tx, peer_response.clone());
         }
     }
 }

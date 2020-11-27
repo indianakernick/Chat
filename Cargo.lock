@@ -218,6 +218,7 @@ dependencies = [
  "log",
  "pretty_env_logger",
  "serde",
+ "serde_json",
  "tokio",
  "tokio-postgres",
  "warp",

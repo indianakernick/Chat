@@ -1,5 +1,5 @@
 <template>
-  <div class="message">
+  <div class="message" :class="{'sending': sending}">
     <span class="message-creation-time">{{formattedCreationTime}}</span>
     &nbsp;-&nbsp;
     <span class="message-content">{{content}}</span>
@@ -12,7 +12,8 @@ export default {
 
   props: {
     creation_time: Number,
-    content: String
+    content: String,
+    sending: Boolean
   },
 
   computed: {
@@ -60,5 +61,7 @@ export default {
 </script>
 
 <style scoped>
-
+  .sending {
+    color: #555;
+  }
 </style>

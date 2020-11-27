@@ -19,7 +19,7 @@ struct Message {
 }
 
 impl Message {
-    fn from_row(row: &deadpool_postgres::tokio_postgres::Row) -> Message {
+    fn from_row(row: &tokio_postgres::Row) -> Message {
         let time: SystemTime = row.get(1);
         Message {
             content: row.get(0),
@@ -29,11 +29,9 @@ impl Message {
 }
 
 pub async fn get_messages(pool: Pool) -> Result<impl warp::Reply, Infallible> {
-    let client = try_reply!(pool.get().await);
-    let rows = try_reply!(client.query(
-        "SELECT content, creation_time FROM Message",
-        &[]
-    ).await);
+    let conn = try_reply!(pool.get().await);
+    let stmt = try_reply!(conn.prepare("SELECT content, creation_time FROM Message").await);
+    let rows = try_reply!(conn.query(&stmt, &[]).await);
     let messages: Vec<_> = rows
         .iter()
         .map(Message::from_row)
@@ -42,10 +40,8 @@ pub async fn get_messages(pool: Pool) -> Result<impl warp::Reply, Infallible> {
 }
 
 pub async fn post_message(message: String, pool: Pool) -> Result<impl warp::Reply, Infallible> {
-    let client = try_reply!(pool.get().await);
-    try_reply!(client.query(
-        "INSERT INTO Message (content) VALUES ($1)",
-        &[&message]
-    ).await);
+    let conn = try_reply!(pool.get().await);
+    let stmt = try_reply!(conn.prepare("INSERT INTO Message (content) VALUES ($1)").await);
+    try_reply!(conn.query(&stmt, &[&message]).await);
     Ok(warp::reply::json(&""))
 }

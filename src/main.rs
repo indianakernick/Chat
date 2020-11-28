@@ -43,7 +43,7 @@ async fn main() {
         .or(filters::get_messages(pool.clone()))
         .or(filters::post_message(pool.clone()))
         .or(filters::root())
-        .or(filters::socket());
+        .or(filters::socket(pool.clone()));
 
     warp::serve(routes.with(warp::log("chat")))
         .run(([0, 0, 0, 0], 3030))

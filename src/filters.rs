@@ -32,17 +32,12 @@ pub fn root() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection
         .and(warp::fs::dir("client/dist"))
 }
 
-pub fn socket() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let clients = handlers::Connections::default();
+pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let conns = handlers::Connections::default();
 
-    // Accepts a GET request with some particular headers
     warp::ws()
         .and(warp::path!("api" / "socket"))
         .map(move |ws: warp::ws::Ws| {
-            let clients = std::sync::Arc::clone(&clients);
-            // Upgrade the HTTP connection to a WebSocket connection
-            ws.on_upgrade(move |socket: warp::ws::WebSocket| {
-                handlers::connected(socket, clients)
-            })
+            handlers::upgrade(ws, conns.clone(), pool.clone())
         })
 }

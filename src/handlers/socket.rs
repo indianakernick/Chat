@@ -11,14 +11,7 @@ static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 
 type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 
-type ConnectionMap = std::collections::HashMap<
-    // Connection ID. We need to map connection IDs to persistent client
-    // IDs somehow.
-    usize,
-    // Sending end of an unbounded channel.
-    // Unbounded channels use an unbounded amount of memory.
-    Sender
->;
+type ConnectionMap = std::collections::HashMap<usize, Sender>;
 
 pub type Connections = Arc<tokio::sync::RwLock<ConnectionMap>>;
 
@@ -66,7 +59,7 @@ async fn connected(ws: WebSocket, conns: Connections, pool: Pool) {
                 break;
             }
         };
-        
+
         let conns_guard = conns.read().await;
         if let Err(e) = message_received(conn_id, message, &*conns_guard, &pool).await {
             send_error_to(&*conns_guard, conn_id, e);
@@ -85,7 +78,26 @@ async fn disconnected(conn_id: usize, conns: &Connections) {
 #[serde(tag="type")]
 enum ClientMessage {
     #[serde(rename="send message")]
-    SendMessage { content: String }
+    SendMessage { content: String },
+    #[serde(rename="request messages")]
+    RequestMessages
+}
+
+#[derive(Serialize)]
+struct NewMessage {
+    timestamp: u64,
+    content: String,
+    from: usize
+}
+
+impl NewMessage {
+    fn from_row(row: &tokio_postgres::Row) -> NewMessage {
+        NewMessage {
+            timestamp: as_timestamp(row.get(1)),
+            content: row.get(0),
+            from: 0
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -96,7 +108,9 @@ enum ServerMessage {
     #[serde(rename="message sent")]
     MessageSent { timestamp: u64 },
     #[serde(rename="new message")]
-    NewMessage { timestamp: u64, content: String, from: usize },
+    NewMessage(NewMessage),
+    #[serde(rename="message list")]
+    MessageList { messages: Vec<NewMessage> }
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -132,6 +146,8 @@ macro_rules! try_string {
 }
 
 async fn message_received(conn_id: usize, message: Message, conns: &ConnectionMap, pool: &Pool) -> Result<(), String> {
+    // TODO: This function is turning into a bit of a mess
+
     let time = SystemTime::now();
     let timestamp = as_timestamp(time);
     let message = match message.to_str() {
@@ -140,38 +156,56 @@ async fn message_received(conn_id: usize, message: Message, conns: &ConnectionMa
     };
     let client_message = try_string!(serde_json::from_str::<ClientMessage>(message));
 
-    let client_message_content = match client_message {
-        ClientMessage::SendMessage{ content: c } => c,
-    };
+    match client_message {
+        ClientMessage::SendMessage{ content: client_message_content } => {
+            let echo_response = serde_json::to_string(&ServerMessage::MessageSent {
+                timestamp
+            }).unwrap();
 
-    let echo_response = serde_json::to_string(&ServerMessage::MessageSent {
-        timestamp
-    }).unwrap();
+            let peer_response = serde_json::to_string(&ServerMessage::NewMessage (NewMessage {
+                timestamp,
+                content: client_message_content.clone(),
+                from: conn_id
+            })).unwrap();
 
-    let peer_response = serde_json::to_string(&ServerMessage::NewMessage {
-        timestamp,
-        content: client_message_content.clone(),
-        from: conn_id
-    }).unwrap();
+            // Artificial delay for testing
+            // tokio::time::delay_for(std::time::Duration::from_secs(1)).await
 
-    // Artificial delay for testing
-    // tokio::time::delay_for(std::time::Duration::from_secs(1)).await
+            for (&other_conn_id, ch_tx) in conns.iter() {
+                if other_conn_id == conn_id {
+                    println!("Echoing back to ({}): {}", conn_id, echo_response);
+                    send_message(ch_tx, echo_response.clone());
+                } else {
+                    println!("Forwarding message from ({}) to ({}): {}", conn_id, other_conn_id, peer_response);
+                    send_message(ch_tx, peer_response.clone());
+                }
+            }
 
-    for (&other_conn_id, ch_tx) in conns.iter() {
-        if other_conn_id == conn_id {
-            println!("Echoing back to ({}): {}", conn_id, echo_response);
-            send_message(ch_tx, echo_response.clone());
-        } else {
-            println!("Forwarding message from ({}) to ({}): {}", conn_id, other_conn_id, peer_response);
-            send_message(ch_tx, peer_response.clone());
+            let db_conn = try_string!(pool.get().await);
+            let stmt = try_string!(db_conn.prepare(
+                "INSERT INTO Message (content, creation_time) VALUES ($1, $2)"
+            ).await);
+            try_string!(db_conn.query(&stmt, &[&client_message_content, &time]).await);
+
+            Ok(())
+        },
+
+        ClientMessage::RequestMessages => {
+            let db_conn = try_string!(pool.get().await);
+            let stmt = try_string!(db_conn.prepare(
+                "SELECT content, creation_time FROM Message"
+            ).await);
+            let rows = try_string!(db_conn.query(&stmt, &[]).await);
+            let response = serde_json::to_string(&ServerMessage::MessageList {
+                messages: rows.iter()
+                    .map(NewMessage::from_row)
+                    .collect()
+            }).unwrap();
+            if let Some(ch_tx) = conns.get(&conn_id) {
+                send_message(ch_tx, response);
+            }
+
+            Ok(())
         }
     }
-
-    let db_conn = try_string!(pool.get().await);
-    let stmt = try_string!(db_conn.prepare(
-        "INSERT INTO Message (content, creation_time) VALUES ($1, $2)"
-    ).await);
-    try_string!(db_conn.query(&stmt, &[&client_message_content, &time]).await);
-
-    Ok(())
 }

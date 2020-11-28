@@ -31,24 +31,6 @@ export default {
   },
 
   created() {
-    // Should probably get the initial messages from the socket
-    const req = new XMLHttpRequest();
-    req.addEventListener("error", () => {
-      this.messages = [];
-    });
-    req.addEventListener("load", () => {
-      this.messages = req.response.map(res => {
-        return {
-          content: res.content,
-          timestamp: res.creation_time,
-          sending: false
-        };
-      });
-    });
-    req.responseType = "json";
-    req.open("GET", "/api/messages");
-    req.send();
-
     this.socket = new WebSocket(`ws://${window.location.host}/api/socket`);
 
     this.socket.addEventListener("message", this.receiveMessage);
@@ -59,7 +41,9 @@ export default {
       console.error("Connection error");
     });
 
-    // TODO: only use the socket after the connection has opened
+    this.socket.addEventListener("open", () => {
+      this.socket.send('{"type":"request messages"}');
+    });
   },
 
   methods: {
@@ -94,12 +78,23 @@ export default {
           }
           console.error("\"message sent\" but all messages have been sent");
           break;
+
+        case "message list":
+          // TODO: Should prevent sending "send message" until "message list" is received
+          this.messages = message.messages.map(msg => {
+            return {
+              content: `<${msg.from}>: ${msg.content}`,
+              timestamp: msg.timestamp,
+              sending: false
+            };
+          });
+          break;
       }
     },
 
-    sendMessageContent(message) {
+    sendMessageContent(content) {
       this.messages.push({
-        content: "<You>: " + message,
+        content: "<You>: " + content,
         // Initial "guess" for the send time.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
@@ -107,7 +102,7 @@ export default {
       });
       this.socket.send(JSON.stringify({
         type: "send message",
-        content: message
+        content: content
       }));
     }
   }

@@ -1,6 +1,6 @@
 <template>
   <div class="message" :class="{'sending': sending}">
-    <span class="message-creation-time">{{formattedCreationTime}}</span>
+    <span class="message-time">{{formattedTime}}</span>
     &nbsp;-&nbsp;
     <span class="message-content">{{content}}</span>
   </div>
@@ -11,7 +11,7 @@ export default {
   name: "Message",
 
   props: {
-    creation_time: Number,
+    timestamp: Number,
     content: String,
     sending: Boolean
   },
@@ -21,7 +21,7 @@ export default {
     // I could recompute every minute or half-minute.
     // Or maybe do a setTimeout to update at the right time.
 
-    formattedCreationTime() {
+    formattedTime() {
       const timeFormatter = new Intl.DateTimeFormat([], {
         hour: "2-digit",
         minute: "2-digit"
@@ -40,7 +40,7 @@ export default {
         minute: "2-digit"
       });
 
-      const creation = new Date(this.creation_time * 1000);
+      const creation = new Date(this.timestamp * 1000);
 
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);

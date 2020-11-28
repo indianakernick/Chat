@@ -32,10 +32,6 @@ async fn print_message_count(pool: &Pool) {
     println!("Messages: {}", rows.len());
 }
 
-// Once the boiler-plate for pushing and popping the queue (inside
-// client_connected) is done, usage is pretty simple. message_received is
-// completely application specific.
-
 #[tokio::main]
 async fn main() {
     let pool = create_pool();
@@ -50,6 +46,6 @@ async fn main() {
         .or(filters::socket());
 
     warp::serve(routes.with(warp::log("chat")))
-        .run(([127, 0, 0, 1], 3030))
+        .run(([0, 0, 0, 0], 3030))
         .await;
 }

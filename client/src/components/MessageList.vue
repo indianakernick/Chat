@@ -4,7 +4,7 @@
     <Message
         v-for="message in messages"
         :content="message.content"
-        :creation_time="message.creation_time"
+        :timestamp="message.timestamp"
         :sending="message.sending"
     ></Message>
   </div>
@@ -31,14 +31,18 @@ export default {
   },
 
   created() {
+    // Should probably get the initial messages from the socket
     const req = new XMLHttpRequest();
     req.addEventListener("error", () => {
       this.messages = [];
     });
     req.addEventListener("load", () => {
       this.messages = req.response.map(res => {
-        res.sending = false;
-        return res;
+        return {
+          content: res.content,
+          timestamp: res.creation_time,
+          sending: false
+        };
       });
     });
     req.responseType = "json";
@@ -52,7 +56,7 @@ export default {
     this.socket.addEventListener("error", () => {
       // TODO: tell the user that an error occurred
       // Still print the error message to the console though
-      console.log("Connection error");
+      console.error("Connection error");
     });
 
     // TODO: only use the socket after the connection has opened
@@ -72,31 +76,33 @@ export default {
         case "new message":
           this.messages.push({
             content: `<${message.from}>: ${message.content}`,
-            creation_time: message.timestamp,
+            timestamp: message.timestamp,
             sending: false
           });
           break;
 
         case "message sent":
-          // TODO: but which message was sent?
-          for (const idx in this.messages) {
-            if (this.messages[idx].sending) {
-              this.messages[idx].sending = false;
-              this.messages[idx].creation_time = message.timestamp;
+          // All messages arrive in the same order that they are sent.
+          const messages = this.messages;
+          const length = messages.length;
+          for (let idx = 0; idx !== length; ++idx) {
+            if (messages[idx].sending) {
+              messages[idx].sending = false;
+              messages[idx].timestamp = message.timestamp;
+              return;
             }
           }
-          this.messages = this.messages.slice();
+          console.error("\"message sent\" but all messages have been sent");
           break;
       }
     },
 
     sendMessageContent(message) {
-      // TODO: Timestamps
       this.messages.push({
         content: "<You>: " + message,
         // Initial "guess" for the send time.
         // This will be updated by the server.
-        creation_time: new Date().valueOf() / 1000,
+        timestamp: new Date().valueOf() / 1000,
         sending: true
       });
       this.socket.send(JSON.stringify({

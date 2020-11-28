@@ -86,16 +86,17 @@ enum ClientMessage {
 #[derive(Serialize)]
 struct NewMessage {
     timestamp: u64,
-    content: String,
-    from: usize
+    author: i32,
+    content: String
 }
 
 impl NewMessage {
     fn from_row(row: &tokio_postgres::Row) -> NewMessage {
         NewMessage {
-            timestamp: as_timestamp(row.get(1)),
-            content: row.get(0),
-            from: 0
+            timestamp: as_timestamp(row.get(0)),
+            // Why not row.get(1) as i32 ?
+            author: row.get::<_, i32>(1),
+            content: row.get(2)
         }
     }
 }
@@ -164,8 +165,8 @@ async fn message_received(conn_id: usize, message: Message, conns: &ConnectionMa
 
             let peer_response = serde_json::to_string(&ServerMessage::NewMessage (NewMessage {
                 timestamp,
+                author: conn_id as i32,
                 content: client_message_content.clone(),
-                from: conn_id
             })).unwrap();
 
             // Artificial delay for testing
@@ -183,9 +184,9 @@ async fn message_received(conn_id: usize, message: Message, conns: &ConnectionMa
 
             let db_conn = try_string!(pool.get().await);
             let stmt = try_string!(db_conn.prepare(
-                "INSERT INTO Message (content, creation_time) VALUES ($1, $2)"
+                "INSERT INTO Message (timestamp, author, content) VALUES ($1, $2, $3)"
             ).await);
-            try_string!(db_conn.query(&stmt, &[&client_message_content, &time]).await);
+            try_string!(db_conn.query(&stmt, &[&time, &(conn_id as i32), &client_message_content]).await);
 
             Ok(())
         },
@@ -193,7 +194,7 @@ async fn message_received(conn_id: usize, message: Message, conns: &ConnectionMa
         ClientMessage::RequestMessages => {
             let db_conn = try_string!(pool.get().await);
             let stmt = try_string!(db_conn.prepare(
-                "SELECT content, creation_time FROM Message"
+                "SELECT timestamp, author, content FROM Message"
             ).await);
             let rows = try_string!(db_conn.query(&stmt, &[]).await);
             let response = serde_json::to_string(&ServerMessage::MessageList {

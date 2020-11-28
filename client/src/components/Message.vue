@@ -1,7 +1,9 @@
 <template>
   <div class="message" :class="{'sending': sending}">
     <span class="message-time">{{formattedTime}}</span>
-    &nbsp;-&nbsp;
+    -
+    <span class="message-author">{{author}}</span>
+    -
     <span class="message-content">{{content}}</span>
   </div>
 </template>
@@ -12,15 +14,13 @@ export default {
 
   props: {
     timestamp: Number,
+    author: Number,
     content: String,
     sending: Boolean
   },
 
   computed: {
-    // This depends on the current time.
-    // I could recompute every minute or half-minute.
-    // Or maybe do a setTimeout to update at the right time.
-
+    // TODO: Use setTimeout to update the representation
     formattedTime() {
       const timeFormatter = new Intl.DateTimeFormat([], {
         hour: "2-digit",
@@ -40,21 +40,21 @@ export default {
         minute: "2-digit"
       });
 
-      const creation = new Date(this.timestamp * 1000);
+      const time = new Date(this.timestamp * 1000);
 
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);
-      if (creation >= dayStart) {
-        return timeFormatter.format(creation);
+      if (time >= dayStart) {
+        return timeFormatter.format(time);
       }
 
       const yearStart = new Date(dayStart.getTime());
       yearStart.setMonth(0, 1);
-      if (creation >= yearStart) {
-        return dateTimeFormatter.format(creation);
+      if (time >= yearStart) {
+        return dateTimeFormatter.format(time);
       }
 
-      return yearDateTimeFormatter.format(creation);
+      return yearDateTimeFormatter.format(time);
     }
   }
 };

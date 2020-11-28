@@ -3,8 +3,9 @@
     <!-- Should use key with v-for. Forgot why... -->
     <Message
         v-for="message in messages"
-        :content="message.content"
         :timestamp="message.timestamp"
+        :author="message.author"
+        :content="message.content"
         :sending="message.sending"
     ></Message>
   </div>
@@ -54,13 +55,14 @@ export default {
         case "error":
           // TODO: tell the user that an error occurred
           // Still print the error message to the console though
-          console.log(message.message);
+          console.error(message.message);
           break;
 
         case "new message":
           this.messages.push({
-            content: `<${message.from}>: ${message.content}`,
             timestamp: message.timestamp,
+            author: message.author,
+            content: message.content,
             sending: false
           });
           break;
@@ -83,8 +85,9 @@ export default {
           // TODO: Should prevent sending "send message" until "message list" is received
           this.messages = message.messages.map(msg => {
             return {
-              content: `<${msg.from}>: ${msg.content}`,
               timestamp: msg.timestamp,
+              author: msg.author,
+              content: msg.content,
               sending: false
             };
           });
@@ -94,10 +97,11 @@ export default {
 
     sendMessageContent(content) {
       this.messages.push({
-        content: "<You>: " + content,
-        // Initial "guess" for the send time.
+        // Initial "guess" for the timestamp.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
+        author: -1,
+        content: content,
         sending: true
       });
       this.socket.send(JSON.stringify({

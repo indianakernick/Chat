@@ -19,9 +19,29 @@ export default {
     sending: Boolean
   },
 
-  computed: {
-    // TODO: Use setTimeout to update the representation
-    formattedTime() {
+  data() {
+    return {
+      timeoutId: -1,
+      formattedTime: this.formatTime(),
+      updateTime: true
+    }
+  },
+
+  created() {
+    this.$watch(
+        () => [this.timestamp, this.updateTime],
+        () => this.formattedTime = this.formatTime()
+    );
+  },
+
+  beforeUnmount() {
+    clearTimeout(this.timeoutId);
+  },
+
+  methods: {
+    formatTime() {
+      clearTimeout(this.timeoutId);
+
       const timeFormatter = new Intl.DateTimeFormat([], {
         hour: "2-digit",
         minute: "2-digit"
@@ -40,20 +60,36 @@ export default {
         minute: "2-digit"
       });
 
+      const now = new Date();
       const time = new Date(this.timestamp * 1000);
 
-      const dayStart = new Date();
+      const dayStart = new Date(now.getTime());
       dayStart.setHours(0, 0, 0, 0);
       if (time >= dayStart) {
+        dayStart.setDate(dayStart.getDate() + 1);
+        const delay = dayStart.getTime() - now.getTime();
+        this.timeoutId = setTimeout(() => {
+          this.updateTime = !this.updateTime;
+        }, delay);
         return timeFormatter.format(time);
       }
 
-      const yearStart = new Date(dayStart.getTime());
+      const yearStart = dayStart;
       yearStart.setMonth(0, 1);
       if (time >= yearStart) {
+        yearStart.setFullYear(yearStart.getFullYear() + 1);
+        const delay = yearStart.getTime() - now.getTime();
+        if (delay < 2 ** 31) {
+          this.timeoutId = setTimeout(() => {
+            this.updateTime = !this.updateTime;
+          }, delay);
+        } else {
+          this.timeoutId = -1;
+        }
         return dateTimeFormatter.format(time);
       }
 
+      this.timeoutId = -1;
       return yearDateTimeFormatter.format(time);
     }
   }

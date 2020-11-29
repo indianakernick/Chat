@@ -78,14 +78,10 @@ export default {
       yearStart.setMonth(0, 1);
       if (time >= yearStart) {
         yearStart.setFullYear(yearStart.getFullYear() + 1);
-        const delay = yearStart.getTime() - now.getTime();
-        if (delay < 2 ** 31) {
-          this.timeoutId = setTimeout(() => {
-            this.updateTime = !this.updateTime;
-          }, delay);
-        } else {
-          this.timeoutId = -1;
-        }
+        const delay = Math.min(2 ** 31 - 1, yearStart.getTime() - now.getTime());
+        this.timeoutId = setTimeout(() => {
+          this.updateTime = !this.updateTime;
+        }, delay);
         return dateTimeFormatter.format(time);
       }
 

@@ -11,7 +11,7 @@
   </div>
   <input
       type="text"
-      @keypress.enter="sendMessageContent($event.target.value), $event.target.value = ''"
+      @keypress.enter="pressEnter($event.target)"
   />
 </template>
 
@@ -27,7 +27,8 @@ export default {
 
   data() {
     return {
-      messages: []
+      messages: [],
+      connecting: true
     }
   },
 
@@ -82,7 +83,7 @@ export default {
           break;
 
         case "recent message list":
-          // TODO: Should prevent sending "post message" until "recent message list" is received
+          this.connecting = false;
           this.messages = message.messages.map(msg => {
             return {
               timestamp: msg.timestamp,
@@ -95,19 +96,22 @@ export default {
       }
     },
 
-    sendMessageContent(content) {
+    pressEnter(input) {
+      // Alternative might be to hide the text box until connected
+      if (this.connecting) return;
       this.messages.push({
         // Initial "guess" for the timestamp.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
         author: -1,
-        content: content,
+        content: input.value,
         sending: true
       });
       this.socket.send(JSON.stringify({
         type: "post message",
-        content: content
+        content: input.value
       }));
+      input.value = "";
     }
   }
 };

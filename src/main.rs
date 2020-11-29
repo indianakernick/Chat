@@ -9,10 +9,6 @@ use deadpool_postgres::tokio_postgres::{Config, NoTls};
 // let _a: &[u8; 5] = b"hello";
 // let _b: &str = "hello";
 
-// I did row.get(1) as i32
-// and the compiler couldn't infer the return type of get
-// ???
-
 fn create_pool() -> Pool {
     let mut config = Config::new();
     config.host("localhost");

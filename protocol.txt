@@ -1,9 +1,9 @@
-1. Client A sends to server {type: "send message", content}
+1. Client A sends to server {type: "post message", content}
 2. Server receives message
 3. Server generates timestamp
 4. Concurrently {
-     Server sends to Client A {type: "message sent", timestamp}
-     Server sends to Client B {type: "new message", timestamp, content}
+     Server sends to Client A {type: "message receipt", timestamp}
+     Server sends to Client B {type: "recent message", timestamp, content}
    }
 5. Concurrently {
      Client A marks message as sent and updates timestamp

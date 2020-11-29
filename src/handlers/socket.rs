@@ -47,7 +47,7 @@ async fn connected(ws: WebSocket, conns: Connections, pool: Pool) {
     conns.write().await.insert(conn_id, ch_tx);
 
     // The future returned by this function acts as a state machine for the
-    // connection in a way. When we break out of this loop, we disconnect.
+    // connection in a way. It exists for the entire lifetime of the connection.
 
     // Handle each message received from the socket in some way.
     while let Some(result) = ws_rx.next().await {
@@ -61,9 +61,13 @@ async fn connected(ws: WebSocket, conns: Connections, pool: Pool) {
         };
 
         let conns_guard = conns.read().await;
-        if let Err(e) = message_received(conn_id, message, &*conns_guard, &pool).await {
-            send_error_to(&*conns_guard, conn_id, e);
-        }
+        let handler = MessageHandler {
+            conn_id,
+            message,
+            conns: &*conns_guard,
+            pool: &pool
+        };
+        handler.handle().await;
     }
 
     disconnected(conn_id, &conns).await;
@@ -74,31 +78,29 @@ async fn disconnected(conn_id: usize, conns: &Connections) {
     conns.write().await.remove(&conn_id);
 }
 
+macro_rules! try_string {
+    ($expr:expr) => {
+        match $expr {
+            Ok(val) => val,
+            Err(err) => return Err(err.to_string())
+        }
+    };
+}
+
 #[derive(Deserialize)]
 #[serde(tag="type")]
 enum ClientMessage {
-    #[serde(rename="send message")]
-    SendMessage { content: String },
-    #[serde(rename="request messages")]
-    RequestMessages
+    #[serde(rename="post message")]
+    PostMessage { content: String },
+    #[serde(rename="request recent messages")]
+    RequestRecentMessages
 }
 
 #[derive(Serialize)]
-struct NewMessage {
+struct RecentMessage {
     timestamp: u64,
     author: i32,
     content: String
-}
-
-impl NewMessage {
-    fn from_row(row: &tokio_postgres::Row) -> NewMessage {
-        NewMessage {
-            timestamp: as_timestamp(row.get(0)),
-            // Why not row.get(1) as i32 ?
-            author: row.get::<_, i32>(1),
-            content: row.get(2)
-        }
-    }
 }
 
 #[derive(Serialize)]
@@ -106,16 +108,23 @@ impl NewMessage {
 enum ServerMessage {
     #[serde(rename="error")]
     Error { message: String },
-    #[serde(rename="message sent")]
-    MessageSent { timestamp: u64 },
-    #[serde(rename="new message")]
-    NewMessage(NewMessage),
-    #[serde(rename="message list")]
-    MessageList { messages: Vec<NewMessage> }
+    #[serde(rename="message receipt")]
+    MessageReceipt { timestamp: u64 },
+    #[serde(rename="recent message")]
+    RecentMessage(RecentMessage),
+    #[serde(rename="recent message list")]
+    RecentMessageList { messages: Vec<RecentMessage> }
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
     time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
+}
+
+struct MessageHandler<'a> {
+    conn_id: usize,
+    message: Message,
+    conns: &'a ConnectionMap,
+    pool: &'a Pool,
 }
 
 fn send_message(ch_tx: &Sender, message: String) {
@@ -131,82 +140,97 @@ fn send_error(ch_tx: &Sender, error: String) {
     send_message(ch_tx, response);
 }
 
-fn send_error_to(conns: &ConnectionMap, conn_id: usize, error: String) {
-    if let Some(ch_tx) = conns.get(&conn_id) {
-        send_error(ch_tx, error);
+impl<'a> MessageHandler<'a> {
+    fn reply_error(&self, error: String) {
+        if let Some(ch_tx) = self.conns.get(&self.conn_id) {
+            send_error(ch_tx, error);
+        }
     }
-}
 
-macro_rules! try_string {
-    ($expr:expr) => {
-        match $expr {
-            Ok(val) => val,
-            Err(err) => return Err(err.to_string())
+    fn reply_message(&self, message: String) {
+        if let Some(ch_tx) = self.conns.get(&self.conn_id) {
+            send_message(ch_tx, message);
         }
-    };
-}
+    }
 
-async fn message_received(conn_id: usize, message: Message, conns: &ConnectionMap, pool: &Pool) -> Result<(), String> {
-    // TODO: This function is turning into a bit of a mess
-
-    let time = SystemTime::now();
-    let timestamp = as_timestamp(time);
-    let message = match message.to_str() {
-        Ok(m) => m,
-        Err(_) => return Ok(())
-    };
-    let client_message = try_string!(serde_json::from_str::<ClientMessage>(message));
-
-    match client_message {
-        ClientMessage::SendMessage{ content: client_message_content } => {
-            let echo_response = serde_json::to_string(&ServerMessage::MessageSent {
-                timestamp
-            }).unwrap();
-
-            let peer_response = serde_json::to_string(&ServerMessage::NewMessage (NewMessage {
-                timestamp,
-                author: conn_id as i32,
-                content: client_message_content.clone(),
-            })).unwrap();
-
-            // Artificial delay for testing
-            // tokio::time::delay_for(std::time::Duration::from_secs(1)).await
-
-            for (&other_conn_id, ch_tx) in conns.iter() {
-                if other_conn_id == conn_id {
-                    println!("Echoing back to ({}): {}", conn_id, echo_response);
-                    send_message(ch_tx, echo_response.clone());
-                } else {
-                    println!("Forwarding message from ({}) to ({}): {}", conn_id, other_conn_id, peer_response);
-                    send_message(ch_tx, peer_response.clone());
-                }
-            }
-
-            let db_conn = try_string!(pool.get().await);
-            let stmt = try_string!(db_conn.prepare(
-                "INSERT INTO Message (timestamp, author, content) VALUES ($1, $2, $3)"
-            ).await);
-            try_string!(db_conn.query(&stmt, &[&time, &(conn_id as i32), &client_message_content]).await);
-
-            Ok(())
-        },
-
-        ClientMessage::RequestMessages => {
-            let db_conn = try_string!(pool.get().await);
-            let stmt = try_string!(db_conn.prepare(
-                "SELECT timestamp, author, content FROM Message"
-            ).await);
-            let rows = try_string!(db_conn.query(&stmt, &[]).await);
-            let response = serde_json::to_string(&ServerMessage::MessageList {
-                messages: rows.iter()
-                    .map(NewMessage::from_row)
-                    .collect()
-            }).unwrap();
-            if let Some(ch_tx) = conns.get(&conn_id) {
-                send_message(ch_tx, response);
-            }
-
-            Ok(())
+    async fn handle(self) {
+        if let Err(e) = self.handle_error().await {
+            self.reply_error(e);
         }
+    }
+
+    async fn handle_error(&self) -> Result<(), String> {
+        let message = match self.message.to_str() {
+            Ok(m) => m,
+            Err(_) => return Ok(())
+        };
+        let client_message = try_string!(serde_json::from_str::<ClientMessage>(message));
+
+        match client_message {
+            ClientMessage::PostMessage { content } => {
+                self.handle_post_message(content).await
+            },
+            ClientMessage::RequestRecentMessages => {
+                self.handle_request_recent_messages().await
+            }
+        }
+    }
+
+    async fn handle_post_message(&self, content: String) -> Result<(), String> {
+        let time = SystemTime::now();
+        let timestamp = as_timestamp(time);
+
+        let echo_response = serde_json::to_string(&ServerMessage::MessageReceipt {
+            timestamp
+        }).unwrap();
+
+        let peer_response = serde_json::to_string(&ServerMessage::RecentMessage(RecentMessage {
+            timestamp,
+            author: self.conn_id as i32,
+            content: content.clone(),
+        })).unwrap();
+
+        // Artificial delay for testing
+        // tokio::time::delay_for(std::time::Duration::from_secs(1)).await
+
+        for (&other_conn_id, ch_tx) in self.conns.iter() {
+            if other_conn_id == self.conn_id {
+                println!("Echoing back to ({}): {}", self.conn_id, echo_response);
+                send_message(ch_tx, echo_response.clone());
+            } else {
+                println!("Forwarding message from ({}) to ({}): {}", self.conn_id, other_conn_id, peer_response);
+                send_message(ch_tx, peer_response.clone());
+            }
+        }
+
+        let db_conn = try_string!(self.pool.get().await);
+        let stmt = try_string!(db_conn.prepare(
+            "INSERT INTO Message (timestamp, author, content) VALUES ($1, $2, $3)"
+        ).await);
+        try_string!(db_conn.query(&stmt, &[&time, &(self.conn_id as i32), &content]).await);
+
+        Ok(())
+    }
+
+    async fn handle_request_recent_messages(&self) -> Result<(), String> {
+        let db_conn = try_string!(self.pool.get().await);
+        let stmt = try_string!(db_conn.prepare(
+            "SELECT timestamp, author, content FROM Message"
+        ).await);
+        let rows = try_string!(db_conn.query(&stmt, &[]).await);
+
+        let response = serde_json::to_string(&ServerMessage::RecentMessageList {
+            messages: rows.iter()
+                .map(|row| RecentMessage {
+                    timestamp: as_timestamp(row.get(0)),
+                    author: row.get::<_, i32>(1),
+                    content: row.get(2)
+                })
+                .collect()
+        }).unwrap();
+
+        self.reply_message(response);
+
+        Ok(())
     }
 }

@@ -43,7 +43,7 @@ export default {
     });
 
     this.socket.addEventListener("open", () => {
-      this.socket.send('{"type":"request messages"}');
+      this.socket.send('{"type":"request recent messages"}');
     });
   },
 
@@ -58,7 +58,7 @@ export default {
           console.error(message.message);
           break;
 
-        case "new message":
+        case "recent message":
           this.messages.push({
             timestamp: message.timestamp,
             author: message.author,
@@ -67,7 +67,7 @@ export default {
           });
           break;
 
-        case "message sent":
+        case "message receipt":
           // All messages arrive in the same order that they are sent.
           const messages = this.messages;
           const length = messages.length;
@@ -81,8 +81,8 @@ export default {
           console.error("\"message sent\" but all messages have been sent");
           break;
 
-        case "message list":
-          // TODO: Should prevent sending "send message" until "message list" is received
+        case "recent message list":
+          // TODO: Should prevent sending "post message" until "recent message list" is received
           this.messages = message.messages.map(msg => {
             return {
               timestamp: msg.timestamp,
@@ -105,7 +105,7 @@ export default {
         sending: true
       });
       this.socket.send(JSON.stringify({
-        type: "send message",
+        type: "post message",
         content: content
       }));
     }

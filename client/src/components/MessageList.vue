@@ -1,54 +1,89 @@
 <template>
-  <div id="message-list">
-    <!-- Should use key with v-for. Forgot why... -->
-    <Message
-        v-for="message in messages"
-        :timestamp="message.timestamp"
-        :author="message.author"
-        :content="message.content"
-        :sending="message.sending"
-    ></Message>
-  </div>
-  <input
-      type="text"
-      @keypress.enter="pressEnter($event.target)"
-  />
+  <template v-if="connected">
+    <div id="message-list">
+      <!-- Should use key with v-for. Forgot why... -->
+      <Message
+          v-for="message in messages"
+          :timestamp="message.timestamp"
+          :author="message.author"
+          :content="message.content"
+          :sending="message.sending"
+      ></Message>
+    </div>
+    <input
+        type="text"
+        @keypress.enter="pressEnter($event.target)"
+    />
+  </template>
+  <Disconnected v-else></Disconnected>
 </template>
 
 <script>
 import Message from "./Message.vue";
+import Disconnected from "./Disconnected.vue";
+
+const CONNECTION_RETRY_TIME = 5000;
 
 export default {
   name: "MessageList",
 
   components: {
-    Message
+    Message,
+    Disconnected
   },
 
   data() {
     return {
       messages: [],
-      connecting: true
+      connected: false
     }
   },
 
   created() {
-    this.socket = new WebSocket(`ws://${window.location.host}/api/socket`);
-
-    this.socket.addEventListener("message", this.receiveMessage);
-
-    this.socket.addEventListener("error", () => {
-      // TODO: tell the user that an error occurred
-      // Still print the error message to the console though
-      console.error("Connection error");
-    });
-
-    this.socket.addEventListener("open", () => {
-      this.socket.send('{"type":"request recent messages"}');
-    });
+    this.openConnection();
+    window.messageList = this;
   },
 
   methods: {
+    initSocket() {
+      this.socket = new WebSocket(`ws://${window.location.host}/api/socket`);
+    },
+
+    initListeners() {
+      this.socket.onmessage = this.receiveMessage;
+
+      this.socket.onerror = () => {
+        this.connected = false;
+      };
+
+      this.socket.onclose = () => {
+        this.connected = false;
+        setTimeout(this.retryConnection, CONNECTION_RETRY_TIME);
+      };
+    },
+
+    openConnection() {
+      this.initSocket();
+      this.initListeners();
+
+      this.socket.onopen = () => {
+        this.socket.send('{"type":"request recent messages"}');
+      };
+    },
+
+    retryConnection() {
+      this.initSocket();
+
+      this.socket.onerror = () => {
+        setTimeout(this.retryConnection, CONNECTION_RETRY_TIME);
+      };
+
+      this.socket.onopen = () => {
+        this.initListeners();
+        this.socket.send('{"type":"request recent messages"}');
+      };
+    },
+
     receiveMessage(event) {
       console.log(event.data);
       const message = JSON.parse(event.data);
@@ -83,7 +118,7 @@ export default {
           break;
 
         case "recent message list":
-          this.connecting = false;
+          this.connected = true;
           this.messages = message.messages.map(msg => {
             return {
               timestamp: msg.timestamp,
@@ -98,7 +133,7 @@ export default {
 
     pressEnter(input) {
       // Alternative might be to hide the text box until connected
-      if (this.connecting) return;
+      if (!this.connected) return;
       this.messages.push({
         // Initial "guess" for the timestamp.
         // This will be updated by the server.

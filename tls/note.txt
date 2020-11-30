@@ -1,0 +1,13 @@
+This is a self-signed certificate generated using this:
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls/private_key.key -out tls/certificate.crt
+
+Country Name: AU
+State or Province Name: SA
+Locality Name: Adelaide
+Organization Name: Indiana Kernick
+Common Name: localhost
+
+On macOS, open the certificate in Keychain Access and trust it. In Chrome,
+you'll have to "Proceed to localhost (unsafe)" once. It still doesn't show the
+green padlock icon but I think this is as close as I can get without going
+through the whole process of getting a proper server.

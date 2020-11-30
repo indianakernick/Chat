@@ -44,6 +44,9 @@ async fn main() {
         .or(filters::socket(pool.clone()));
 
     warp::serve(routes.with(warp::log("chat")))
-        .run(([0, 0, 0, 0], 3030))
+        .tls()
+        .cert_path("tls/localhost.crt")
+        .key_path("tls/localhost.key")
+        .run(([0, 0, 0, 0], 443))
         .await;
 }

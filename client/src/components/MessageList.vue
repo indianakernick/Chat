@@ -47,7 +47,7 @@ export default {
 
   methods: {
     initSocket() {
-      this.socket = new WebSocket(`ws://${window.location.host}/api/socket`);
+      this.socket = new WebSocket(`wss://${window.location.host}/api/socket`);
     },
 
     initListeners() {

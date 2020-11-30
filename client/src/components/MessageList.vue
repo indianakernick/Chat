@@ -22,7 +22,8 @@
 import Message from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
 
-const CONNECTION_RETRY_TIME = 5000;
+const INITIAL_RETRY_DELAY = 125;
+const MAX_RETRY_DELAY = 16000;
 
 export default {
   name: "MessageList",
@@ -36,7 +37,8 @@ export default {
     return {
       messages: [],
       connected: false,
-      status: "Connecting..."
+      status: "Connecting...",
+      retryDelay: INITIAL_RETRY_DELAY
     }
   },
 
@@ -46,6 +48,16 @@ export default {
   },
 
   methods: {
+    getRetryDelay() {
+      const delay = this.retryDelay;
+      this.retryDelay = Math.min(MAX_RETRY_DELAY, 2 * this.retryDelay);
+      return delay;
+    },
+
+    resetRetryDelay() {
+      this.retryDelay = INITIAL_RETRY_DELAY;
+    },
+
     initSocket() {
       this.socket = new WebSocket(`wss://${window.location.host}/api/socket`);
     },
@@ -62,7 +74,7 @@ export default {
         // 1000 means "normal closure"
         // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
         if (event.code !== 1000) {
-          setTimeout(this.retryConnection, CONNECTION_RETRY_TIME);
+          setTimeout(this.retryConnection, this.getRetryDelay());
         }
       };
     },
@@ -80,7 +92,7 @@ export default {
       this.initSocket();
 
       this.socket.onerror = () => {
-        setTimeout(this.retryConnection, CONNECTION_RETRY_TIME);
+        setTimeout(this.retryConnection, this.getRetryDelay());
       };
 
       this.socket.onopen = () => {
@@ -123,6 +135,7 @@ export default {
           break;
 
         case "recent message list":
+          this.resetRetryDelay();
           this.connected = true;
           this.messages = message.messages.map(msg => {
             return {

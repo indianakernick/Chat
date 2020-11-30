@@ -15,12 +15,12 @@
         @keypress.enter="pressEnter($event.target)"
     />
   </template>
-  <Disconnected v-else></Disconnected>
+  <StatusMessage v-else :status="status"></StatusMessage>
 </template>
 
 <script>
 import Message from "./Message.vue";
-import Disconnected from "./Disconnected.vue";
+import StatusMessage from "./StatusMessage.vue";
 
 const CONNECTION_RETRY_TIME = 5000;
 
@@ -29,13 +29,14 @@ export default {
 
   components: {
     Message,
-    Disconnected
+    StatusMessage
   },
 
   data() {
     return {
       messages: [],
-      connected: false
+      connected: false,
+      status: "Connecting..."
     }
   },
 
@@ -56,9 +57,13 @@ export default {
         this.connected = false;
       };
 
-      this.socket.onclose = () => {
+      this.socket.onclose = event => {
         this.connected = false;
-        setTimeout(this.retryConnection, CONNECTION_RETRY_TIME);
+        // 1000 means "normal closure"
+        // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+        if (event.code !== 1000) {
+          setTimeout(this.retryConnection, CONNECTION_RETRY_TIME);
+        }
       };
     },
 
@@ -89,9 +94,9 @@ export default {
       const message = JSON.parse(event.data);
       switch (message.type) {
         case "error":
-          // TODO: tell the user that an error occurred
-          // Still print the error message to the console though
-          console.error(message.message);
+          console.error("Server error:", message.message);
+          this.status = "An error has occurred";
+          this.socket.close(1000);
           break;
 
         case "recent message":

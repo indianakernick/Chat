@@ -1,12 +1,16 @@
 <template>
   <div>
-    <span>Connecting...</span>
+    <span>{{status}}</span>
   </div>
 </template>
 
 <script>
 export default {
-  name: "Disconnected"
+  name: "StatusMessage",
+
+  props: {
+    status: String
+  }
 }
 </script>
 

@@ -7,9 +7,9 @@ fn main() {
     println!("cargo:rerun-if-changed=client/public/index.html");
     println!("cargo:rerun-if-changed=client/src/App.vue");
     println!("cargo:rerun-if-changed=client/src/main.js");
-    println!("cargo:rerun-if-changed=client/src/components/Disconnected.vue");
     println!("cargo:rerun-if-changed=client/src/components/Message.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
 
     let build = match std::env::var("PROFILE").unwrap().as_str() {
         "debug" => "build-dev",

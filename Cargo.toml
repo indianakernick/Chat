@@ -21,6 +21,7 @@ deadpool-postgres = { version = "0.5" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 futures = "0.3"
+reqwest = { version = "0.10", features = ["json"] }
 
 # I'm considering using rocket due to the amount of boilerplate required to
 # get the database working.

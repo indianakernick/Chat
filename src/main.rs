@@ -41,7 +41,9 @@ async fn main() {
 
     let routes = filters::hello()
         .or(filters::root())
-        .or(filters::socket(pool.clone()));
+        .or(filters::socket(pool.clone()))
+        .or(filters::auth_success())
+        .or(filters::auth_fail());
 
     warp::serve(routes.with(warp::log("chat")))
         .tls()

@@ -15,6 +15,7 @@ pub fn root() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection
 
 pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let conns = handlers::Connections::default();
+
     warp::ws()
         .and(warp::path!("api" / "socket"))
         .map(move |ws: warp::ws::Ws| {
@@ -23,8 +24,13 @@ pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 }
 
 pub fn auth_success() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let cert_cache = handlers::CertificateCache::default();
+
     warp::get()
         .and(warp::path!("api" / "auth"))
+        .map(move || {
+            cert_cache.clone()
+        })
         .and(warp::query::<handlers::AuthSuccess>())
         .and_then(handlers::auth_success)
 }

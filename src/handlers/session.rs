@@ -1,13 +1,13 @@
 use rand::Rng;
 use deadpool_postgres::Pool;
 
+const SESSION_ID_LENGTH: usize = 16;
+
 /// Generates a 16 character, [base64url][1] encoded, cryptographically secure,
 /// random string.
 ///
 /// [1]: https://tools.ietf.org/html/rfc4648#page-7
 fn generate_session_id() -> String {
-    const SESSION_ID_LENGTH: usize = 16;
-
     let mut rng = rand::thread_rng();
     let mut bytes = vec![0; SESSION_ID_LENGTH];
 
@@ -31,18 +31,29 @@ fn generate_session_id() -> String {
     }
 }
 
-async fn initialize_session(pool: Pool, session_id: &String) -> Result<(), deadpool_postgres::PoolError> {
+async fn initialize_session(pool: Pool) -> Result<String, deadpool_postgres::PoolError> {
+    let mut session_id = generate_session_id();
     let conn = pool.get().await?;
-    let stmt = conn.prepare("INSERT INTO Session (session_id) VALUES ($1)").await?;
-    conn.query_opt(&stmt, &[session_id]).await?;
-    Ok(())
+
+    // TODO: Consider using https://github.com/dtolnay/indoc
+    let stmt = conn.prepare("
+         INSERT INTO Session (session_id)
+         VALUES ($1)
+         ON CONFLICT (session_id) DO NOTHING
+    ").await?;
+
+    while conn.execute(&stmt, &[&session_id]).await? == 0 {
+        session_id = generate_session_id();
+    }
+
+    Ok(session_id)
 }
 
 pub async fn create_session(pool: Pool, claims: super::Claims) -> Result<impl warp::Reply, warp::Rejection> {
-    let session_id = generate_session_id();
-    if let Err(e) = initialize_session(pool, &session_id).await {
-        return Err(warp::reject()); // TODO: Use warp::reject::custom
-    }
+    let session_id = match initialize_session(pool).await {
+        Ok(s) => s,
+        Err(_) => return Err(warp::reject()) // TODO: Use warp::reject::custom
+    };
 
     Ok(
         warp::reply::with_header(

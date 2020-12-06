@@ -24,6 +24,7 @@ futures = "0.3"
 reqwest = { version = "0.10", features = ["json"] }
 jsonwebtoken = "7.2"
 headers = "0.3"
+rand = "0.7"
 
 # I'm considering using rocket due to the amount of boilerplate required to
 # get the database working.

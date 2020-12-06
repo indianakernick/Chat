@@ -13,6 +13,20 @@ pub fn root() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection
         .and(warp::fs::dir("client/dist"))
 }
 
+pub fn me_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path!("api" / "me"))
+        .map(move || pool.clone())
+        .and(warp::cookie("session_id"))
+        .and_then(handlers::me)
+}
+
+pub fn me_without_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path!("api" / "me"))
+        .map(|| Ok(warp::http::StatusCode::UNAUTHORIZED))
+}
+
 pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let conns = handlers::Connections::default();
 
@@ -23,16 +37,17 @@ pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
         })
 }
 
-pub fn auth_success() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn auth_success(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let cert_cache = handlers::CertificateCache::default();
 
     warp::get()
         .and(warp::path!("api" / "auth"))
-        .map(move || {
-            cert_cache.clone()
-        })
+        .map(move || cert_cache.clone())
         .and(warp::query::<handlers::AuthSuccess>())
         .and_then(handlers::auth_success)
+        .map(move |claims| (pool.clone(), claims))
+        .untuple_one()
+        .and_then(handlers::create_session)
 }
 
 pub fn auth_fail() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {

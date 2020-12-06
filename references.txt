@@ -1,0 +1,15 @@
+OAuth
+https://developer.okta.com/blog/2017/06/21/what-the-heck-is-oauth
+
+Session management
+https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+
+Authentication
+https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+
+Websocket
+https://hpbn.co/websocket/
+
+JWT
+https://blog.logrocket.com/jwt-authentication-best-practices
+https://developer.okta.com/blog/2017/08/17/why-jwts-suck-as-session-tokens

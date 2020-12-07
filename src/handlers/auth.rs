@@ -1,3 +1,4 @@
+use log::error;
 use headers::Header;
 use headers::CacheControl;
 use std::time::SystemTime;
@@ -8,6 +9,10 @@ use jsonwebtoken::errors::ErrorKind as JWTErrorKind;
 use jsonwebtoken::{decode, decode_header, Algorithm, Validation, DecodingKey};
 
 /*
+
+Full explanation
+https://developers.google.com/identity/protocols/oauth2/web-server#httprest_5
+
 The authentication flow starts when the user clicks a link:
 https://accounts.google.com/o/oauth2/v2/auth?
   client_id=xxx.apps.googleusercontent.com&
@@ -39,7 +44,7 @@ certificate expires.
 #[derive(Deserialize)]
 pub struct AuthSuccess {
     code: String,
-    scope: String
+    // scope: String
 }
 
 #[derive(Deserialize)]
@@ -48,12 +53,12 @@ pub struct AuthFail {
 }
 
 #[derive(Serialize)]
-struct TokenRequest<'a> {
-    client_id: &'a str,
-    client_secret: &'a str,
+struct TokenRequest {
+    client_id: &'static str,
+    client_secret: &'static str,
     code: String,
-    grant_type: &'a str,
-    redirect_uri: &'a str
+    grant_type: &'static str,
+    redirect_uri: &'static str
 }
 
 #[derive(Deserialize)]
@@ -87,9 +92,9 @@ struct Certificate {
     kid: String, // Key ID
     n: String, // RSA modulus
     e: String, // RSA exponent
-    //alg: String,
-    //kty: String,
-    //r#use: String,
+    // alg: String,
+    // kty: String,
+    // r#use: String,
 }
 
 #[derive(Deserialize)]
@@ -138,8 +143,8 @@ async fn update_cert_cache(client: &reqwest::Client, cached_certs: &mut Certs) -
 #[derive(Deserialize)]
 pub struct Claims {
     iss: String, // Issuer
-    aud: String, // Audience
-    exp: usize, // Expire
+    // aud: String, // Audience
+    // exp: usize, // Expire
 
     pub sub: String,
     pub name: String,
@@ -210,5 +215,6 @@ pub async fn auth_success(cache: CertificateCache, res: AuthSuccess) -> Result<C
 }
 
 pub async fn auth_fail(res: AuthFail) -> Result<impl warp::Reply, Infallible> {
+    error!("Google auth error: {}", res.error);
     Ok(warp::redirect(warp::http::Uri::from_static("/")))
 }

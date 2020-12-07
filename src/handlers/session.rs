@@ -77,11 +77,9 @@ async fn initialize_session(conn: &Client, user_id: UserID) -> Result<String, Er
 pub async fn create_session(pool: Pool, claims: super::Claims) -> Result<impl warp::Reply, warp::Rejection> {
     let conn = match pool.get().await {
         Ok(c) => c,
-        Err(_) => return Err(warp::reject())
+        Err(e) => return Err(Error::Database(e).into())
     };
-
     let user_id = signup_or_login(&conn, claims).await?;
-
     let session_id = initialize_session(&conn, user_id).await?;
 
     Ok(

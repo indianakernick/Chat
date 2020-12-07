@@ -26,15 +26,6 @@ impl std::error::Error for Error {}
 
 impl warp::reject::Reject for Error {}
 
-/*
-impl Into<warp::Rejection> for Error {
-    fn into(self) -> warp::Rejection {
-        info!("{}", self);
-        warp::reject::custom(self)
-    }
-}
-*/
-
 impl From<Error> for warp::Rejection {
     fn from(e: Error) -> warp::Rejection {
         warp::reject::custom(e)

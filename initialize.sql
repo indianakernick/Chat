@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS Message (
-    "timestamp" TIMESTAMPTZ NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL,
     author INTEGER NOT NULL, -- TODO: Make this a FK that references user_id
     content TEXT NOT NULL
 );
@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS Usr (
     PRIMARY KEY (user_id)
 );
 
--- When getting rows from session, check the creation and active time.
 CREATE TABLE IF NOT EXISTS Session (
     session_id CHAR(16) COLLATE "C" NOT NULL,
     creation_time TIMESTAMPTZ NOT NULL,

@@ -27,10 +27,10 @@ async fn print_message_count(pool: &Pool) {
     client.batch_execute(init.as_str()).await.unwrap();
 
     let rows = client
-        .query("SELECT content FROM Message", &[])
+        .query("SELECT COUNT(*) FROM Message", &[])
         .await.unwrap();
 
-    println!("Messages: {}", rows.len());
+    println!("Messages: {}", rows[0].get::<_, i64>(0));
 }
 
 #[tokio::main]
@@ -46,8 +46,7 @@ async fn main() {
         .or(filters::me_without_session())
         .or(filters::socket(pool.clone()))
         .or(filters::auth_success(pool.clone()))
-        .or(filters::auth_fail())
-        .recover(filters::rejection);
+        .or(filters::auth_fail());
 
     warp::serve(routes.with(warp::log("chat")))
         .tls()

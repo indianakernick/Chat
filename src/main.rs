@@ -1,5 +1,6 @@
 mod filters;
 mod handlers;
+mod error;
 
 use warp::Filter;
 use deadpool_postgres::{Pool, Manager};
@@ -45,7 +46,8 @@ async fn main() {
         .or(filters::me_without_session())
         .or(filters::socket(pool.clone()))
         .or(filters::auth_success(pool.clone()))
-        .or(filters::auth_fail());
+        .or(filters::auth_fail())
+        .recover(filters::rejection);
 
     warp::serve(routes.with(warp::log("chat")))
         .tls()

@@ -1,3 +1,4 @@
+use log::info;
 use warp::Filter;
 use super::handlers;
 use deadpool_postgres::Pool;
@@ -9,6 +10,7 @@ pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
 }
 
 pub fn root() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    // TODO: Consider setting cache-control header for static files
     warp::get()
         .and(warp::fs::dir("client/dist"))
 }
@@ -55,4 +57,17 @@ pub fn auth_fail() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reje
         .and(warp::path!("api" / "auth"))
         .and(warp::query::<handlers::AuthFail>())
         .and_then(handlers::auth_fail)
+}
+
+// This is technically a handler so maybe it doesn't belong in this file.
+pub async fn rejection(error: warp::Rejection) -> Result<impl warp::Reply, warp::Rejection> {
+    if let Some(e) = error.find::<crate::error::Error>() {
+        info!("{}", e);
+        Ok(warp::reply::with_status(
+            warp::reply(),
+            warp::http::StatusCode::INTERNAL_SERVER_ERROR
+        ))
+    } else {
+        Err(error)
+    }
 }

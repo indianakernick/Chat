@@ -1,7 +1,12 @@
 use rand::Rng;
+use serde::Serialize;
 use deadpool_postgres::Pool;
+use deadpool_postgres::Client;
+use crate::error::Error;
 
 const SESSION_ID_LENGTH: usize = 16;
+
+pub type UserID = i32;
 
 /// Generates a 16 character, [base64url][1] encoded, cryptographically secure,
 /// random string.
@@ -31,18 +36,38 @@ fn generate_session_id() -> String {
     }
 }
 
-async fn initialize_session(pool: Pool) -> Result<String, deadpool_postgres::PoolError> {
+async fn signup_or_login(conn: &Client, claims: super::Claims) -> Result<UserID, Error> {
+    // TODO: I really don't like this. Should do it in one statement.
+    let login_stmt = conn.prepare("
+        SELECT user_id
+        FROM Usr
+        WHERE google_id = $1
+        LIMIT 1
+    ").await?;
+    let signup_stmt = conn.prepare("
+        INSERT INTO Usr (name, picture, google_id)
+        VALUES ($1, $2, $3)
+        RETURNING user_id
+    ").await?;
+
+    if let Some(user_id) = conn.query_opt(&login_stmt, &[&claims.sub]).await? {
+        return Ok(user_id.get(0));
+    }
+
+    Ok(conn.query_one(&signup_stmt, &[&claims.name, &claims.picture, &claims.sub]).await?.get(0))
+}
+
+async fn initialize_session(conn: &Client, user_id: UserID) -> Result<String, Error> {
     let mut session_id = generate_session_id();
-    let conn = pool.get().await?;
 
     // TODO: Consider using https://github.com/dtolnay/indoc
     let stmt = conn.prepare("
-         INSERT INTO Session (session_id)
-         VALUES ($1)
+         INSERT INTO Session (session_id, creation_time, user_id)
+         VALUES ($1, NOW(), $2)
          ON CONFLICT (session_id) DO NOTHING
     ").await?;
 
-    while conn.execute(&stmt, &[&session_id]).await? == 0 {
+    while conn.execute(&stmt, &[&session_id, &user_id]).await? == 0 {
         session_id = generate_session_id();
     }
 
@@ -50,10 +75,14 @@ async fn initialize_session(pool: Pool) -> Result<String, deadpool_postgres::Poo
 }
 
 pub async fn create_session(pool: Pool, claims: super::Claims) -> Result<impl warp::Reply, warp::Rejection> {
-    let session_id = match initialize_session(pool).await {
-        Ok(s) => s,
-        Err(_) => return Err(warp::reject()) // TODO: Use warp::reject::custom
+    let conn = match pool.get().await {
+        Ok(c) => c,
+        Err(_) => return Err(warp::reject())
     };
+
+    let user_id = signup_or_login(&conn, claims).await?;
+
+    let session_id = initialize_session(&conn, user_id).await?;
 
     Ok(
         warp::reply::with_header(
@@ -62,4 +91,54 @@ pub async fn create_session(pool: Pool, claims: super::Claims) -> Result<impl wa
             format!("session_id={}; HttpOnly; Secure", session_id)
         )
     )
+}
+
+pub async fn get_session_user_id(pool: Pool, session_id: String) -> Result<UserID, Error> {
+    if session_id.len() != SESSION_ID_LENGTH {
+        return Err(Error::InvalidSessionID);
+    }
+
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT user_id
+        FROM Session
+        WHERE session_id = $1
+        AND creation_time > NOW() - INTERVAL '7 days'
+        LIMIT 1
+    ").await?;
+
+    match conn.query_opt(&stmt, &[&session_id]).await? {
+        Some(row) => Ok(row.get(0)),
+        None => Err(Error::InvalidSessionID)
+    }
+}
+
+#[derive(Serialize)]
+pub struct UserInfo {
+    name: String,
+    picture: String,
+}
+
+pub async fn get_session_user_info(pool: Pool, session_id: String) -> Result<UserInfo, Error> {
+    if session_id.len() != SESSION_ID_LENGTH {
+        return Err(Error::InvalidSessionID);
+    }
+
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT Usr.name, Usr.picture
+        FROM Usr
+        JOIN Session ON Session.user_id = Usr.user_id
+        WHERE Session.session_id = $1
+        AND Session.creation_time > NOW() - INTERVAL '7 days'
+        LIMIT 1
+    ").await?;
+
+    match conn.query_opt(&stmt, &[&session_id]).await? {
+        Some(row) => Ok(UserInfo {
+            name: row.get(0),
+            picture: row.get(1)
+        }),
+        None => Err(Error::InvalidSessionID)
+    }
 }

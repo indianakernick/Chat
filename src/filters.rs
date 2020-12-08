@@ -15,10 +15,37 @@ pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
-pub fn root() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    // TODO: Consider setting cache-control header for static files
+// TODO: Consider setting cache-control header for static files
+
+pub fn root_with_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
-        .and(warp::fs::dir("client/dist"))
+        .and(warp::path::end())
+        .and(warp::cookie("session_id"))
+        .and(warp::fs::file("client/dist/with_session.html"))
+        // TODO: Use the cookie to embed the profile information into the page.
+        // This also makes api/me redundant.
+        .map(|session_id, file| file)
+        .recover(rejection)
+}
+
+pub fn root_without_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path::end())
+        .and(warp::fs::file("client/dist/without_session.html"))
+        .recover(rejection)
+}
+
+pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path!("favicon.ico"))
+        .and(warp::fs::file("client/dist/favicon.ico"))
+        .recover(rejection)
+}
+
+pub fn js() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path("js"))
+        .and(warp::fs::dir("client/dist/js"))
         .recover(rejection)
 }
 

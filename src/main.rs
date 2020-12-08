@@ -41,7 +41,10 @@ async fn main() {
     pretty_env_logger::init();
 
     let routes = filters::hello()
-        .or(filters::root())
+        .or(filters::root_with_session())
+        .or(filters::root_without_session())
+        .or(filters::favicon())
+        .or(filters::js())
         .or(filters::me_with_session(pool.clone()))
         .or(filters::me_without_session())
         .or(filters::socket(pool.clone()))

@@ -46,6 +46,7 @@ certificate expires.
 #[derive(Deserialize)]
 pub struct AuthSuccess {
     code: String,
+    // TODO: Do we need to check that scope is as expected?
     // scope: String
 }
 

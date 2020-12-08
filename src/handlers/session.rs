@@ -86,7 +86,7 @@ pub async fn create_session(claims: super::Claims, pool: Pool) -> Result<impl wa
         warp::reply::with_header(
             warp::redirect(warp::http::Uri::from_static("/")),
             "Set-Cookie",
-            format!("session_id={}; HttpOnly; Secure", session_id)
+            format!("session_id={};Path=/;HttpOnly;Secure", session_id)
         )
     )
 }

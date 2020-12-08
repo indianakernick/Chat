@@ -34,7 +34,7 @@ pub fn me_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Er
 pub fn me_without_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
         .and(warp::path!("api" / "me"))
-        .map(|| warp::http::StatusCode::UNAUTHORIZED)
+        .map(|| warp::reply::json(&serde_json::json!({})))
         .recover(rejection)
 }
 

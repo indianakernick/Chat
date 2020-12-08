@@ -2,6 +2,11 @@ use log::error;
 use warp::Filter;
 use super::handlers;
 use deadpool_postgres::Pool;
+use std::convert::Infallible;
+
+fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> + Clone {
+    warp::any().map(move || pool.clone())
+}
 
 pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
@@ -20,8 +25,8 @@ pub fn root() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection
 pub fn me_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
         .and(warp::path!("api" / "me"))
-        .map(move || pool.clone())
         .and(warp::cookie("session_id"))
+        .and(with_pool(pool))
         .and_then(handlers::me)
         .recover(rejection)
 }
@@ -29,7 +34,7 @@ pub fn me_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Er
 pub fn me_without_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
         .and(warp::path!("api" / "me"))
-        .map(|| Ok(warp::http::StatusCode::UNAUTHORIZED))
+        .map(|| warp::http::StatusCode::UNAUTHORIZED)
         .recover(rejection)
 }
 
@@ -38,10 +43,10 @@ pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 
     warp::ws()
         .and(warp::path!("api" / "socket"))
-        //.and(warp::cookie("session_id"))
-        .map(move |ws: warp::ws::Ws| {
-            handlers::upgrade(ws, conns.clone(), pool.clone())
-        })
+        .and(warp::cookie("session_id"))
+        .and(with_pool(pool))
+        .and(warp::any().map(move || conns.clone()))
+        .map(handlers::upgrade)
         .recover(rejection)
 }
 
@@ -53,8 +58,7 @@ pub fn auth_success(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error
         .map(move || cert_cache.clone())
         .and(warp::query::<handlers::AuthSuccess>())
         .and_then(handlers::auth_success)
-        .map(move |claims| (pool.clone(), claims))
-        .untuple_one()
+        .and(with_pool(pool))
         .and_then(handlers::create_session)
         .recover(rejection)
 }
@@ -71,10 +75,7 @@ pub fn auth_fail() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reje
 async fn rejection(error: warp::Rejection) -> Result<impl warp::Reply, warp::Rejection> {
     if let Some(e) = error.find::<crate::error::Error>() {
         error!("{}", e);
-        Ok(warp::reply::with_status(
-            warp::reply(),
-            warp::http::StatusCode::INTERNAL_SERVER_ERROR
-        ))
+        Ok(warp::http::StatusCode::INTERNAL_SERVER_ERROR)
     } else {
         Err(error)
     }

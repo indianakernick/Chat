@@ -1,12 +1,18 @@
+// TODO: Maybe use newtype structs and implement Reject for each other them
+
 pub type DatabaseError = deadpool_postgres::PoolError;
 pub type RequestError = reqwest::Error;
 pub type JWTError = jsonwebtoken::errors::Error;
+pub type HeaderError = headers::Error;
+pub type JSONError = serde_json::error::Error;
 
 #[derive(Debug)]
 pub enum Error {
     Database(DatabaseError),
     Request(RequestError),
     JWT(JWTError),
+    Header(HeaderError),
+    JSON(JSONError),
 
     InvalidSessionID
 }
@@ -17,6 +23,8 @@ impl std::fmt::Display for Error {
             Error::Database(e) => e.fmt(f),
             Error::Request(e) => e.fmt(f),
             Error::JWT(e) => e.fmt(f),
+            Error::Header(e) => e.fmt(f),
+            Error::JSON(e) => e.fmt(f),
             Error::InvalidSessionID => f.write_str("Invalid session ID")
         }
     }
@@ -53,5 +61,17 @@ impl From<RequestError> for Error {
 impl From<JWTError> for Error {
     fn from(e: JWTError) -> Error {
         Error::JWT(e)
+    }
+}
+
+impl From<HeaderError> for Error {
+    fn from(e: HeaderError) -> Error {
+        Error::Header(e)
+    }
+}
+
+impl From<JSONError> for Error {
+    fn from(e: JSONError) -> Error {
+        Error::JSON(e)
     }
 }

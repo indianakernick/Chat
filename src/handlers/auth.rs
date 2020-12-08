@@ -1,11 +1,13 @@
 use log::error;
+use crate::error::Error;
+use jsonwebtoken::errors::Error as JWTError;
+use jsonwebtoken::errors::ErrorKind as JWTErrorKind;
+
 use headers::Header;
 use headers::CacheControl;
 use std::time::SystemTime;
 use std::convert::Infallible;
 use serde::{Serialize, Deserialize};
-use jsonwebtoken::errors::Error as JWTError;
-use jsonwebtoken::errors::ErrorKind as JWTErrorKind;
 use jsonwebtoken::{decode, decode_header, Algorithm, Validation, DecodingKey};
 
 /*
@@ -71,7 +73,7 @@ struct TokenResponse {
     // refresh_token: String,
 }
 
-async fn request_id_token(client: &reqwest::Client, authorization_code: String) -> Result<TokenResponse, reqwest::Error> {
+async fn request_id_token(client: &reqwest::Client, authorization_code: String) -> Result<TokenResponse, Error> {
     let request = TokenRequest {
         client_id: include_str!("../../api/client_id.txt"),
         client_secret: include_str!("../../api/client_secret.txt"),
@@ -84,7 +86,8 @@ async fn request_id_token(client: &reqwest::Client, authorization_code: String) 
         .send()
         .await?
         .json::<TokenResponse>()
-        .await?)
+        .await?
+    )
 }
 
 #[derive(Deserialize)]
@@ -116,7 +119,7 @@ impl Default for Certs {
 
 pub type CertificateCache = std::sync::Arc<tokio::sync::Mutex<Certs>>;
 
-async fn update_cert_cache(client: &reqwest::Client, cached_certs: &mut Certs) -> Result<(), reqwest::Error> {
+async fn update_cert_cache(client: &reqwest::Client, cached_certs: &mut Certs) -> Result<(), Error> {
     let now = SystemTime::now();
     if cached_certs.expire > now {
         return Ok(());
@@ -125,13 +128,11 @@ async fn update_cert_cache(client: &reqwest::Client, cached_certs: &mut Certs) -
     let response = client.get("https://www.googleapis.com/oauth2/v3/certs")
         .send()
         .await?;
-
     let headers = response.headers();
     let mut iter = headers
         .get_all(CacheControl::name())
         .iter();
-    let cache_control = CacheControl::decode(&mut iter).unwrap(); // TODO: Use ? here
-
+    let cache_control = CacheControl::decode(&mut iter)?;
     let certs = response.json::<Certs>().await?;
 
     cached_certs.keys = certs.keys;
@@ -153,18 +154,18 @@ pub struct Claims {
     pub family_name: String,
 }
 
-fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, JWTError> {
+fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, Error> {
     let header = decode_header(id_token)?;
 
     // The header contains a kid (key ID) field that identifies the key to use
     // from the list of keys.
     //
-    // We're hijacking the InvalidAlgorithmName error here in case it isn't
+    // We're returning the InvalidAlgorithmName error here in case it isn't
     // present. This error is only used when Algorithm::from_str is called which
     // we're not using.
     let header_kid = match header.kid {
         Some(k) => k,
-        None => return Err(JWTError::from(JWTErrorKind::InvalidAlgorithmName))
+        None => return Err(JWTError::from(JWTErrorKind::InvalidAlgorithmName).into())
     };
 
     // Search the list of keys for the one with the matching ID and use that
@@ -180,38 +181,24 @@ fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, JWTError> {
             // one value but the issuer can be one of two values.
             match token_data.claims.iss.as_str() {
                 "accounts.google.com" | "https://accounts.google.com" => {},
-                _ => return Err(JWTError::from(JWTErrorKind::InvalidIssuer))
+                _ => return Err(JWTError::from(JWTErrorKind::InvalidIssuer).into())
             };
 
             return Ok(token_data.claims);
         }
     }
 
-    Err(JWTError::from(JWTErrorKind::InvalidAlgorithmName))
+    Err(JWTError::from(JWTErrorKind::InvalidAlgorithmName).into())
 }
 
 pub async fn auth_success(cache: CertificateCache, res: AuthSuccess) -> Result<Claims, warp::Rejection> {
     // TODO: Should create this once and reuse it.
     // It uses a connection pool internally.
     let client = reqwest::Client::new();
-
-    // TODO: Use warp::reject::custom
-
-    let token = match request_id_token(&client, res.code).await {
-        Ok(t) => t,
-        Err(e) => return Err(warp::reject())
-    };
-
+    let token = request_id_token(&client, res.code).await?;
     let mut certs = cache.lock().await;
-
-    if let Err(e) = update_cert_cache(&client, &mut *certs).await {
-        return Err(warp::reject())
-    }
-
-    Ok(match decode_id_token(&certs, token.id_token.as_str()) {
-        Ok(c) => c,
-        Err(e) => return Err(warp::reject())
-    })
+    update_cert_cache(&client, &mut *certs).await?;
+    Ok(decode_id_token(&certs, token.id_token.as_str())?)
 }
 
 pub async fn auth_fail(res: AuthFail) -> Result<impl warp::Reply, Infallible> {

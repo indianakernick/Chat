@@ -7,7 +7,7 @@ struct Login {
     error: String
 }
 
-pub async fn me(pool: Pool, session_id: String) -> Result<impl warp::Reply, warp::Rejection> {
+pub async fn me(session_id: String, pool: Pool) -> Result<impl warp::Reply, warp::Rejection> {
     match get_session_user_info(pool, session_id).await {
         Ok(info) => Ok(warp::reply::json(&info)),
         Err(crate::error::Error::InvalidSessionID) =>

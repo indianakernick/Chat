@@ -1,7 +1,12 @@
 CREATE TABLE IF NOT EXISTS Message (
     timestamp TIMESTAMPTZ NOT NULL,
-    author INTEGER NOT NULL, -- TODO: Make this a FK that references user_id
-    content TEXT NOT NULL
+    author INTEGER DEFAULT 0,
+    content TEXT NOT NULL,
+
+    FOREIGN KEY (author)
+        REFERENCES Usr (user_id)
+        ON UPDATE CASCADE
+        ON DELETE SET DEFAULT
 );
 
 CREATE TABLE IF NOT EXISTS Usr (

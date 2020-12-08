@@ -2,6 +2,8 @@ fn main() {
     // This is so sad ;-(
     // https://github.com/rust-lang/cargo/issues/2599
 
+    println!("cargo:rerun-if-changed=client/vue.config.js");
+
     println!("cargo:rerun-if-changed=client/public/index.html");
 
     println!("cargo:rerun-if-changed=client/src/App.vue");
@@ -10,14 +12,14 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/Login.vue");
     println!("cargo:rerun-if-changed=client/src/components/Message.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/ProfileNav.vue");
     println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
 
     let build = match std::env::var("PROFILE").unwrap().as_str() {
         "debug" => "build-dev",
         "release" => "build-prod",
-        _ => ""
+        _ => panic!()
     };
-    assert!(!build.is_empty());
 
     let status = std::process::Command::new("npm")
         .arg("run")

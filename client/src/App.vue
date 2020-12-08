@@ -1,10 +1,12 @@
 <template>
+  <ProfileNav v-if="loggedIn" :name="name" :picture="picture"/>
   <Login v-if="notLoggedIn"/>
   <MessageList v-if="loggedIn"/>
 </template>
 
 <script>
 import Login from "./components/Login.vue";
+import ProfileNav from "./components/ProfileNav.vue";
 import MessageList from "./components/MessageList.vue";
 
 const CONNECTING = 0;
@@ -16,12 +18,15 @@ export default {
 
   components: {
     Login,
+    ProfileNav,
     MessageList
   },
 
   data() {
     return {
-      state: CONNECTING
+      state: CONNECTING,
+      name: "",
+      picture: ""
     }
   },
 
@@ -43,7 +48,8 @@ export default {
         this.state = NOT_LOGGED_IN;
       } else {
         this.state = LOGGED_IN;
-        console.log("Logged in as", req.response.name, req.response.picture);
+        this.name = req.response.name;
+        this.picture = req.response.picture;
       }
     };
 

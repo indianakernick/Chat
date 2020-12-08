@@ -1,8 +1,9 @@
 use log::{debug, error};
 use tokio::sync::mpsc;
 use deadpool_postgres::Pool;
-use warp::ws::{Ws, WebSocket, Message};
 use futures::{FutureExt, StreamExt};
+use warp::ws::{Ws, WebSocket, Message};
+use crate::handlers::{UserID, get_session_user_id};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
 
 pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
@@ -12,16 +13,17 @@ pub type Connections = Arc<tokio::sync::RwLock<ConnectionMap>>;
 // Atomic int for tracking connection IDs
 static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 
-pub fn upgrade(ws: Ws, session_id: String, pool: Pool, conns: Connections) -> impl warp::Reply {
+pub async fn upgrade(ws: Ws, session_id: String, pool: Pool, conns: Connections)
+    -> Result<impl warp::Reply, warp::Rejection> {
+    let user_id = get_session_user_id(pool.clone(), session_id).await?;
     // Upgrade the HTTP connection to a WebSocket connection
-    ws.on_upgrade(move |socket: WebSocket| {
-        connected(socket, conns, pool)
-    })
+    Ok(ws.on_upgrade(move |socket: WebSocket| {
+        connected(socket, user_id, pool, conns)
+    }))
 }
 
-async fn connected(ws: WebSocket, conns: Connections, pool: Pool) {
+async fn connected(ws: WebSocket, user_id: UserID, pool: Pool, conns: Connections) {
     let conn_id = NEXT_CONNECTION_ID.fetch_add(1, Ordering::Relaxed);
-
     debug!("Socket connected: {}", conn_id);
 
     // Splitting the web socket into separate sinks and streams.
@@ -60,6 +62,7 @@ async fn connected(ws: WebSocket, conns: Connections, pool: Pool) {
         let conns_guard = conns.read().await;
         let handler = super::handler::MessageHandler {
             conn_id,
+            user_id,
             message,
             conns: &*conns_guard,
             pool: &pool
@@ -67,10 +70,6 @@ async fn connected(ws: WebSocket, conns: Connections, pool: Pool) {
         handler.handle().await;
     }
 
-    disconnected(conn_id, &conns).await;
-}
-
-async fn disconnected(conn_id: usize, conns: &Connections) {
     debug!("Socket disconnected: {}", conn_id);
     conns.write().await.remove(&conn_id);
 }

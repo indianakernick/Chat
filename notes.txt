@@ -34,3 +34,6 @@ npm install
 
 Compile the client
 npm run build
+
+Google API console
+https://console.developers.google.com/apis/credentials?project=chat-297602

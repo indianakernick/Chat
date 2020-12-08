@@ -46,7 +46,7 @@ pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
         .and(warp::cookie("session_id"))
         .and(with_pool(pool))
         .and(warp::any().map(move || conns.clone()))
-        .map(handlers::upgrade)
+        .and_then(handlers::upgrade)
         .recover(rejection)
 }
 

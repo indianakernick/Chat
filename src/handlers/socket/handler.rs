@@ -1,7 +1,8 @@
 use log::debug;
+use warp::ws::Message;
 use std::time::SystemTime;
 use deadpool_postgres::Pool;
-use warp::ws::Message;
+use crate::handlers::UserID;
 use serde::{Serialize, Deserialize};
 use crate::error::{Error, DatabaseError};
 use super::upgrade::{Sender, ConnectionMap};
@@ -41,6 +42,7 @@ fn as_timestamp(time: SystemTime) -> u64 {
 
 pub struct MessageHandler<'a> {
     pub conn_id: usize,
+    pub user_id: UserID,
     pub message: Message,
     pub conns: &'a ConnectionMap,
     pub pool: &'a Pool,
@@ -48,7 +50,7 @@ pub struct MessageHandler<'a> {
 
 fn send_message(ch_tx: &Sender, message: String) {
     if ch_tx.send(Ok(Message::text(message))).is_err() {
-        // disconnected will handle the possible error
+        // the connection handler will handle the possible error
     }
 }
 
@@ -105,7 +107,7 @@ impl<'a> MessageHandler<'a> {
 
         let peer_response = serde_json::to_string(&ServerMessage::RecentMessage(RecentMessage {
             timestamp,
-            author: self.conn_id as i32,
+            author: self.user_id,
             content: content.clone(),
         })).unwrap();
 
@@ -124,7 +126,7 @@ impl<'a> MessageHandler<'a> {
             INSERT INTO Message (timestamp, author, content)
             VALUES ($1, $2, $3)
         ").await?;
-        db_conn.query(&stmt, &[&time, &(self.conn_id as i32), &content]).await?;
+        db_conn.query(&stmt, &[&time, &self.user_id, &content]).await?;
 
         Ok(())
     }

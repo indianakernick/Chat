@@ -5,10 +5,9 @@
       <Message
           v-for="message in messages"
           :timestamp="message.timestamp"
-          :author="message.author"
+          :userInfo="message.userInfo"
           :content="message.content"
           :sending="message.sending"
-          :picture="message.picture"
       ></Message>
     </div>
     <input
@@ -35,8 +34,7 @@ export default {
   },
 
   props: {
-    name: String,
-    picture: String
+    userInfo: Object
   },
 
   data() {
@@ -44,12 +42,16 @@ export default {
       messages: [],
       connected: false,
       status: "Connecting...",
-      retryDelay: INITIAL_RETRY_DELAY
+      retryDelay: INITIAL_RETRY_DELAY,
+      userInfoCache: {
+        [USER_ID]: this.userInfo
+      }
     }
   },
 
   created() {
     this.openConnection();
+    // TODO: This is very useful for debugging but don't forget to remove it
     window.messageList = this;
   },
 
@@ -107,6 +109,28 @@ export default {
       };
     },
 
+    getUserInfo(id) {
+      if (!this.userInfoCache.hasOwnProperty(id)) {
+        this.userInfoCache[id] = {
+          name: "",
+          picture: ""
+        };
+
+        const req = new XMLHttpRequest();
+
+        req.onload = () => {
+          this.userInfoCache[id].name = req.response.name;
+          this.userInfoCache[id].picture = req.response.picture;
+        };
+
+        req.responseType = "json";
+        req.open("GET", `/api/user/${id}`);
+        req.send();
+      }
+
+      return this.userInfoCache[id];
+    },
+
     receiveMessage(event) {
       console.log(event.data);
       const message = JSON.parse(event.data);
@@ -118,10 +142,10 @@ export default {
           break;
 
         case "recent message":
+          const userInfo = this.getUserInfo(message.author);
           this.messages.push({
             timestamp: message.timestamp,
-            author: message.author.toString(),
-            picture: "",
+            userInfo: userInfo,
             content: message.content,
             sending: false
           });
@@ -145,10 +169,10 @@ export default {
           this.resetRetryDelay();
           this.connected = true;
           this.messages = message.messages.map(msg => {
+            const userInfo = this.getUserInfo(msg.author);
             return {
               timestamp: msg.timestamp,
-              author: msg.author === user_id ? this.name : msg.author.toString(),
-              picture: msg.author === user_id ? this.picture : "",
+              userInfo: userInfo,
               content: msg.content,
               sending: false
             };
@@ -164,8 +188,7 @@ export default {
         // Initial "guess" for the timestamp.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
-        author: this.name,
-        picture: this.picture,
+        userInfo: this.userInfo,
         content: input.value,
         sending: true
       });

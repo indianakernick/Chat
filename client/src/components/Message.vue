@@ -1,9 +1,9 @@
 <template>
   <div class="message" :class="{'sending': sending}">
-    <img class="message-picture" alt="" width="32" height="32" :src="picture"/>
+    <img class="message-picture" alt="" width="32" height="32" :src="userInfo.picture"/>
     <div class="message-right">
       <div>
-        <span class="message-author">{{author}}</span>
+        <span class="message-name">{{userInfo.name}}</span>
         -
         <span class="message-time">{{formattedTime}}</span>
       </div>
@@ -18,10 +18,9 @@ export default {
 
   props: {
     timestamp: Number,
-    author: String,
     content: String,
     sending: Boolean,
-    picture: String
+    userInfo: Object
   },
 
   data() {

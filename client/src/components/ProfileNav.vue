@@ -1,6 +1,6 @@
 <template>
-  <img :src="picture" alt="" width="32" height="32"/>
-  <span>{{ name }}</span>
+  <img :src="userInfo.picture" alt="" width="32" height="32"/>
+  <span>{{ userInfo.name }}</span>
 </template>
 
 <script>
@@ -8,8 +8,7 @@ export default {
   name: "ProfileNav",
 
   props: {
-    name: String,
-    picture: String
+    userInfo: Object
   }
 };
 </script>

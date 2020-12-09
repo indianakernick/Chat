@@ -1,6 +1,6 @@
 <template>
-  <ProfileNav :name="name" :picture="picture"/>
-  <MessageList :name="name" :picture="picture"/>
+  <ProfileNav :userInfo="userInfo"/>
+  <MessageList :userInfo="userInfo"/>
 </template>
 
 <script>
@@ -17,8 +17,10 @@ export default {
 
   data() {
     return {
-      name: "",
-      picture: ""
+      userInfo: {
+        name: "",
+        picture: ""
+      }
     }
   },
 
@@ -26,8 +28,8 @@ export default {
     const req = new XMLHttpRequest();
 
     req.onload = () => {
-      this.name = req.response.name;
-      this.picture = req.response.picture;
+      this.userInfo.name = req.response.name;
+      this.userInfo.picture = req.response.picture;
     };
 
     req.onerror = () => {
@@ -35,7 +37,7 @@ export default {
     };
 
     req.responseType = "json";
-    req.open("GET", `/api/user/${user_id}`);
+    req.open("GET", `/api/user/${USER_ID}`);
     req.send();
   }
 };

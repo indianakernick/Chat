@@ -29,7 +29,7 @@ pub async fn user(user_id: UserID, pool: Pool) -> Result<impl warp::Reply, warp:
         warp::reply::with_header(
             warp::reply::json(&get_user_info(user_id, pool).await?),
             "Cache-Control",
-            "public,immutable,max-age=86400" // 24 hours
+            "public,max-age=86400,immutable" // 24 hours
         )
     )
 }

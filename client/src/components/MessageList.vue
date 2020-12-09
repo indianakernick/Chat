@@ -8,6 +8,7 @@
           :author="message.author"
           :content="message.content"
           :sending="message.sending"
+          :picture="message.picture"
       ></Message>
     </div>
     <input
@@ -31,6 +32,11 @@ export default {
   components: {
     Message,
     StatusMessage
+  },
+
+  props: {
+    name: String,
+    picture: String
   },
 
   data() {
@@ -114,7 +120,8 @@ export default {
         case "recent message":
           this.messages.push({
             timestamp: message.timestamp,
-            author: message.author,
+            author: message.author.toString(),
+            picture: "",
             content: message.content,
             sending: false
           });
@@ -140,7 +147,8 @@ export default {
           this.messages = message.messages.map(msg => {
             return {
               timestamp: msg.timestamp,
-              author: msg.author,
+              author: msg.author === user_id ? this.name : msg.author.toString(),
+              picture: msg.author === user_id ? this.picture : "",
               content: msg.content,
               sending: false
             };
@@ -156,7 +164,8 @@ export default {
         // Initial "guess" for the timestamp.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
-        author: -1,
+        author: this.name,
+        picture: this.picture,
         content: input.value,
         sending: true
       });

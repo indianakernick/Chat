@@ -1,10 +1,14 @@
 <template>
   <div class="message" :class="{'sending': sending}">
-    <span class="message-time">{{formattedTime}}</span>
-    -
-    <span class="message-author">{{author}}</span>
-    -
-    <span class="message-content">{{content}}</span>
+    <img class="message-picture" alt="" width="32" height="32" :src="picture"/>
+    <div class="message-right">
+      <div>
+        <span class="message-author">{{author}}</span>
+        -
+        <span class="message-time">{{formattedTime}}</span>
+      </div>
+      <span class="message-content">{{content}}</span>
+    </div>
   </div>
 </template>
 
@@ -14,9 +18,10 @@ export default {
 
   props: {
     timestamp: Number,
-    author: Number,
+    author: String,
     content: String,
-    sending: Boolean
+    sending: Boolean,
+    picture: String
   },
 
   data() {
@@ -93,7 +98,17 @@ export default {
 </script>
 
 <style scoped>
-  .sending {
-    color: #555;
-  }
+.message {
+  display: flex;
+  flex-direction: row;
+}
+
+.message-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.sending {
+  color: #555;
+}
 </style>

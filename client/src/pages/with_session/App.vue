@@ -1,6 +1,6 @@
 <template>
   <ProfileNav :name="name" :picture="picture"/>
-  <MessageList/>
+  <MessageList :name="name" :picture="picture"/>
 </template>
 
 <script>

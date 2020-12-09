@@ -12,7 +12,7 @@ fn cache_static<R: warp::Reply>(reply: R) -> impl warp::Reply {
     warp::reply::with_header(
         reply,
         "Cache-Control",
-        "public,immutable,max-age=604800" // 7 days
+        "public,max-age=604800,immutable" // 7 days
     )
 }
 
@@ -30,7 +30,6 @@ pub fn root_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, 
         .and(warp::cookie("session_id"))
         .and(with_pool(pool))
         .and_then(handlers::root_with_session)
-        .map(cache_static)
         .recover(rejection)
 }
 
@@ -38,7 +37,6 @@ pub fn root_without_session() -> impl Filter<Extract = impl warp::Reply, Error =
     warp::get()
         .and(warp::path::end())
         .and(warp::fs::file("client/dist/without_session.html"))
-        .map(cache_static)
         .recover(rejection)
 }
 

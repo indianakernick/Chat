@@ -8,14 +8,21 @@ fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> +
     warp::any().map(move || pool.clone())
 }
 
+fn cache_static<R: warp::Reply>(reply: R) -> impl warp::Reply {
+    warp::reply::with_header(
+        reply,
+        "Cache-Control",
+        "public,immutable,max-age=604800" // 7 days
+    )
+}
+
 pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
         .and(warp::path!("hello" / String))
         .and_then(handlers::hello)
+        .map(cache_static)
         .recover(rejection)
 }
-
-// TODO: Consider setting cache-control header
 
 pub fn root_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
@@ -23,6 +30,7 @@ pub fn root_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, 
         .and(warp::cookie("session_id"))
         .and(with_pool(pool))
         .and_then(handlers::root_with_session)
+        .map(cache_static)
         .recover(rejection)
 }
 
@@ -30,6 +38,7 @@ pub fn root_without_session() -> impl Filter<Extract = impl warp::Reply, Error =
     warp::get()
         .and(warp::path::end())
         .and(warp::fs::file("client/dist/without_session.html"))
+        .map(cache_static)
         .recover(rejection)
 }
 
@@ -37,6 +46,7 @@ pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
     warp::get()
         .and(warp::path!("favicon.ico"))
         .and(warp::fs::file("client/dist/favicon.ico"))
+        .map(cache_static)
         .recover(rejection)
 }
 
@@ -44,6 +54,7 @@ pub fn js() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> 
     warp::get()
         .and(warp::path("js"))
         .and(warp::fs::dir("client/dist/js"))
+        .map(cache_static)
         .recover(rejection)
 }
 
@@ -51,6 +62,7 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
     warp::get()
         .and(warp::path("css"))
         .and(warp::fs::dir("client/dist/css"))
+        .map(cache_static)
         .recover(rejection)
 }
 

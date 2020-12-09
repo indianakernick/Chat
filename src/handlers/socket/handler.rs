@@ -134,7 +134,7 @@ impl<'a> MessageHandler<'a> {
     async fn handle_request_recent_messages(&self) -> Result<(), DatabaseError> {
         let db_conn = self.pool.get().await?;
         let stmt = db_conn.prepare("
-            SELECT timestamp, author, content
+            SELECT timestamp, COALESCE(author, 0), content
             FROM Message
         ").await?;
         let rows = db_conn.query(&stmt, &[]).await?;

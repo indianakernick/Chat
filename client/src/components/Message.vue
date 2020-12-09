@@ -3,7 +3,7 @@
     <img class="message-picture" alt="" width="32" height="32" :src="userInfo.picture"/>
     <div class="message-right">
       <div>
-        <span class="message-name">{{userInfo.name}}</span>
+        <span class="message-name" :class="{'deleted': deleted}">{{userInfo.name}}</span>
         -
         <span class="message-time">{{formattedTime}}</span>
       </div>
@@ -13,6 +13,12 @@
 </template>
 
 <script>
+export const DELETED_USER_INFO = {
+  name: "<deleted user>",
+  picture: "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y&s=32",
+  deleted: true
+};
+
 export default {
   name: "Message",
 
@@ -27,7 +33,8 @@ export default {
     return {
       timeoutId: -1,
       formattedTime: this.formatTime(),
-      updateTime: true
+      updateTime: true,
+      deleted: this.userInfo.hasOwnProperty("deleted")
     }
   },
 
@@ -109,5 +116,9 @@ export default {
 
 .sending {
   color: #555;
+}
+
+.deleted {
+  color: #F00;
 }
 </style>

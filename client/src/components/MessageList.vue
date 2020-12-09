@@ -19,7 +19,7 @@
 </template>
 
 <script>
-import Message from "./Message.vue";
+import Message, { DELETED_USER_INFO } from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
 
 const INITIAL_RETRY_DELAY = 125;
@@ -47,6 +47,7 @@ export default {
       status: "Connecting...",
       retryDelay: INITIAL_RETRY_DELAY,
       userInfoCache: {
+        0: DELETED_USER_INFO,
         [USER_ID]: this.userInfo
       }
     }
@@ -172,10 +173,9 @@ export default {
           this.resetRetryDelay();
           this.connected = true;
           this.messages = message.messages.map(msg => {
-            const userInfo = this.getUserInfo(msg.author);
             return {
               timestamp: msg.timestamp,
-              userInfo: userInfo,
+              userInfo: this.getUserInfo(msg.author),
               content: msg.content,
               sending: false
             };

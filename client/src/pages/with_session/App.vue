@@ -17,10 +17,10 @@ export default {
 
   data() {
     return {
-      name: "",
-      picture: ""
+      name: profile_info.name,
+      picture: profile_info.picture
     }
-  },
+  }/*,
 
   created() {
     const req = new XMLHttpRequest();
@@ -37,7 +37,7 @@ export default {
     req.responseType = "json";
     req.open("GET", "/api/me");
     req.send();
-  }
+  }*/
 };
 </script>
 

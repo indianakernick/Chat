@@ -15,14 +15,14 @@ pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
-// TODO: Consider setting cache-control header for static files
+// TODO: Consider setting cache-control header
 
-pub fn root_with_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn root_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
         .and(warp::path::end())
         .and(warp::cookie("session_id"))
-        .and(warp::fs::file("client/dist/with_session.html"))
-        .map(|_session_id, file| file)
+        .and(with_pool(pool))
+        .and_then(handlers::root_with_session)
         .recover(rejection)
 }
 
@@ -44,6 +44,13 @@ pub fn js() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> 
     warp::get()
         .and(warp::path("js"))
         .and(warp::fs::dir("client/dist/js"))
+        .recover(rejection)
+}
+
+pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::get()
+        .and(warp::path("css"))
+        .and(warp::fs::dir("client/dist/css"))
         .recover(rejection)
 }
 

@@ -2,11 +2,24 @@ CREATE TABLE IF NOT EXISTS Message (
     timestamp TIMESTAMPTZ NOT NULL,
     author INTEGER DEFAULT 0,
     content TEXT NOT NULL,
+    channel_id INTEGER NOT NULL,
 
     FOREIGN KEY (author)
         REFERENCES Usr (user_id)
         ON UPDATE CASCADE
-        ON DELETE SET DEFAULT
+        ON DELETE SET DEFAULT,
+
+    FOREIGN KEY (channel_id)
+        REFERENCES Channel (channel_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Channel (
+    channel_id SERIAL NOT NULL,
+    name TEXT NOT NULL,
+
+    PRIMARY KEY (channel_id)
 );
 
 CREATE TABLE IF NOT EXISTS Usr (

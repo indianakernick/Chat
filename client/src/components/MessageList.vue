@@ -25,6 +25,9 @@ import StatusMessage from "./StatusMessage.vue";
 const INITIAL_RETRY_DELAY = 125;
 const MAX_RETRY_DELAY = 16000;
 
+// For plain javascript files, the convention seems to be putting them in
+// assets/js/
+
 export default {
   name: "MessageList",
 

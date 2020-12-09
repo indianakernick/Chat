@@ -1,5 +1,5 @@
 <template>
-  <img :src="picture" width="32" height="32"/>
+  <img :src="picture" alt="" width="32" height="32"/>
   <span>{{ name }}</span>
 </template>
 
@@ -11,7 +11,7 @@ export default {
     name: String,
     picture: String
   }
-}
+};
 </script>
 
 <style scoped>

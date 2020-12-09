@@ -14,7 +14,7 @@ export default {
       url: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${ClientID}&redirect_uri=https://localhost/api/auth&response_type=code&scope=profile`
     }
   }
-}
+};
 </script>
 
 <style scoped>

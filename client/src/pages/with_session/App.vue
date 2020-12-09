@@ -1,15 +1,11 @@
 <template>
-  <ProfileNav v-if="loggedIn" :name="name" :picture="picture"/>
-  <MessageList v-if="loggedIn"/>
+  <ProfileNav :name="name" :picture="picture"/>
+  <MessageList/>
 </template>
 
 <script>
 import ProfileNav from "@/components/ProfileNav.vue";
 import MessageList from "@/components/MessageList.vue";
-
-const CONNECTING = 0;
-const LOGGED_IN = 1;
-const NOT_LOGGED_IN = 2;
 
 export default {
   name: "App",
@@ -21,15 +17,8 @@ export default {
 
   data() {
     return {
-      state: CONNECTING,
       name: "",
       picture: ""
-    }
-  },
-
-  computed: {
-    loggedIn() {
-      return this.state === LOGGED_IN;
     }
   },
 
@@ -37,13 +26,8 @@ export default {
     const req = new XMLHttpRequest();
 
     req.onload = () => {
-      if (Object.keys(req.response).length === 0) {
-        this.state = NOT_LOGGED_IN;
-      } else {
-        this.state = LOGGED_IN;
-        this.name = req.response.name;
-        this.picture = req.response.picture;
-      }
+      this.name = req.response.name;
+      this.picture = req.response.picture;
     };
 
     req.onerror = () => {

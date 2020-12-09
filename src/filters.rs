@@ -22,9 +22,7 @@ pub fn root_with_session() -> impl Filter<Extract = impl warp::Reply, Error = wa
         .and(warp::path::end())
         .and(warp::cookie("session_id"))
         .and(warp::fs::file("client/dist/with_session.html"))
-        // TODO: Use the cookie to embed the profile information into the page.
-        // This also makes api/me redundant.
-        .map(|session_id, file| file)
+        .map(|_session_id, file| file)
         .recover(rejection)
 }
 

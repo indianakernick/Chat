@@ -11,7 +11,7 @@ export default {
   props: {
     status: String
   }
-}
+};
 </script>
 
 <style scoped>

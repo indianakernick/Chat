@@ -46,8 +46,7 @@ async fn main() {
         .or(filters::favicon())
         .or(filters::js())
         .or(filters::css())
-        .or(filters::me_with_session(pool.clone()))
-        .or(filters::me_without_session())
+        .or(filters::user(pool.clone()))
         .or(filters::socket(pool.clone()))
         .or(filters::auth_success(pool.clone()))
         .or(filters::auth_fail());

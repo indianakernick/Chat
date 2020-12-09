@@ -1,5 +1,4 @@
 use rand::Rng;
-use serde::Serialize;
 use deadpool_postgres::Pool;
 use deadpool_postgres::Client;
 use crate::error::Error;
@@ -107,36 +106,6 @@ pub async fn get_session_user_id(pool: Pool, session_id: String) -> Result<UserI
 
     match conn.query_opt(&stmt, &[&session_id]).await? {
         Some(row) => Ok(row.get(0)),
-        None => Err(Error::InvalidSessionID)
-    }
-}
-
-#[derive(Serialize)]
-pub struct UserInfo {
-    name: String,
-    picture: String,
-}
-
-pub async fn get_session_user_info(pool: Pool, session_id: String) -> Result<UserInfo, Error> {
-    if session_id.len() != SESSION_ID_LENGTH {
-        return Err(Error::InvalidSessionID);
-    }
-
-    let conn = pool.get().await?;
-    let stmt = conn.prepare("
-        SELECT Usr.name, Usr.picture
-        FROM Usr
-        JOIN Session ON Session.user_id = Usr.user_id
-        WHERE Session.session_id = $1
-        AND Session.creation_time > NOW() - INTERVAL '7 days'
-        LIMIT 1
-    ").await?;
-
-    match conn.query_opt(&stmt, &[&session_id]).await? {
-        Some(row) => Ok(UserInfo {
-            name: row.get(0),
-            picture: row.get(1)
-        }),
         None => Err(Error::InvalidSessionID)
     }
 }

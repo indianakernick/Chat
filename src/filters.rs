@@ -54,19 +54,15 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
         .recover(rejection)
 }
 
-pub fn me_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
-        .and(warp::path!("api" / "me"))
-        .and(warp::cookie("session_id"))
+        //.and(warp::path!("api" / "user" / handlers::UserID))
+        .and(warp::path("api"))
+        .and(warp::path("user"))
+        .and(warp::path::param::<handlers::UserID>())
+        .and(warp::path::end())
         .and(with_pool(pool))
-        .and_then(handlers::me)
-        .recover(rejection)
-}
-
-pub fn me_without_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::get()
-        .and(warp::path!("api" / "me"))
-        .map(|| warp::reply::json(&serde_json::json!({})))
+        .and_then(handlers::user)
         .recover(rejection)
 }
 

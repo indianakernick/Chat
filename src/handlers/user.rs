@@ -17,19 +17,32 @@ async fn get_user_info(user_id: UserID, pool: Pool) -> Result<UserInfo, Error> {
         WHERE user_id = $1
         LIMIT 1
     ").await?;
-    let row = conn.query_one(&stmt, &[&user_id]).await?;
-    Ok(UserInfo {
-        name: row.get(0),
-        picture: row.get(1)
-    })
+    match conn.query_opt(&stmt, &[&user_id]).await? {
+        Some(row) => {
+            Ok(UserInfo {
+                name: row.get(0),
+                picture: row.get(1)
+            })
+        },
+        None => Err(Error::InvalidUserID)
+    }
 }
 
-pub async fn user(user_id: UserID, pool: Pool) -> Result<impl warp::Reply, warp::Rejection> {
-    Ok(
+pub async fn user(user_id: UserID, pool: Pool) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+    let user_info = match get_user_info(user_id, pool).await {
+        Ok(info) => info,
+        Err(Error::InvalidUserID) => {
+            return Ok(Box::new(
+                warp::http::StatusCode::NOT_FOUND
+            ));
+        },
+        Err(e) => return Err(e.into())
+    };
+    Ok(Box::new(
         warp::reply::with_header(
-            warp::reply::json(&get_user_info(user_id, pool).await?),
+            warp::reply::json(&user_info),
             "Cache-Control",
             "public,max-age=86400,immutable" // 24 hours
         )
-    )
+    ))
 }

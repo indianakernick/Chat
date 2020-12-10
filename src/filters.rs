@@ -18,8 +18,8 @@ fn cache_static<R: warp::Reply>(reply: R) -> impl warp::Reply {
 }
 
 pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::get()
-        .and(warp::path!("hello" / String))
+    warp::path!("hello" / String)
+        .and(warp::get())
         .and_then(handlers::hello)
         .map(cache_static)
         .recover(rejection)
@@ -27,8 +27,8 @@ pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
 
 // TODO: Might need a query parameter to redirect back to after logging in
 pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::get()
-        .and(warp::path!("login"))
+    warp::path!("login")
+        .and(warp::get())
         .and(warp::fs::file("client/dist/without_session.html"))
         .recover(rejection)
 }
@@ -40,8 +40,8 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .and(warp::cookie::optional("session_id"))
         .map(|session_id: Option<String>| session_id.unwrap_or(String::new()));
 
-    warp::get()
-        .and(warp::path!("channel" / ChannelID))
+    warp::path!("channel" / ChannelID)
+        .and(warp::get())
         .and(session_id)
         .and(with_pool(pool))
         .and_then(handlers::channel)
@@ -49,24 +49,24 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
 }
 
 pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::get()
-        .and(warp::path!("favicon.ico"))
+    warp::path!("favicon.ico")
+        .and(warp::get())
         .and(warp::fs::file("client/dist/favicon.ico"))
         .map(cache_static)
         .recover(rejection)
 }
 
 pub fn js() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::get()
-        .and(warp::path("js"))
+    warp::path("js")
+        .and(warp::get())
         .and(warp::fs::dir("client/dist/js"))
         .map(cache_static)
         .recover(rejection)
 }
 
 pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::get()
-        .and(warp::path("css"))
+    warp::path("css")
+        .and(warp::get())
         .and(warp::fs::dir("client/dist/css"))
         .map(cache_static)
         .recover(rejection)
@@ -75,8 +75,8 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
 pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     use handlers::UserID;
 
-    warp::get()
-        .and(warp::path!("api" / "user" / UserID))
+    warp::path!("api" / "user" / UserID)
+        .and(warp::get())
         .and(with_pool(pool))
         .and_then(handlers::user)
         .recover(rejection)
@@ -97,8 +97,8 @@ pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 pub fn auth_success(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let cert_cache = handlers::CertificateCache::default();
 
-    warp::get()
-        .and(warp::path!("api" / "auth"))
+    warp::path!("api" / "auth")
+        .and(warp::get())
         .map(move || cert_cache.clone())
         .and(warp::query::<handlers::AuthSuccess>())
         .and_then(handlers::auth_success)
@@ -108,8 +108,8 @@ pub fn auth_success(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error
 }
 
 pub fn auth_fail() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::get()
-        .and(warp::path!("api" / "auth"))
+    warp::path!("api" / "auth")
+        .and(warp::get())
         .and(warp::query::<handlers::AuthFail>())
         .and_then(handlers::auth_fail)
         .recover(rejection)

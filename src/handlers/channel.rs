@@ -31,7 +31,7 @@ pub async fn channel(channel_id: ChannelID, session_id: String, pool: Pool)
         Ok(name) => name,
         Err(Error::InvalidChannelID) => {
             return Ok(Box::new(
-                warp::reply::with_status(warp::reply(), warp::http::StatusCode::NOT_FOUND)
+                warp::http::StatusCode::NOT_FOUND
             ));
         },
         Err(e) => return Err(e.into())

@@ -14,8 +14,14 @@ pub enum Error {
     Header(HeaderError),
     JSON(JSONError),
 
+    // TODO: Do these belong here?
+    // Is there a better way to handle these conditions?
+    // Maybe Result<Option<T>, Error> ?
+    // Functions have the possibility of returning an invalid session ID error
+    // even if they don't deal with session IDs.
     InvalidSessionID,
-    InvalidChannelID
+    InvalidChannelID,
+    InvalidUserID
 }
 
 impl std::fmt::Display for Error {
@@ -27,7 +33,8 @@ impl std::fmt::Display for Error {
             Error::Header(e) => e.fmt(f),
             Error::JSON(e) => e.fmt(f),
             Error::InvalidSessionID => f.write_str("Invalid session ID"),
-            Error::InvalidChannelID => f.write_str("Invalid channel ID")
+            Error::InvalidChannelID => f.write_str("Invalid channel ID"),
+            Error::InvalidUserID => f.write_str("Invalid user ID")
         }
     }
 }

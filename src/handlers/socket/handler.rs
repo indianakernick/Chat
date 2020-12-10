@@ -126,7 +126,7 @@ impl<'a> MessageHandler<'a> {
             INSERT INTO Message (timestamp, author, content)
             VALUES ($1, $2, $3)
         ").await?;
-        db_conn.query(&stmt, &[&time, &self.user_id, &content]).await?;
+        db_conn.execute(&stmt, &[&time, &self.user_id, &content]).await?;
 
         Ok(())
     }

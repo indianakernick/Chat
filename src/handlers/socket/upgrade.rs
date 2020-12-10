@@ -14,12 +14,20 @@ pub type Connections = Arc<tokio::sync::RwLock<ConnectionMap>>;
 static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 
 pub async fn upgrade(ws: Ws, session_id: String, pool: Pool, conns: Connections)
-    -> Result<impl warp::Reply, warp::Rejection> {
-    let user_id = get_session_user_id(pool.clone(), session_id).await?;
+    -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+    // The JavaScript that invokes this is only loaded when the session cookie
+    // is valid. The only way that this error could happen is if the session
+    // expires between loading the page and running the JavaScript. Another
+    // possibility is someone directly accessing this endpoint but failing to
+    // provide the cookie.
+    let user_id = match get_session_user_id(pool.clone(), session_id).await? {
+        Some(id) => id,
+        None => return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR))
+    };
     // Upgrade the HTTP connection to a WebSocket connection
-    Ok(ws.on_upgrade(move |socket: WebSocket| {
+    Ok(Box::new(ws.on_upgrade(move |socket: WebSocket| {
         connected(socket, user_id, pool, conns)
-    }))
+    })))
 }
 
 async fn connected(ws: WebSocket, user_id: UserID, pool: Pool, conns: Connections) {

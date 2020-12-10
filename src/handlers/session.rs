@@ -1,7 +1,7 @@
 use rand::Rng;
+use crate::error::Error;
 use deadpool_postgres::Pool;
 use deadpool_postgres::Client;
-use crate::error::Error;
 
 const SESSION_ID_LENGTH: usize = 16;
 
@@ -90,9 +90,10 @@ pub async fn create_session(claims: super::Claims, pool: Pool) -> Result<impl wa
     )
 }
 
-pub async fn get_session_user_id(pool: Pool, session_id: String) -> Result<UserID, Error> {
+pub async fn get_session_user_id(pool: Pool, session_id: String)
+    -> Result<Option<UserID>, Error> {
     if session_id.len() != SESSION_ID_LENGTH {
-        return Err(Error::InvalidSessionID);
+        return Ok(None);
     }
 
     let conn = pool.get().await?;
@@ -104,8 +105,5 @@ pub async fn get_session_user_id(pool: Pool, session_id: String) -> Result<UserI
         LIMIT 1
     ").await?;
 
-    match conn.query_opt(&stmt, &[&session_id]).await? {
-        Some(row) => Ok(row.get(0)),
-        None => Err(Error::InvalidSessionID)
-    }
+    Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
 }

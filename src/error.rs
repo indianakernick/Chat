@@ -1,5 +1,3 @@
-// TODO: Maybe use newtype structs and implement Reject for each other them
-
 pub type DatabaseError = deadpool_postgres::PoolError;
 pub type RequestError = reqwest::Error;
 pub type JWTError = jsonwebtoken::errors::Error;
@@ -12,16 +10,7 @@ pub enum Error {
     Request(RequestError),
     JWT(JWTError),
     Header(HeaderError),
-    JSON(JSONError),
-
-    // TODO: Do these belong here?
-    // Is there a better way to handle these conditions?
-    // Maybe Result<Option<T>, Error> ?
-    // Functions have the possibility of returning an invalid session ID error
-    // even if they don't deal with session IDs.
-    InvalidSessionID,
-    InvalidChannelID,
-    InvalidUserID
+    JSON(JSONError)
 }
 
 impl std::fmt::Display for Error {
@@ -31,10 +20,7 @@ impl std::fmt::Display for Error {
             Error::Request(e) => e.fmt(f),
             Error::JWT(e) => e.fmt(f),
             Error::Header(e) => e.fmt(f),
-            Error::JSON(e) => e.fmt(f),
-            Error::InvalidSessionID => f.write_str("Invalid session ID"),
-            Error::InvalidChannelID => f.write_str("Invalid channel ID"),
-            Error::InvalidUserID => f.write_str("Invalid user ID")
+            Error::JSON(e) => e.fmt(f)
         }
     }
 }
@@ -43,6 +29,7 @@ impl std::error::Error for Error {}
 
 impl warp::reject::Reject for Error {}
 
+// TODO: Converting this error to a rejection might not be the right move
 impl From<Error> for warp::Rejection {
     fn from(e: Error) -> warp::Rejection {
         warp::reject::custom(e)

@@ -41,15 +41,16 @@ async fn main() {
     pretty_env_logger::init();
 
     let routes = filters::hello()
-        .or(filters::root_with_session(pool.clone()))
-        .or(filters::root_without_session())
+        .or(filters::login())
+        .or(filters::channel(pool.clone()))
         .or(filters::favicon())
         .or(filters::js())
         .or(filters::css())
         .or(filters::user(pool.clone()))
         .or(filters::socket(pool.clone()))
         .or(filters::auth_success(pool.clone()))
-        .or(filters::auth_fail());
+        .or(filters::auth_fail())
+        .recover(filters::leaked_rejection);
 
     warp::serve(routes.with(warp::log("chat")))
         .tls()

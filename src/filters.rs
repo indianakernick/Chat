@@ -1,6 +1,7 @@
-use log::error;
 use warp::Filter;
 use super::handlers;
+use log::{debug, error};
+use crate::error::Error;
 use deadpool_postgres::Pool;
 use std::convert::Infallible;
 
@@ -24,19 +25,26 @@ pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
-pub fn root_with_session(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+// TODO: Might need a query parameter to redirect back to after logging in
+pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
-        .and(warp::path::end())
-        .and(warp::cookie("session_id"))
-        .and(with_pool(pool))
-        .and_then(handlers::root_with_session)
+        .and(warp::path!("login"))
+        .and(warp::fs::file("client/dist/without_session.html"))
         .recover(rejection)
 }
 
-pub fn root_without_session() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    use handlers::ChannelID;
+
+    let session_id = warp::any()
+        .and(warp::cookie::optional("session_id"))
+        .map(|session_id: Option<String>| session_id.unwrap_or(String::new()));
+
     warp::get()
-        .and(warp::path::end())
-        .and(warp::fs::file("client/dist/without_session.html"))
+        .and(warp::path!("channel" / ChannelID))
+        .and(session_id)
+        .and(with_pool(pool))
+        .and_then(handlers::channel)
         .recover(rejection)
 }
 
@@ -65,12 +73,10 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
 }
 
 pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    use handlers::UserID;
+
     warp::get()
-        //.and(warp::path!("api" / "user" / handlers::UserID))
-        .and(warp::path("api"))
-        .and(warp::path("user"))
-        .and(warp::path::param::<handlers::UserID>())
-        .and(warp::path::end())
+        .and(warp::path!("api" / "user" / UserID))
         .and(with_pool(pool))
         .and_then(handlers::user)
         .recover(rejection)
@@ -79,8 +85,8 @@ pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp:
 pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let conns = handlers::Connections::default();
 
-    warp::ws()
-        .and(warp::path!("api" / "socket"))
+    warp::path!("api" / "socket")
+        .and(warp::ws())
         .and(warp::cookie("session_id"))
         .and(with_pool(pool))
         .and(warp::any().map(move || conns.clone()))
@@ -110,11 +116,16 @@ pub fn auth_fail() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reje
 }
 
 // This is technically a handler so maybe it doesn't belong in this file.
-async fn rejection(error: warp::Rejection) -> Result<impl warp::Reply, warp::Rejection> {
-    if let Some(e) = error.find::<crate::error::Error>() {
-        error!("{}", e);
+async fn rejection(rejection: warp::Rejection) -> Result<impl warp::Reply, warp::Rejection> {
+    if let Some(error) = rejection.find::<Error>() {
+        error!("{}", error);
         Ok(warp::http::StatusCode::INTERNAL_SERVER_ERROR)
     } else {
-        Err(error)
+        Err(rejection)
     }
+}
+
+pub async fn leaked_rejection(rejection: warp::Rejection) -> Result<warp::http::StatusCode, warp::Rejection> {
+    debug!("Leaked: {:?}", rejection);
+    Err(rejection)
 }

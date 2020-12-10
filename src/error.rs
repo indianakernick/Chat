@@ -14,7 +14,8 @@ pub enum Error {
     Header(HeaderError),
     JSON(JSONError),
 
-    InvalidSessionID
+    InvalidSessionID,
+    InvalidChannelID
 }
 
 impl std::fmt::Display for Error {
@@ -25,7 +26,8 @@ impl std::fmt::Display for Error {
             Error::JWT(e) => e.fmt(f),
             Error::Header(e) => e.fmt(f),
             Error::JSON(e) => e.fmt(f),
-            Error::InvalidSessionID => f.write_str("Invalid session ID")
+            Error::InvalidSessionID => f.write_str("Invalid session ID"),
+            Error::InvalidChannelID => f.write_str("Invalid channel ID")
         }
     }
 }

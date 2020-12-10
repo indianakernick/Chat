@@ -1,6 +1,7 @@
 <template>
   <div class="message" :class="{'sending': sending}">
-    <img class="message-picture" alt="" width="32" height="32" :src="userInfo.picture"/>
+    <!-- https://stackoverflow.com/a/61042200/4093378 -->
+    <img class="message-picture" :src="userInfo.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
     <div class="message-right">
       <div>
         <span class="message-name" :class="{'deleted': deleted}">{{userInfo.name}}</span>

@@ -1,11 +1,10 @@
 use tokio::sync::mpsc;
 use log::{debug, error};
-use crate::error::Error;
 use deadpool_postgres::Pool;
 use futures::{FutureExt, StreamExt};
 use warp::ws::{Ws, WebSocket, Message};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
-use crate::handlers::{UserID, ChannelID, get_session_user_id};
+use crate::database::{UserID, ChannelID, valid_channel, SessionID, session_user_id};
 
 pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 pub type ConnectionMap = std::collections::HashMap<usize, Sender>;
@@ -14,18 +13,7 @@ pub type Connections = Arc<tokio::sync::RwLock<ConnectionMap>>;
 // Atomic int for tracking connection IDs
 static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 
-async fn valid_channel_id(pool: Pool, channel_id: ChannelID) -> Result<bool, Error> {
-    let conn = pool.get().await?;
-    let stmt = conn.prepare("
-        SELECT 1
-        FROM Channel
-        WHERE channel_id = $1
-        LIMIT 1
-    ").await?;
-    Ok(conn.query_opt(&stmt, &[&channel_id]).await?.is_some())
-}
-
-pub async fn upgrade(channel_id: ChannelID, ws: Ws, session_id: String, pool: Pool, conns: Connections)
+pub async fn upgrade(channel_id: ChannelID, ws: Ws, session_id: SessionID, pool: Pool, conns: Connections)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
 
     // The JavaScript that invokes this is only loaded when the session cookie
@@ -33,13 +21,13 @@ pub async fn upgrade(channel_id: ChannelID, ws: Ws, session_id: String, pool: Po
     // expires between loading the page and running the JavaScript. Another
     // possibility is someone directly accessing this endpoint but failing to
     // provide the cookie.
-    let user_id = match get_session_user_id(pool.clone(), session_id).await? {
+    let user_id = match session_user_id(pool.clone(), session_id).await? {
         Some(id) => id,
         None => return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR))
     };
 
     // Can only happen if someone is directly accessing the socket.
-    if !valid_channel_id(pool.clone(), channel_id).await? {
+    if !valid_channel(pool.clone(), channel_id).await? {
         return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR));
     }
 

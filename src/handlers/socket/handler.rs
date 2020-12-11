@@ -3,9 +3,9 @@ use warp::ws::Message;
 use std::time::SystemTime;
 use deadpool_postgres::Pool;
 use serde::{Serialize, Deserialize};
-use crate::handlers::{UserID, ChannelID};
 use crate::error::{Error, DatabaseError};
 use super::upgrade::{Sender, ConnectionMap};
+use crate::database::{UserID, ChannelID, create_message, recent_messages};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
@@ -122,24 +122,11 @@ impl<'a> MessageHandler<'a> {
             }
         }
 
-        let db_conn = self.pool.get().await?;
-        let stmt = db_conn.prepare("
-            INSERT INTO Message (timestamp, author, content, channel_id)
-            VALUES ($1, $2, $3, $4)
-        ").await?;
-        db_conn.execute(&stmt, &[&time, &self.user_id, &content, &self.chan_id]).await?;
-
-        Ok(())
+        create_message(self.pool.clone(), time, self.user_id, content, self.chan_id).await
     }
 
     async fn handle_request_recent_messages(&self) -> Result<(), DatabaseError> {
-        let db_conn = self.pool.get().await?;
-        let stmt = db_conn.prepare("
-            SELECT timestamp, COALESCE(author, 0), content
-            FROM Message
-            WHERE channel_id = $1
-        ").await?;
-        let rows = db_conn.query(&stmt, &[&self.chan_id]).await?;
+        let rows = recent_messages(self.pool.clone(), self.chan_id).await?;
 
         let response = serde_json::to_string(&ServerMessage::RecentMessageList {
             messages: rows.iter()

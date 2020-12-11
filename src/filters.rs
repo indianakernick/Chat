@@ -4,6 +4,7 @@ use log::{debug, error};
 use crate::error::Error;
 use deadpool_postgres::Pool;
 use std::convert::Infallible;
+use crate::database::{ChannelID, UserID};
 
 fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> + Clone {
     warp::any().map(move || pool.clone())
@@ -34,8 +35,6 @@ pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
 }
 
 pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    use handlers::ChannelID;
-
     let session_id = warp::any()
         .and(warp::cookie::optional("session_id"))
         .map(|session_id: Option<String>| session_id.unwrap_or(String::new()));
@@ -73,8 +72,6 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
 }
 
 pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    use handlers::UserID;
-
     warp::path!("api" / "user" / UserID)
         .and(warp::get())
         .and(with_pool(pool))
@@ -83,8 +80,6 @@ pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp:
 }
 
 pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    use handlers::ChannelID;
-
     let conns = handlers::Connections::default();
 
     warp::path!("api" / "socket" / ChannelID)

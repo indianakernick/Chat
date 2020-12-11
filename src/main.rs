@@ -1,6 +1,7 @@
 mod filters;
 mod handlers;
 mod error;
+mod database;
 
 use warp::Filter;
 use deadpool_postgres::{Pool, Manager};

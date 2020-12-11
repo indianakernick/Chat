@@ -29,7 +29,8 @@ impl std::error::Error for Error {}
 
 impl warp::reject::Reject for Error {}
 
-// TODO: Converting this error to a rejection might not be the right move
+// TODO: Converting this error to a rejection might not be the right move.
+// Should instead convert these types of errors to replies.
 impl From<Error> for warp::Rejection {
     fn from(e: Error) -> warp::Rejection {
         warp::reject::custom(e)

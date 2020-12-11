@@ -34,7 +34,9 @@ CREATE TABLE IF NOT EXISTS Usr (
     picture TEXT NOT NULL,
     google_id TEXT,
 
-    PRIMARY KEY (user_id)
+    PRIMARY KEY (user_id),
+
+    UNIQUE (google_id)
 );
 
 CREATE TABLE IF NOT EXISTS Session (
@@ -45,6 +47,7 @@ CREATE TABLE IF NOT EXISTS Session (
     -- TODO: Maybe tie some client info to the session
 
     PRIMARY KEY (session_id),
+
     FOREIGN KEY (user_id)
         REFERENCES Usr (user_id)
         ON UPDATE CASCADE

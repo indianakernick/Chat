@@ -197,10 +197,7 @@ fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, Error> {
     Err(JWTError::from(JWTErrorKind::InvalidAlgorithmName).into())
 }
 
-pub async fn auth_success(cache: CertificateCache, res: AuthSuccess) -> Result<Claims, warp::Rejection> {
-    // TODO: Should create this once and reuse it.
-    // It uses a connection pool internally.
-    let client = reqwest::Client::new();
+pub async fn auth_success(client: reqwest::Client, cache: CertificateCache, res: AuthSuccess) -> Result<Claims, warp::Rejection> {
     let token = request_id_token(&client, res.code).await?;
     let mut certs = cache.lock().await;
     update_cert_cache(&client, &mut *certs).await?;

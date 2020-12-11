@@ -92,15 +92,17 @@ pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 }
 
 pub fn auth_success(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let client = reqwest::Client::new();
     let cert_cache = handlers::CertificateCache::default();
 
     warp::path!("api" / "auth")
         .and(warp::get())
-        .map(move || cert_cache.clone())
+        .and(warp::any().map(move || client.clone()))
+        .and(warp::any().map(move || cert_cache.clone()))
         .and(warp::query::<handlers::AuthSuccess>())
         .and_then(handlers::auth_success)
         .and(with_pool(pool))
-        .and_then(handlers::create_session)
+        .and_then(handlers::initialize_session)
         .recover(rejection)
 }
 

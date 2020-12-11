@@ -30,23 +30,19 @@ pub async fn user_info(pool: Pool, user_id: UserID) -> Result<Option<UserInfo>, 
 // TODO: Maybe use a struct named GoogleUserInfo
 
 pub async fn user_from_google(pool: Pool, claims: &crate::handlers::Claims) -> Result<UserID, Error> {
-    // TODO: I really don't like this. Should do it in one statement.
     let conn = pool.get().await?;
-    let login_stmt = conn.prepare("
-        SELECT user_id
-        FROM Usr
-        WHERE google_id = $1
+    // https://stackoverflow.com/a/6722460/4093378
+    let stmt = conn.prepare("
+        WITH Temp AS (
+            INSERT INTO Usr (google_id, name, picture)
+            SELECT $1, $2, $3
+            WHERE NOT EXISTS (SELECT * FROM Usr WHERE google_id = $1)
+            RETURNING user_id
+        )
+        SELECT user_id FROM Temp
+        UNION ALL
+        SELECT user_id FROM Usr WHERE google_id = $1
         LIMIT 1
     ").await?;
-    let signup_stmt = conn.prepare("
-        INSERT INTO Usr (name, picture, google_id)
-        VALUES ($1, $2, $3)
-        RETURNING user_id
-    ").await?;
-
-    if let Some(user_id) = conn.query_opt(&login_stmt, &[&claims.sub]).await? {
-        return Ok(user_id.get(0));
-    }
-
-    Ok(conn.query_one(&signup_stmt, &[&claims.name, &claims.picture, &claims.sub]).await?.get(0))
+    Ok(conn.query_one(&stmt, &[&claims.sub, &claims.name, &claims.picture]).await?.get(0))
 }

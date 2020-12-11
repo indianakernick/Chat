@@ -71,7 +71,7 @@ export default {
     },
 
     initSocket() {
-      this.socket = new WebSocket(`wss://${window.location.host}/api/socket`);
+      this.socket = new WebSocket(`wss://${window.location.host}/api/socket/${CHANNEL_ID}`);
     },
 
     initListeners() {

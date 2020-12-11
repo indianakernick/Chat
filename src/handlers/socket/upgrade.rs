@@ -1,10 +1,11 @@
-use log::{debug, error};
 use tokio::sync::mpsc;
+use log::{debug, error};
+use crate::error::Error;
 use deadpool_postgres::Pool;
 use futures::{FutureExt, StreamExt};
 use warp::ws::{Ws, WebSocket, Message};
-use crate::handlers::{UserID, get_session_user_id};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
+use crate::handlers::{UserID, ChannelID, get_session_user_id};
 
 pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 pub type ConnectionMap = std::collections::HashMap<usize, Sender>;
@@ -13,8 +14,20 @@ pub type Connections = Arc<tokio::sync::RwLock<ConnectionMap>>;
 // Atomic int for tracking connection IDs
 static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 
-pub async fn upgrade(ws: Ws, session_id: String, pool: Pool, conns: Connections)
+async fn valid_channel_id(pool: Pool, channel_id: ChannelID) -> Result<bool, Error> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT 1
+        FROM Channel
+        WHERE channel_id = $1
+        LIMIT 1
+    ").await?;
+    Ok(conn.query_opt(&stmt, &[&channel_id]).await?.is_some())
+}
+
+pub async fn upgrade(channel_id: ChannelID, ws: Ws, session_id: String, pool: Pool, conns: Connections)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+
     // The JavaScript that invokes this is only loaded when the session cookie
     // is valid. The only way that this error could happen is if the session
     // expires between loading the page and running the JavaScript. Another
@@ -24,13 +37,21 @@ pub async fn upgrade(ws: Ws, session_id: String, pool: Pool, conns: Connections)
         Some(id) => id,
         None => return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR))
     };
+
+    // Can only happen if someone is directly accessing the socket.
+    if !valid_channel_id(pool.clone(), channel_id).await? {
+        return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR));
+    }
+
+    // TODO: Maybe join the above two database queries and run them simultaneously
+
     // Upgrade the HTTP connection to a WebSocket connection
     Ok(Box::new(ws.on_upgrade(move |socket: WebSocket| {
-        connected(socket, user_id, pool, conns)
+        connected(socket, channel_id, user_id, pool, conns)
     })))
 }
 
-async fn connected(ws: WebSocket, user_id: UserID, pool: Pool, conns: Connections) {
+async fn connected(ws: WebSocket, chan_id: ChannelID, user_id: UserID, pool: Pool, conns: Connections) {
     let conn_id = NEXT_CONNECTION_ID.fetch_add(1, Ordering::Relaxed);
     debug!("Socket connected: {}", conn_id);
 
@@ -71,6 +92,7 @@ async fn connected(ws: WebSocket, user_id: UserID, pool: Pool, conns: Connection
         let handler = super::handler::MessageHandler {
             conn_id,
             user_id,
+            chan_id,
             message,
             conns: &*conns_guard,
             pool: &pool

@@ -83,9 +83,11 @@ pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp:
 }
 
 pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    use handlers::ChannelID;
+
     let conns = handlers::Connections::default();
 
-    warp::path!("api" / "socket")
+    warp::path!("api" / "socket" / ChannelID)
         .and(warp::ws())
         .and(warp::cookie("session_id"))
         .and(with_pool(pool))

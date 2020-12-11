@@ -6,6 +6,7 @@ use deadpool_postgres::Pool;
 #[template(path = "../client/dist/with_session.html")]
 struct ChannelTemplate {
     user_id: super::UserID,
+    channel_id: super::ChannelID,
     channel_name: String
 }
 
@@ -38,5 +39,7 @@ pub async fn channel(channel_id: ChannelID, session_id: String, pool: Pool)
         )))
     };
 
-    Ok(Box::new(ChannelTemplate { user_id, channel_name }))
+    Ok(Box::new(ChannelTemplate {
+        user_id, channel_id, channel_name
+    }))
 }

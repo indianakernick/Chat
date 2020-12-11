@@ -46,6 +46,7 @@ certificate expires.
 #[derive(Deserialize)]
 pub struct AuthSuccess {
     code: String,
+    state: String
     // TODO: Do we need to check that scope is as expected?
     // scope: String
 }
@@ -153,6 +154,10 @@ pub struct Claims {
     pub picture: String,
     pub given_name: String,
     pub family_name: String,
+
+    // TODO: I feel like this might not belong here
+    #[serde(skip)]
+    pub redirect: String
 }
 
 fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, Error> {
@@ -199,7 +204,9 @@ pub async fn auth_success(cache: CertificateCache, res: AuthSuccess) -> Result<C
     let token = request_id_token(&client, res.code).await?;
     let mut certs = cache.lock().await;
     update_cert_cache(&client, &mut *certs).await?;
-    Ok(decode_id_token(&certs, token.id_token.as_str())?)
+    let mut claims = decode_id_token(&certs, token.id_token.as_str())?;
+    claims.redirect = res.state;
+    Ok(claims)
 }
 
 pub async fn auth_fail(res: AuthFail) -> Result<impl warp::Reply, Infallible> {

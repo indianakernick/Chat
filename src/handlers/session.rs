@@ -35,7 +35,7 @@ fn generate_session_id() -> String {
     }
 }
 
-async fn signup_or_login(conn: &Client, claims: super::Claims) -> Result<UserID, Error> {
+async fn signup_or_login(conn: &Client, claims: &super::Claims) -> Result<UserID, Error> {
     // TODO: I really don't like this. Should do it in one statement.
     let login_stmt = conn.prepare("
         SELECT user_id
@@ -78,16 +78,14 @@ pub async fn create_session(claims: super::Claims, pool: Pool) -> Result<impl wa
         Ok(c) => c,
         Err(e) => return Err(Error::Database(e).into())
     };
-    let user_id = signup_or_login(&conn, claims).await?;
+    let user_id = signup_or_login(&conn, &claims).await?;
     let session_id = initialize_session(&conn, user_id).await?;
 
-    Ok(
-        warp::reply::with_header(
-            warp::redirect(warp::http::Uri::from_static("/")),
-            "Set-Cookie",
-            format!("session_id={};Path=/;HttpOnly;Secure", session_id)
-        )
-    )
+    Ok(warp::reply::with_header(
+        warp::redirect(claims.redirect.parse::<warp::http::Uri>().unwrap()),
+        "Set-Cookie",
+        format!("session_id={};Path=/;HttpOnly;Secure", session_id)
+    ))
 }
 
 pub async fn get_session_user_id(pool: Pool, session_id: String)

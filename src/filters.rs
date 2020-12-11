@@ -25,11 +25,11 @@ pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
-// TODO: Might need a query parameter to redirect back to after logging in
 pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("login")
         .and(warp::get())
-        .and(warp::fs::file("client/dist/without_session.html"))
+        .and(warp::query::<handlers::LoginQuery>())
+        .and_then(handlers::login)
         .recover(rejection)
 }
 

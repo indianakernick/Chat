@@ -4,13 +4,14 @@ use deadpool_postgres::Pool;
 
 #[derive(Template)]
 #[template(path = "../client/dist/with_session.html")]
-struct RootTemplate {
+struct ChannelTemplate {
     user_id: super::UserID,
     channel_name: String
 }
 
 pub type ChannelID = i32;
 
+// TODO: Maybe put these sorts of functions into their own database module
 async fn get_channel_name(pool: Pool, channel_id: ChannelID) -> Result<Option<String>, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
@@ -22,10 +23,6 @@ async fn get_channel_name(pool: Pool, channel_id: ChannelID) -> Result<Option<St
     Ok(conn.query_opt(&stmt, &[&channel_id]).await?.map(|row| row.get(0)))
 }
 
-fn redirect_static(location: &'static str) -> impl warp::Reply {
-    warp::redirect(warp::http::Uri::from_static(location))
-}
-
 pub async fn channel(channel_id: ChannelID, session_id: String, pool: Pool)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let channel_name = match get_channel_name(pool.clone(), channel_id).await? {
@@ -35,8 +32,11 @@ pub async fn channel(channel_id: ChannelID, session_id: String, pool: Pool)
 
     let user_id = match super::get_session_user_id(pool, session_id).await? {
         Some(id) => id,
-        None => return Ok(Box::new(redirect_static("/login")))
+        None => return Ok(Box::new(warp::redirect(
+            format!("/login?redirect=/channel/{}", channel_id)
+                .parse::<warp::http::Uri>().unwrap()
+        )))
     };
 
-    Ok(Box::new(RootTemplate { user_id, channel_name }))
+    Ok(Box::new(ChannelTemplate { user_id, channel_name }))
 }

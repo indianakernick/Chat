@@ -1,8 +1,11 @@
 CREATE TABLE IF NOT EXISTS Message (
+    message_id SERIAL NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL,
     author INTEGER,
     content TEXT NOT NULL,
     channel_id INTEGER NOT NULL,
+
+    PRIMARY KEY (message_id),
 
     FOREIGN KEY (author)
         REFERENCES Usr (user_id)
@@ -14,6 +17,9 @@ CREATE TABLE IF NOT EXISTS Message (
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS message_chan_mess_idx
+    ON Message (channel_id, message_id);
 
 CREATE TABLE IF NOT EXISTS Channel (
     channel_id SERIAL NOT NULL,

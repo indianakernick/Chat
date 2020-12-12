@@ -1,3 +1,4 @@
+use serde::Serialize;
 use crate::error::Error;
 use deadpool_postgres::Pool;
 use deadpool_postgres::tokio_postgres::Row;
@@ -20,6 +21,7 @@ pub async fn create_group(pool: Pool, name: String)
     Ok(conn.query_opt(&stmt, &[&name]).await?.map(|row| row.get(0)))
 }
 
+#[derive(Serialize)]
 pub struct GroupInfo {
     pub name: String,
     pub picture: String

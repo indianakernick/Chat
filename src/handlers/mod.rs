@@ -5,6 +5,7 @@ mod user;
 mod session;
 mod channel;
 mod login;
+mod group;
 
 pub use hello::*;
 pub use socket::*;
@@ -13,3 +14,4 @@ pub use user::*;
 pub use session::*;
 pub use channel::*;
 pub use login::*;
+pub use group::*;

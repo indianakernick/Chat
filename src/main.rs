@@ -2,6 +2,7 @@ mod filters;
 mod handlers;
 mod error;
 mod database;
+mod utils;
 
 use warp::Filter;
 use deadpool_postgres::{Pool, Manager};
@@ -44,6 +45,8 @@ async fn main() {
     let routes = filters::hello()
         .or(filters::login())
         .or(filters::channel(pool.clone()))
+        .or(filters::group(pool.clone()))
+        .or(filters::group_channels(pool.clone()))
         .or(filters::favicon())
         .or(filters::js())
         .or(filters::css())

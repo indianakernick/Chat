@@ -4,25 +4,18 @@ use log::{debug, error};
 use crate::error::Error;
 use deadpool_postgres::Pool;
 use std::convert::Infallible;
-use crate::database::{ChannelID, UserID};
+use crate::utils::cache_long;
+use crate::database::{ChannelID, UserID, GroupID};
 
 fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> + Clone {
     warp::any().map(move || pool.clone())
-}
-
-fn cache_static<R: warp::Reply>(reply: R) -> impl warp::Reply {
-    warp::reply::with_header(
-        reply,
-        "Cache-Control",
-        "public,max-age=604800,immutable" // 7 days
-    )
 }
 
 pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("hello" / String)
         .and(warp::get())
         .and_then(handlers::hello)
-        .map(cache_static)
+        .map(cache_long)
         .recover(rejection)
 }
 
@@ -47,11 +40,27 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .recover(rejection)
 }
 
+pub fn group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("api" / "group" / GroupID)
+        .and(warp::get())
+        .and(with_pool(pool))
+        .and_then(handlers::get_group_info)
+        .recover(rejection)
+}
+
+pub fn group_channels(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("api" / "group" / GroupID / "channels")
+        .and(warp::get())
+        .and(with_pool(pool))
+        .and_then(handlers::get_group_channels)
+        .recover(rejection)
+}
+
 pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("favicon.ico")
         .and(warp::get())
         .and(warp::fs::file("client/dist/favicon.ico"))
-        .map(cache_static)
+        .map(cache_long)
         .recover(rejection)
 }
 
@@ -59,7 +68,7 @@ pub fn js() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> 
     warp::path("js")
         .and(warp::get())
         .and(warp::fs::dir("client/dist/js"))
-        .map(cache_static)
+        .map(cache_long)
         .recover(rejection)
 }
 
@@ -67,7 +76,7 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
     warp::path("css")
         .and(warp::get())
         .and(warp::fs::dir("client/dist/css"))
-        .map(cache_static)
+        .map(cache_long)
         .recover(rejection)
 }
 

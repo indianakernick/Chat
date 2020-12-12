@@ -1,5 +1,6 @@
 use askama::Template;
 use serde::Deserialize;
+use crate::utils::cache_long;
 
 #[derive(Template)]
 #[template(path = "../client/dist/login.html")]
@@ -18,5 +19,5 @@ pub async fn login(query: LoginQuery) -> Result<impl warp::Reply, warp::Rejectio
         include_str!("../../api/client_id.txt")
     );
     google_auth_url.extend(form_urlencoded::byte_serialize(query.redirect.as_bytes()));
-    Ok(LoginTemplate { google_auth_url })
+    Ok(cache_long(LoginTemplate { google_auth_url }))
 }

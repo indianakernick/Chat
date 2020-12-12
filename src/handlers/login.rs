@@ -4,7 +4,7 @@ use serde::Deserialize;
 #[derive(Template)]
 #[template(path = "../client/dist/login.html")]
 struct LoginTemplate {
-    redirect: String
+    google_auth_url: String
 }
 
 #[derive(Deserialize)]
@@ -13,7 +13,10 @@ pub struct LoginQuery {
 }
 
 pub async fn login(query: LoginQuery) -> Result<impl warp::Reply, warp::Rejection> {
-    Ok(LoginTemplate {
-        redirect: serde_json::to_string(&query.redirect).unwrap()
-    })
+    let mut google_auth_url = format!(
+        "https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https://localhost/api/auth&response_type=code&scope=profile&client_id={}&state=",
+        include_str!("../../api/client_id.txt")
+    );
+    google_auth_url.extend(form_urlencoded::byte_serialize(query.redirect.as_bytes()));
+    Ok(LoginTemplate { google_auth_url })
 }

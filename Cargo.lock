@@ -226,6 +226,7 @@ dependencies = [
  "askama",
  "askama_warp",
  "deadpool-postgres",
+ "form_urlencoded",
  "futures",
  "headers",
  "jsonwebtoken",

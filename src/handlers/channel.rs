@@ -3,7 +3,7 @@ use deadpool_postgres::Pool;
 use crate::database::{UserID, ChannelID, channel_name, SessionID, session_user_id};
 
 #[derive(Template)]
-#[template(path = "../client/dist/with_session.html")]
+#[template(path = "../client/dist/channel.html")]
 struct ChannelTemplate {
     user_id: UserID,
     channel_id: ChannelID,

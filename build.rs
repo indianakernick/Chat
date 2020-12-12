@@ -4,13 +4,13 @@ fn main() {
 
     println!("cargo:rerun-if-changed=client/vue.config.js");
 
-    println!("cargo:rerun-if-changed=client/public/with_session.html");
-    println!("cargo:rerun-if-changed=client/src/pages/with_session/App.vue");
-    println!("cargo:rerun-if-changed=client/src/pages/with_session/main.js");
+    println!("cargo:rerun-if-changed=client/public/channel.html");
+    println!("cargo:rerun-if-changed=client/src/pages/channel/App.vue");
+    println!("cargo:rerun-if-changed=client/src/pages/channel/main.js");
 
-    println!("cargo:rerun-if-changed=client/public/without_session.html");
-    println!("cargo:rerun-if-changed=client/src/pages/without_session/App.vue");
-    println!("cargo:rerun-if-changed=client/src/pages/without_session/main.js");
+    println!("cargo:rerun-if-changed=client/public/login.html");
+    println!("cargo:rerun-if-changed=client/src/pages/login/App.vue");
+    println!("cargo:rerun-if-changed=client/src/pages/login/main.js");
 
     println!("cargo:rerun-if-changed=client/src/components/Login.vue");
     println!("cargo:rerun-if-changed=client/src/components/Message.vue");

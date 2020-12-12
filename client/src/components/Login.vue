@@ -4,6 +4,9 @@
 </template>
 
 <script>
+// TODO: Should the login page use Vue at all?
+// It probably doesn't need to. Askama alone would suffice.
+
 import ClientID from "./../../../api/client_id.txt"
 
 export default {

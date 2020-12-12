@@ -11,7 +11,6 @@ use serde::{Serialize, Deserialize};
 use jsonwebtoken::{decode, decode_header, Algorithm, Validation, DecodingKey};
 
 /*
-
 Full explanation
 https://developers.google.com/identity/protocols/oauth2/web-server#httprest_5
 

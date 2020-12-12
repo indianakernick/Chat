@@ -9,19 +9,19 @@ module.exports = {
     },
 
     pages: {
-        with_session: {
+        channel: {
             title: "Chat",
-            entry: "./src/pages/with_session/main.js",
-            template: "./public/with_session.html",
-            filename: "with_session.html",
-            chunks: [ "chunk-vendors", "chunk-common", "with_session" ]
+            entry: "./src/pages/channel/main.js",
+            template: "./public/channel.html",
+            filename: "channel.html",
+            chunks: [ "chunk-vendors", "chunk-common", "channel" ]
         },
-        without_session: {
+        login: {
             title: "Chat",
-            entry: "./src/pages/without_session/main.js",
-            template: "./public/without_session.html",
-            filename: "without_session.html",
-            chunks: [ "chunk-vendors", "chunk-common", "without_session" ]
+            entry: "./src/pages/login/main.js",
+            template: "./public/login.html",
+            filename: "login.html",
+            chunks: [ "chunk-vendors", "chunk-common", "login" ]
         }
     }
 };

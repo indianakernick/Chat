@@ -2,7 +2,7 @@ use askama::Template;
 use serde::Deserialize;
 
 #[derive(Template)]
-#[template(path = "../client/dist/without_session.html")]
+#[template(path = "../client/dist/login.html")]
 struct LoginTemplate {
     redirect: String
 }

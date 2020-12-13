@@ -12,8 +12,17 @@
       <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
     <!-- This doesn't get minified so we have to do it manually -->
-    <script type="text/javascript">const CHANNEL_ID={{channel_id|safe}};const USER_INFO={{user_info|safe}};const GROUP_INFO={{group_info|safe}};const CHANNEL_LIST={{channel_list|safe}};</script>
+    <script type="text/javascript">const GROUP_ID={{group_id|safe}};const CHANNEL_ID={{channel_id|safe}};const USER_INFO={{user_info|safe}};const GROUP_INFO={{group_info|safe}};const CHANNEL_LIST={{channel_list|safe}};</script>
     <div id="app"></div>
     <!-- built files will be auto injected -->
   </body>
 </html>
+
+<!--
+
+localhost/group/1/channel/1
+  loads the channel with an embedded JSON object
+  subsequent navigations change the url and fetch data
+  maybe recent messages should be embedded too
+
+-->

@@ -71,7 +71,7 @@ export default {
     },
 
     initSocket() {
-      this.socket = new WebSocket(`wss://${window.location.host}/api/socket/${CHANNEL_ID}`);
+      this.socket = new WebSocket(`wss://${window.location.host}/api/socket/${GROUP_ID}`);
     },
 
     initListeners() {
@@ -96,7 +96,7 @@ export default {
       this.initListeners();
 
       this.socket.onopen = () => {
-        this.socket.send('{"type":"request recent messages"}');
+        this.socket.send(`{"type":"request recent messages","channel_id":${CHANNEL_ID}}`);
       };
     },
 
@@ -109,7 +109,7 @@ export default {
 
       this.socket.onopen = () => {
         this.initListeners();
-        this.socket.send('{"type":"request recent messages"}');
+        this.socket.send(`{"type":"request recent messages","channel_id":${CHANNEL_ID}}`);
       };
     },
 
@@ -146,6 +146,8 @@ export default {
           break;
 
         case "recent message":
+          // TODO: Handle channel_id properly
+          if (message.channel_id !== CHANNEL_ID) break;
           const userInfo = this.getUserInfo(message.author);
           this.messages.push({
             timestamp: message.timestamp,
@@ -159,6 +161,8 @@ export default {
           // All messages arrive in the same order that they are sent.
           const messages = this.messages;
           const length = messages.length;
+          // TODO: Handle channel_id properly
+          if (length === 0 || messages[0].channel_id !== CHANNEL_ID) break;
           for (let idx = 0; idx !== length; ++idx) {
             if (messages[idx].sending) {
               messages[idx].sending = false;
@@ -170,6 +174,7 @@ export default {
           break;
 
         case "recent message list":
+          // TODO: Handle channel_id properly
           this.resetRetryDelay();
           this.connected = true;
           this.messages = message.messages.map(msg => {
@@ -197,7 +202,8 @@ export default {
       });
       this.socket.send(JSON.stringify({
         type: "post message",
-        content: input.value
+        content: input.value,
+        channel_id: CHANNEL_ID
       }));
       input.value = "";
     }

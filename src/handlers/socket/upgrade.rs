@@ -4,7 +4,7 @@ use deadpool_postgres::Pool;
 use futures::{FutureExt, StreamExt};
 use warp::ws::{Ws, WebSocket, Message};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
-use crate::database::{UserID, ChannelID, valid_channel, SessionID, session_user_id};
+use crate::database::{UserID, GroupID, valid_group, SessionID, session_user_id};
 
 pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 pub type ConnectionMap = std::collections::HashMap<usize, Sender>;
@@ -13,7 +13,7 @@ pub type Connections = Arc<tokio::sync::RwLock<ConnectionMap>>;
 // Atomic int for tracking connection IDs
 static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 
-pub async fn upgrade(channel_id: ChannelID, ws: Ws, session_id: SessionID, pool: Pool, conns: Connections)
+pub async fn upgrade(group_id: GroupID, ws: Ws, session_id: SessionID, pool: Pool, conns: Connections)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
 
     // The JavaScript that invokes this is only loaded when the session cookie
@@ -27,7 +27,7 @@ pub async fn upgrade(channel_id: ChannelID, ws: Ws, session_id: SessionID, pool:
     };
 
     // Can only happen if someone is directly accessing the socket.
-    if !valid_channel(pool.clone(), channel_id).await? {
+    if !valid_group(pool.clone(), group_id).await? {
         return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR));
     }
 
@@ -35,11 +35,11 @@ pub async fn upgrade(channel_id: ChannelID, ws: Ws, session_id: SessionID, pool:
 
     // Upgrade the HTTP connection to a WebSocket connection
     Ok(Box::new(ws.on_upgrade(move |socket: WebSocket| {
-        connected(socket, channel_id, user_id, pool, conns)
+        connected(socket, group_id, user_id, pool, conns)
     })))
 }
 
-async fn connected(ws: WebSocket, chan_id: ChannelID, user_id: UserID, pool: Pool, conns: Connections) {
+async fn connected(ws: WebSocket, group_id: GroupID, user_id: UserID, pool: Pool, conns: Connections) {
     let conn_id = NEXT_CONNECTION_ID.fetch_add(1, Ordering::Relaxed);
     debug!("Socket connected: {}", conn_id);
 
@@ -80,7 +80,7 @@ async fn connected(ws: WebSocket, chan_id: ChannelID, user_id: UserID, pool: Poo
         let handler = super::handler::MessageHandler {
             conn_id,
             user_id,
-            chan_id,
+            group_id,
             message,
             conns: &*conns_guard,
             pool: &pool

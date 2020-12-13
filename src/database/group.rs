@@ -1,6 +1,6 @@
 use serde::Serialize;
 use crate::error::Error;
-use deadpool_postgres::Pool;
+use deadpool_postgres::{Pool, PoolError};
 use deadpool_postgres::tokio_postgres::Row;
 
 pub type GroupID = i32;
@@ -56,4 +56,25 @@ pub async fn group_channels(pool: Pool, group_id: GroupID) -> Result<Vec<Row>, E
         WHERE group_id = $1
     ").await?;
     conn.query(&stmt, &[&group_id]).await.map_err(|e| e.into())
+}
+
+pub async fn valid_group(pool: Pool, group_id: GroupID) -> Result<bool, Error> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT 1
+        FROM Groop
+        WHERE group_id = $1
+    ").await?;
+    Ok(conn.query_opt(&stmt, &[&group_id]).await?.is_some())
+}
+
+pub async fn valid_group_channel(pool: Pool, group_id: GroupID, channel_id: super::ChannelID) -> Result<bool, PoolError> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT 1
+        FROM Channel
+        WHERE group_id = $1
+        AND channel_id = $2
+    ").await?;
+    Ok(conn.query_opt(&stmt, &[&group_id, &channel_id]).await?.is_some())
 }

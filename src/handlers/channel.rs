@@ -11,7 +11,8 @@ struct ChannelTemplate {
     user_info: String,
     group_info: String,
     channel_list: String,
-    channel_id: ChannelID
+    channel_id: ChannelID,
+    group_id: GroupID,
 }
 
 #[derive(Serialize)]
@@ -73,6 +74,7 @@ pub async fn channel(group_id: GroupID, channel_id: ChannelID, session_id: Sessi
         user_info: ser_json(&session),
         group_info: ser_json(&group),
         channel_list: ser_json(&channel_list),
-        channel_id
+        channel_id,
+        group_id
     }))
 }

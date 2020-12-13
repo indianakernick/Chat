@@ -1,5 +1,5 @@
 <template>
-  <span class="channel">{{name}}</span>
+  <div class="channel">{{name}}</div>
 </template>
 
 <script>

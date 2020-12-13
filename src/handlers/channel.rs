@@ -1,13 +1,15 @@
 use askama::Template;
 use deadpool_postgres::Pool;
 use crate::database::{UserID, ChannelID, channel_name, SessionID, session_user_id};
+use crate::database::*;
 
 #[derive(Template)]
 #[template(path = "../client/dist/channel.html")]
 struct ChannelTemplate {
     user_id: UserID,
     channel_id: ChannelID,
-    channel_name: String
+    channel_name: String,
+    group_id: GroupID
 }
 
 pub async fn channel(channel_id: ChannelID, session_id: SessionID, pool: Pool)
@@ -25,7 +27,10 @@ pub async fn channel(channel_id: ChannelID, session_id: SessionID, pool: Pool)
         )))
     };
 
+    // TODO: Implement this properly
+    let group_id = 1;
+
     Ok(Box::new(ChannelTemplate {
-        user_id, channel_id, channel_name
+        user_id, channel_id, channel_name, group_id
     }))
 }

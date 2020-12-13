@@ -1,10 +1,12 @@
 <template>
   <ProfileNav :userInfo="userInfo"/>
+  <ChannelList/>
   <MessageList :userInfo="userInfo"/>
 </template>
 
 <script>
 import ProfileNav from "@/components/ProfileNav.vue";
+import ChannelList from "@/components/ChannelList.vue";
 import MessageList from "@/components/MessageList.vue";
 
 export default {
@@ -12,6 +14,7 @@ export default {
 
   components: {
     ProfileNav,
+    ChannelList,
     MessageList
   },
 

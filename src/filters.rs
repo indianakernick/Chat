@@ -32,7 +32,7 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .and(warp::cookie::optional("session_id"))
         .map(|session_id: Option<String>| session_id.unwrap_or(String::new()));
 
-    warp::path!("channel" / ChannelID)
+    warp::path!("channel" / GroupID / ChannelID)
         .and(warp::get())
         .and(session_id)
         .and(with_pool(pool))

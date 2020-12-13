@@ -48,7 +48,7 @@ export default {
       retryDelay: INITIAL_RETRY_DELAY,
       userInfoCache: {
         0: DELETED_USER_INFO,
-        [USER_ID]: this.userInfo
+        [this.userInfo.user_id]: this.userInfo
       }
     }
   },

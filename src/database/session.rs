@@ -68,3 +68,36 @@ pub async fn session_user_id(pool: Pool, session_id: SessionID) -> Result<Option
 
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
 }
+
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct SessionInfo {
+    pub user_id: super::UserID,
+    pub name: String,
+    pub picture: String
+}
+
+pub async fn session_info(pool: Pool, session_id: SessionID) -> Result<Option<SessionInfo>, Error> {
+    if session_id.len() != SESSION_ID_LENGTH {
+        return Ok(None);
+    }
+
+    let conn = pool.get().await?;
+    // TODO: maybe use concat! to define INTERVAL '7 days' in one place
+    let stmt = conn.prepare("
+        SELECT Usr.user_id, name, picture
+        FROM Usr
+        JOIN Session ON Session.user_id = Usr.user_id
+        WHERE session_id = $1
+        AND creation_time > NOW() - INTERVAL '7 days'
+    ").await?;
+
+    Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| {
+        SessionInfo {
+            user_id: row.get(0),
+            name: row.get(1),
+            picture: row.get(2)
+        }
+    }))
+}

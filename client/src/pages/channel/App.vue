@@ -1,10 +1,12 @@
 <template>
+  <GroupTitle/>
   <ProfileNav :userInfo="userInfo"/>
   <ChannelList/>
   <MessageList :userInfo="userInfo"/>
 </template>
 
 <script>
+import GroupTitle from "@/components/GroupTitle.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
 import ChannelList from "@/components/ChannelList.vue";
 import MessageList from "@/components/MessageList.vue";
@@ -13,6 +15,7 @@ export default {
   name: "App",
 
   components: {
+    GroupTitle,
     ProfileNav,
     ChannelList,
     MessageList
@@ -20,28 +23,8 @@ export default {
 
   data() {
     return {
-      userInfo: {
-        name: "",
-        picture: ""
-      }
+      userInfo: USER_INFO
     }
-  },
-
-  created() {
-    const req = new XMLHttpRequest();
-
-    req.onload = () => {
-      this.userInfo.name = req.response.name;
-      this.userInfo.picture = req.response.picture;
-    };
-
-    req.onerror = () => {
-      console.error("Error connecting");
-    };
-
-    req.responseType = "json";
-    req.open("GET", `/api/user/${USER_ID}`);
-    req.send();
   }
 };
 </script>

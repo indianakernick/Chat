@@ -2,7 +2,7 @@
   <div class="channel-list">
     <Channel
         v-for="channel in channels"
-        :channelId="channel.channelId"
+        :channelId="channel.channel_id"
         :name="channel.name"
     ></Channel>
   </div>
@@ -20,23 +20,8 @@ export default {
 
   data() {
     return {
-      channels: []
-    }
-  },
-
-  created() {
-    const req = new XMLHttpRequest();
-    req.onload = () => {
-      this.channels = req.response.map(channel => {
-        return {
-          channelId: channel.channel_id,
-          name: channel.name
-        };
-      })
+      channels: CHANNEL_LIST
     };
-    req.responseType = "json";
-    req.open("GET", `/api/group/${GROUP_ID}/channels`);
-    req.send();
   }
 };
 </script>

@@ -13,6 +13,7 @@ struct ChannelTemplate {
     channel_list: String,
     channel_id: ChannelID,
     group_id: GroupID,
+    user_id: UserID
 }
 
 #[derive(Serialize)]
@@ -69,12 +70,18 @@ pub async fn channel(group_id: GroupID, channel_id: ChannelID, session_id: Sessi
         )))
     };
 
+    let user_info = UserInfo {
+        name: session.name,
+        picture: session.picture
+    };
+
     Ok(Box::new(ChannelTemplate {
         title: group.name.clone() + "#" + channel_name.as_str(),
-        user_info: ser_json(&session),
+        user_info: ser_json(&user_info),
         group_info: ser_json(&group),
         channel_list: ser_json(&channel_list),
         channel_id,
-        group_id
+        group_id,
+        user_id: session.user_id
     }))
 }

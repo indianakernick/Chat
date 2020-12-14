@@ -25,6 +25,13 @@ struct RecentMessage {
 }
 
 #[derive(Serialize)]
+struct GenericRecentMessage {
+    timestamp: u64,
+    author: UserID,
+    content: String,
+}
+
+#[derive(Serialize)]
 #[serde(tag="type")]
 enum ServerMessage {
     #[serde(rename="error")]
@@ -33,9 +40,8 @@ enum ServerMessage {
     MessageReceipt { timestamp: u64, channel_id: ChannelID },
     #[serde(rename="recent message")]
     RecentMessage(RecentMessage),
-    // TODO: each one of the channel_ids on the recent messages is the same.
     #[serde(rename="recent message list")]
-    RecentMessageList { messages: Vec<RecentMessage> }
+    RecentMessageList { channel_id: ChannelID, messages: Vec<GenericRecentMessage> }
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -144,12 +150,12 @@ impl<'a> MessageHandler<'a> {
         let rows = recent_messages(self.pool.clone(), channel_id).await?;
 
         let response = serde_json::to_string(&ServerMessage::RecentMessageList {
+            channel_id,
             messages: rows.iter()
-                .map(|row| RecentMessage {
+                .map(|row| GenericRecentMessage {
                     timestamp: as_timestamp(row.get(0)),
                     author: row.get(1),
-                    content: row.get(2),
-                    channel_id
+                    content: row.get(2)
                 })
                 .collect()
         }).unwrap();

@@ -4,6 +4,7 @@
         v-for="channel in channels"
         :channelId="channel.channel_id"
         :name="channel.name"
+        @channelSelected="channelSelected"
     ></Channel>
   </div>
 </template>
@@ -18,10 +19,20 @@ export default {
     Channel
   },
 
+  emits: [
+    "channelSelected"
+  ],
+
   data() {
     return {
       channels: CHANNEL_LIST
     };
+  },
+
+  methods: {
+    channelSelected(channelId) {
+      this.$emit("channelSelected", channelId);
+    }
   }
 };
 </script>

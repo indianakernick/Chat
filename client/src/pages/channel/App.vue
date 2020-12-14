@@ -1,8 +1,8 @@
 <template>
   <GroupTitle/>
   <ProfileNav :userInfo="userInfo"/>
-  <ChannelList/>
-  <MessageList :userInfo="userInfo"/>
+  <ChannelList @channelSelected="channelSelected"/>
+  <MessageList :userInfo="userInfo" :channelId="channelId"/>
 </template>
 
 <script>
@@ -23,7 +23,21 @@ export default {
 
   data() {
     return {
-      userInfo: USER_INFO
+      userInfo: USER_INFO,
+      channelId: CHANNEL_ID,
+      channelNames: CHANNEL_LIST.reduce((names, info) => {
+        names[info.channel_id] = info.name;
+        return names;
+      }, {})
+    }
+  },
+
+  methods: {
+    channelSelected(channelId) {
+      console.assert(this.channelNames.hasOwnProperty(channelId));
+      this.channelId = channelId;
+      window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
+      document.title = GROUP_INFO.name + "#" + this.channelNames[channelId];
     }
   }
 };

@@ -1,9 +1,8 @@
 <template>
   <template v-if="connected">
     <div id="message-list">
-      <!-- Should use key with v-for. Forgot why... -->
       <Message
-          v-for="message in messages"
+          v-for="message in messages[channelId]"
           :timestamp="message.timestamp"
           :userInfo="message.userInfo"
           :content="message.content"
@@ -28,6 +27,10 @@ const MAX_RETRY_DELAY = 16000;
 // For plain javascript files, the convention seems to be putting them in
 // assets/js/
 
+// TODO: Component is rendered every time channelId changes
+// That's pretty inefficient. Perhaps have an instance of the message list
+// component for each channel?
+
 export default {
   name: "MessageList",
 
@@ -37,18 +40,22 @@ export default {
   },
 
   props: {
-    userInfo: Object
+    userInfo: Object,
+    channelId: Number
   },
 
   data() {
     return {
-      messages: [],
+      messages: CHANNEL_LIST.reduce((msgs, info) => {
+        msgs[info.channel_id] = [];
+        return msgs;
+      }, {}),
       connected: false,
       status: "Connecting...",
       retryDelay: INITIAL_RETRY_DELAY,
       userInfoCache: {
         0: DELETED_USER_INFO,
-        [this.userInfo.user_id]: this.userInfo
+        [USER_ID]: this.userInfo
       }
     }
   },
@@ -59,8 +66,17 @@ export default {
     window.messageList = this;
   },
 
+  watch: {
+    channelId() {
+      this.requestRecent();
+    }
+  },
+
   methods: {
     getRetryDelay() {
+      // TODO: Retry less often when the page is invisible
+      // Also maybe show a countdown
+      // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
       const delay = this.retryDelay;
       this.retryDelay = Math.min(MAX_RETRY_DELAY, 2 * this.retryDelay);
       return delay;
@@ -91,12 +107,16 @@ export default {
       };
     },
 
+    requestRecent() {
+      this.socket.send(`{"type":"request recent messages","channel_id":${this.channelId}}`);
+    },
+
     openConnection() {
       this.initSocket();
       this.initListeners();
 
       this.socket.onopen = () => {
-        this.socket.send(`{"type":"request recent messages","channel_id":${CHANNEL_ID}}`);
+        this.requestRecent();
       };
     },
 
@@ -109,7 +129,7 @@ export default {
 
       this.socket.onopen = () => {
         this.initListeners();
-        this.socket.send(`{"type":"request recent messages","channel_id":${CHANNEL_ID}}`);
+        this.requestRecent();
       };
     },
 
@@ -146,10 +166,9 @@ export default {
           break;
 
         case "recent message":
-          // TODO: Handle channel_id properly
-          if (message.channel_id !== CHANNEL_ID) break;
+          console.assert(this.messages.hasOwnProperty(message.channel_id));
           const userInfo = this.getUserInfo(message.author);
-          this.messages.push({
+          this.messages[message.channel_id].push({
             timestamp: message.timestamp,
             userInfo: userInfo,
             content: message.content,
@@ -158,11 +177,10 @@ export default {
           break;
 
         case "message receipt":
+          console.assert(this.messages.hasOwnProperty(message.channel_id));
           // All messages arrive in the same order that they are sent.
-          const messages = this.messages;
+          const messages = this.messages[message.channel_id];
           const length = messages.length;
-          // TODO: Handle channel_id properly
-          if (length === 0 || messages[0].channel_id !== CHANNEL_ID) break;
           for (let idx = 0; idx !== length; ++idx) {
             if (messages[idx].sending) {
               messages[idx].sending = false;
@@ -174,10 +192,10 @@ export default {
           break;
 
         case "recent message list":
-          // TODO: Handle channel_id properly
+          console.assert(this.messages.hasOwnProperty(message.channel_id));
           this.resetRetryDelay();
           this.connected = true;
-          this.messages = message.messages.map(msg => {
+          this.messages[message.channel_id] = message.messages.map(msg => {
             return {
               timestamp: msg.timestamp,
               userInfo: this.getUserInfo(msg.author),
@@ -192,7 +210,7 @@ export default {
     pressEnter(input) {
       // Alternative might be to hide the text box until connected
       if (!this.connected) return;
-      this.messages.push({
+      this.messages[this.channelId].push({
         // Initial "guess" for the timestamp.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
@@ -203,7 +221,7 @@ export default {
       this.socket.send(JSON.stringify({
         type: "post message",
         content: input.value,
-        channel_id: CHANNEL_ID
+        channel_id: this.channelId
       }));
       input.value = "";
     }

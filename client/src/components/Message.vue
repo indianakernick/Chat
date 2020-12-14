@@ -14,9 +14,11 @@
 </template>
 
 <script>
+import Anonymous from "@/assets/anonymous.png";
+
 export const DELETED_USER_INFO = {
   name: "<deleted user>",
-  picture: "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y&s=32",
+  picture: Anonymous,
   deleted: true
 };
 

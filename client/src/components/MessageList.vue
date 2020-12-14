@@ -66,12 +66,6 @@ export default {
     window.messageList = this;
   },
 
-  watch: {
-    channelId() {
-      this.requestRecent();
-    }
-  },
-
   methods: {
     getRetryDelay() {
       // TODO: Retry less often when the page is invisible
@@ -107,8 +101,17 @@ export default {
       };
     },
 
+    requestRecentFromChannel(channelId) {
+      this.socket.send(`{"type":"request recent messages","channel_id":${channelId}}`);
+    },
+
     requestRecent() {
-      this.socket.send(`{"type":"request recent messages","channel_id":${this.channelId}}`);
+      this.requestRecentFromChannel(this.channelId);
+      for (const info of CHANNEL_LIST) {
+        if (info.channel_id !== this.channelId) {
+          this.requestRecentFromChannel(info.channel_id);
+        }
+      }
     },
 
     openConnection() {

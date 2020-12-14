@@ -1,5 +1,5 @@
 <template>
-  <template v-if="true">
+  <template v-if="loaded">
     <div id="message-list">
       <Message
           v-for="message in messages"
@@ -7,11 +7,10 @@
           :userInfo="message.userInfo"
           :content="message.content"
           :sending="message.sending"
-      ></Message>
+      />
     </div>
   </template>
-  <!-- TODO: Deal with status message -->
-  <StatusMessage v-else :status="status"></StatusMessage>
+  <StatusMessage v-else :status="status"/>
 </template>
 
 <script>
@@ -20,10 +19,6 @@ import StatusMessage from "./StatusMessage.vue";
 
 // For plain javascript files, the convention seems to be putting them in
 // assets/js/
-
-// TODO: Component is rendered every time channelId changes
-// That's pretty inefficient. Perhaps have an instance of the message list
-// component for each channel?
 
 export default {
   name: "MessageList",
@@ -40,7 +35,8 @@ export default {
   data() {
     return {
       messages: [],
-      status: "Connecting...",
+      status: "Loading...",
+      loaded: false,
       userInfoCache: {
         0: DELETED_USER_INFO,
         [USER_ID]: this.userInfo
@@ -106,6 +102,7 @@ export default {
           sending: false
         };
       });
+      this.loaded = true;
     },
 
     sendMessage(content) {

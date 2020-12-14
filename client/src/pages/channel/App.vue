@@ -2,7 +2,15 @@
   <GroupTitle/>
   <ProfileNav :userInfo="userInfo"/>
   <ChannelList @channelSelected="channelSelected"/>
-  <MessageList :userInfo="userInfo" :channelId="channelId"/>
+  <!-- TODO: Each message list is storing its own user info cache -->
+  <MessageList
+      v-for="channelId in channelIds"
+      v-show="currentChannelId === channelId"
+      :userInfo="userInfo"
+      :key="channelId"
+      :ref="list => messageLists[channelId] = list"
+  />
+  <MessageSender @sendMessage="sendMessage"/>
 </template>
 
 <script>
@@ -10,6 +18,10 @@ import GroupTitle from "@/components/GroupTitle.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
 import ChannelList from "@/components/ChannelList.vue";
 import MessageList from "@/components/MessageList.vue";
+import MessageSender from "@/components/MessageSender.vue";
+
+const INITIAL_RETRY_DELAY = 125;
+const MAX_RETRY_DELAY = 16000;
 
 export default {
   name: "App",
@@ -18,26 +30,147 @@ export default {
     GroupTitle,
     ProfileNav,
     ChannelList,
-    MessageList
+    MessageList,
+    MessageSender
   },
 
   data() {
     return {
       userInfo: USER_INFO,
-      channelId: CHANNEL_ID,
+      currentChannelId: CHANNEL_ID,
       channelNames: CHANNEL_LIST.reduce((names, info) => {
         names[info.channel_id] = info.name;
         return names;
-      }, {})
+      }, {}),
+      channelIds: CHANNEL_LIST.reduce((ids, info) => {
+        ids.push(info.channel_id);
+        return ids;
+      }, []),
+      messageLists: {},
+      retryDelay: INITIAL_RETRY_DELAY,
+      connected: false
     }
+  },
+
+  created() {
+    this.openConnection();
+    // TODO: Don't forget to remove this
+    window.app = this;
   },
 
   methods: {
     channelSelected(channelId) {
       console.assert(this.channelNames.hasOwnProperty(channelId));
-      this.channelId = channelId;
+      this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
+      // TODO: Make title reactively depend on group info
       document.title = GROUP_INFO.name + "#" + this.channelNames[channelId];
+    },
+
+    sendMessage(content) {
+      if (!this.connected) return;
+      this.messageLists[this.currentChannelId].sendMessage(content);
+      this.socket.send(JSON.stringify({
+        type: "post message",
+        content: content,
+        channel_id: this.currentChannelId
+      }));
+    },
+
+    getRetryDelay() {
+      // TODO: Retry less often when the page is invisible
+      // Also maybe show a countdown
+      // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+      const delay = this.retryDelay;
+      this.retryDelay = Math.min(MAX_RETRY_DELAY, 2 * this.retryDelay);
+      return delay;
+    },
+
+    resetRetryDelay() {
+      this.retryDelay = INITIAL_RETRY_DELAY;
+    },
+
+    initSocket() {
+      this.socket = new WebSocket(`wss://${window.location.host}/api/socket/${GROUP_ID}`);
+    },
+
+    initListeners() {
+      this.socket.onmessage = this.receiveMessage;
+
+      this.socket.onerror = () => {
+        this.connected = false;
+      };
+
+      this.socket.onclose = event => {
+        this.connected = false;
+        // 1000 means "normal closure"
+        // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+        if (event.code !== 1000) {
+          setTimeout(this.retryConnection, this.getRetryDelay());
+        }
+      };
+    },
+
+    requestRecentFromChannel(channelId) {
+      this.socket.send(`{"type":"request recent messages","channel_id":${channelId}}`);
+    },
+
+    requestRecent() {
+      this.requestRecentFromChannel(this.currentChannelId);
+      for (const channelId of this.channelIds) {
+        if (channelId !== this.currentChannelId) {
+          this.requestRecentFromChannel(channelId);
+        }
+      }
+    },
+
+    retryConnection() {
+      this.initSocket();
+
+      this.socket.onerror = () => {
+        setTimeout(this.retryConnection, this.getRetryDelay());
+      };
+
+      this.socket.onopen = () => {
+        this.connected = true;
+        this.resetRetryDelay();
+        this.initListeners();
+        this.requestRecent();
+      };
+    },
+
+    openConnection() {
+      this.initSocket();
+      this.initListeners();
+
+      this.socket.onopen = () => {
+        this.connected = true;
+        this.requestRecent();
+      };
+    },
+
+    receiveMessage(event) {
+      console.log(event.data);
+      const message = JSON.parse(event.data);
+      switch (message.type) {
+        case "error":
+          console.error("Server error:", message.message);
+          this.status = "An error has occurred";
+          this.socket.close(1000);
+          break;
+
+        case "recent message":
+          this.messageLists[message.channel_id].recentMessage(message);
+          break;
+
+        case "message receipt":
+          this.messageLists[message.channel_id].messageReceipt(message);
+          break;
+
+        case "recent message list":
+          this.messageLists[message.channel_id].recentMessageList(message);
+          break;
+      }
     }
   }
 };

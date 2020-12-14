@@ -1,28 +1,22 @@
 <template>
-  <template v-if="connected">
+  <template v-if="true">
     <div id="message-list">
       <Message
-          v-for="message in messages[channelId]"
+          v-for="message in messages"
           :timestamp="message.timestamp"
           :userInfo="message.userInfo"
           :content="message.content"
           :sending="message.sending"
       ></Message>
     </div>
-    <input
-        type="text"
-        @keypress.enter="pressEnter($event.target)"
-    />
   </template>
+  <!-- TODO: Deal with status message -->
   <StatusMessage v-else :status="status"></StatusMessage>
 </template>
 
 <script>
 import Message, { DELETED_USER_INFO } from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
-
-const INITIAL_RETRY_DELAY = 125;
-const MAX_RETRY_DELAY = 16000;
 
 // For plain javascript files, the convention seems to be putting them in
 // assets/js/
@@ -40,19 +34,13 @@ export default {
   },
 
   props: {
-    userInfo: Object,
-    channelId: Number
+    userInfo: Object
   },
 
   data() {
     return {
-      messages: CHANNEL_LIST.reduce((msgs, info) => {
-        msgs[info.channel_id] = [];
-        return msgs;
-      }, {}),
-      connected: false,
+      messages: [],
       status: "Connecting...",
-      retryDelay: INITIAL_RETRY_DELAY,
       userInfoCache: {
         0: DELETED_USER_INFO,
         [USER_ID]: this.userInfo
@@ -60,82 +48,7 @@ export default {
     }
   },
 
-  created() {
-    this.openConnection();
-    // TODO: This is very useful for debugging but don't forget to remove it
-    window.messageList = this;
-  },
-
   methods: {
-    getRetryDelay() {
-      // TODO: Retry less often when the page is invisible
-      // Also maybe show a countdown
-      // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
-      const delay = this.retryDelay;
-      this.retryDelay = Math.min(MAX_RETRY_DELAY, 2 * this.retryDelay);
-      return delay;
-    },
-
-    resetRetryDelay() {
-      this.retryDelay = INITIAL_RETRY_DELAY;
-    },
-
-    initSocket() {
-      this.socket = new WebSocket(`wss://${window.location.host}/api/socket/${GROUP_ID}`);
-    },
-
-    initListeners() {
-      this.socket.onmessage = this.receiveMessage;
-
-      this.socket.onerror = () => {
-        this.connected = false;
-      };
-
-      this.socket.onclose = event => {
-        this.connected = false;
-        // 1000 means "normal closure"
-        // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-        if (event.code !== 1000) {
-          setTimeout(this.retryConnection, this.getRetryDelay());
-        }
-      };
-    },
-
-    requestRecentFromChannel(channelId) {
-      this.socket.send(`{"type":"request recent messages","channel_id":${channelId}}`);
-    },
-
-    requestRecent() {
-      this.requestRecentFromChannel(this.channelId);
-      for (const info of CHANNEL_LIST) {
-        if (info.channel_id !== this.channelId) {
-          this.requestRecentFromChannel(info.channel_id);
-        }
-      }
-    },
-
-    openConnection() {
-      this.initSocket();
-      this.initListeners();
-
-      this.socket.onopen = () => {
-        this.requestRecent();
-      };
-    },
-
-    retryConnection() {
-      this.initSocket();
-
-      this.socket.onerror = () => {
-        setTimeout(this.retryConnection, this.getRetryDelay());
-      };
-
-      this.socket.onopen = () => {
-        this.initListeners();
-        this.requestRecent();
-      };
-    },
-
     getUserInfo(id) {
       if (!this.userInfoCache.hasOwnProperty(id)) {
         this.userInfoCache[id] = {
@@ -158,75 +71,52 @@ export default {
       return this.userInfoCache[id];
     },
 
-    receiveMessage(event) {
-      console.log(event.data);
-      const message = JSON.parse(event.data);
-      switch (message.type) {
-        case "error":
-          console.error("Server error:", message.message);
-          this.status = "An error has occurred";
-          this.socket.close(1000);
-          break;
-
-        case "recent message":
-          console.assert(this.messages.hasOwnProperty(message.channel_id));
-          const userInfo = this.getUserInfo(message.author);
-          this.messages[message.channel_id].push({
-            timestamp: message.timestamp,
-            userInfo: userInfo,
-            content: message.content,
-            sending: false
-          });
-          break;
-
-        case "message receipt":
-          console.assert(this.messages.hasOwnProperty(message.channel_id));
-          // All messages arrive in the same order that they are sent.
-          const messages = this.messages[message.channel_id];
-          const length = messages.length;
-          for (let idx = 0; idx !== length; ++idx) {
-            if (messages[idx].sending) {
-              messages[idx].sending = false;
-              messages[idx].timestamp = message.timestamp;
-              return;
-            }
-          }
-          console.error("\"message sent\" but all messages have been sent");
-          break;
-
-        case "recent message list":
-          console.assert(this.messages.hasOwnProperty(message.channel_id));
-          this.resetRetryDelay();
-          this.connected = true;
-          this.messages[message.channel_id] = message.messages.map(msg => {
-            return {
-              timestamp: msg.timestamp,
-              userInfo: this.getUserInfo(msg.author),
-              content: msg.content,
-              sending: false
-            };
-          });
-          break;
-      }
+    recentMessage(message) {
+      const userInfo = this.getUserInfo(message.author);
+      this.messages.push({
+        timestamp: message.timestamp,
+        userInfo: userInfo,
+        content: message.content,
+        sending: false
+      });
     },
 
-    pressEnter(input) {
-      // Alternative might be to hide the text box until connected
-      if (!this.connected) return;
-      this.messages[this.channelId].push({
+    messageReceipt(message) {
+      // All messages arrive in the same order that they are sent.
+      // Also, I think for-in has an undefined order.
+      // Not sure about for-of though
+      const messages = this.messages
+      const length = messages.length;
+      for (let idx = 0; idx !== length; ++idx) {
+        if (messages[idx].sending) {
+          messages[idx].sending = false;
+          messages[idx].timestamp = message.timestamp;
+          return;
+        }
+      }
+      console.error("\"message receipt\" but all messages have been sent");
+    },
+
+    recentMessageList(message) {
+      this.messages = message.messages.map(msg => {
+        return {
+          timestamp: msg.timestamp,
+          userInfo: this.getUserInfo(msg.author),
+          content: msg.content,
+          sending: false
+        };
+      });
+    },
+
+    sendMessage(content) {
+      this.messages.push({
         // Initial "guess" for the timestamp.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
         userInfo: this.userInfo,
-        content: input.value,
+        content: content,
         sending: true
       });
-      this.socket.send(JSON.stringify({
-        type: "post message",
-        content: input.value,
-        channel_id: this.channelId
-      }));
-      input.value = "";
     }
   }
 };

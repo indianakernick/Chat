@@ -10,8 +10,10 @@ fn main() {
 
     println!("cargo:rerun-if-changed=client/src/components/Channel.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/GroupTitle.vue");
     println!("cargo:rerun-if-changed=client/src/components/Message.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/MessageSender.vue");
     println!("cargo:rerun-if-changed=client/src/components/ProfileNav.vue");
     println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
 

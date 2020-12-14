@@ -8,8 +8,14 @@ pub async fn recent_messages(pool: Pool, channel_id: super::ChannelID) -> Result
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         SELECT timestamp, COALESCE(author, 0), content
-        FROM Message
-        WHERE channel_id = $1
+        FROM (
+            SELECT *
+            FROM Message
+            WHERE channel_id = $1
+            ORDER BY message_id DESC
+            LIMIT 50
+        ) Temp
+        ORDER BY message_id ASC
     ").await?;
     conn.query(&stmt, &[&channel_id]).await.map_err(|e| e.into())
 }

@@ -10,8 +10,6 @@ pub struct UserInfo {
     pub picture: String
 }
 
-// TODO: Maybe add overloads that take database connections
-
 pub async fn user_info(pool: Pool, user_id: UserID) -> Result<Option<UserInfo>, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("

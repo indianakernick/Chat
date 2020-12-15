@@ -1,11 +1,14 @@
 use tokio::sync::mpsc;
 use log::{debug, error};
 use deadpool_postgres::Pool;
-use std::collections::HashMap;
 use futures::{FutureExt, StreamExt};
 use warp::ws::{Ws, WebSocket, Message};
+use std::collections::hash_map::{HashMap, Entry};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
-use crate::database::{UserID, GroupID, valid_group, SessionID, session_user_id};
+use crate::database::{
+    UserID, GroupID, ChannelID, SessionID, valid_group, session_user_id,
+    group_channel_ids
+};
 
 pub type ConnID = usize;
 static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
@@ -13,37 +16,19 @@ static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 
 pub struct Group {
-    // TODO: Store channels
-    // channels: Vec<ChannelID>,
+    // Could use a HashSet for the channels but a Vec is probably faster
+    // considering that each group will probably have around 5-10 channels at
+    // the most.
+    pub channels: Vec<ChannelID>,
     pub users: HashMap<ConnID, Sender>,
 }
 
 type GroupMap = HashMap<GroupID, Group>;
 type Groups = Arc<tokio::sync::RwLock<GroupMap>>;
 
-fn group_map_insert(map: &mut GroupMap, group_id: GroupID, conn_id: ConnID, ch_tx: Sender) {
-    map
-        .entry(group_id)
-        .or_insert_with(|| {
-            // TODO: get channels
-            Group { users: HashMap::new() }
-        })
-        .users
-        .insert(conn_id, ch_tx);
-}
-
-fn group_map_remove(map: &mut GroupMap, group_id: GroupID, conn_id: ConnID) {
-    let users = &mut map.get_mut(&group_id).unwrap().users;
-    users.remove(&conn_id);
-    if users.is_empty() {
-        map.remove(&group_id);
-    }
-}
-
 #[derive(Clone)]
 pub struct SocketContext {
     pool: Pool,
-    //conns: Connections,
     groups: Groups,
 }
 
@@ -51,7 +36,6 @@ impl SocketContext {
     pub fn new(pool: Pool) -> SocketContext {
         SocketContext {
             pool,
-            //conns: Connections::default(),
             groups: Groups::default()
         }
     }
@@ -115,7 +99,26 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
     // Add the connection to the hashmap, saving the sending end of the queue.
     // Putting messages onto the queue will cause them to eventually be
     // processed above and sent over the socket.
-    group_map_insert(&mut *sock_ctx.groups.write().await, conn_ctx.group_id, conn_ctx.conn_id, ch_tx);
+    {
+        let mut guard = sock_ctx.groups.write().await;
+        match guard.entry(conn_ctx.group_id) {
+            Entry::Vacant(entry) => {
+                let channels = match group_channel_ids(sock_ctx.pool.clone(), conn_ctx.group_id).await {
+                    Ok(c) => c,
+                    Err(e) => {
+                        error!("{}", e);
+                        return;
+                    }
+                };
+                let mut users = HashMap::new();
+                users.insert(conn_ctx.conn_id, ch_tx);
+                entry.insert(Group { channels, users });
+            },
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().users.insert(conn_ctx.conn_id, ch_tx);
+            }
+        }
+    }
 
     // Handle each message received from the socket.
     while let Some(result) = ws_rx.next().await {
@@ -139,5 +142,14 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
     }
 
     debug!("Socket disconnected: {}", conn_ctx.conn_id);
-    group_map_remove(&mut *sock_ctx.groups.write().await, conn_ctx.group_id, conn_ctx.conn_id);
+    let mut guard = sock_ctx.groups.write().await;
+    let mut entry = match guard.entry(conn_ctx.group_id) {
+        Entry::Occupied(entry) => entry,
+        Entry::Vacant(_) => panic!()
+    };
+    let users = &mut entry.get_mut().users;
+    users.remove(&conn_id);
+    if users.is_empty() {
+        entry.remove();
+    }
 }

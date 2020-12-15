@@ -89,13 +89,13 @@ pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp:
 }
 
 pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let ctx = handlers::SocketContext::new(pool);
+    let ctx = crate::socket::SocketContext::new(pool);
 
     warp::path!("api" / "socket" / GroupID)
         .and(warp::ws())
         .and(warp::cookie("session_id"))
         .and(warp::any().map(move || ctx.clone()))
-        .and_then(handlers::upgrade)
+        .and_then(crate::socket::upgrade)
         .recover(rejection)
 }
 

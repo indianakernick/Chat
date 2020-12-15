@@ -3,6 +3,7 @@ mod handlers;
 mod error;
 mod database;
 mod utils;
+mod socket;
 
 use warp::Filter;
 use deadpool_postgres::{Pool, Manager};

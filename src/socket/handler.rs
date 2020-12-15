@@ -1,13 +1,10 @@
-use log::debug;
 use warp::ws::Message;
 use log::{error, debug};
 use std::time::SystemTime;
-use deadpool_postgres::Pool;
 use serde::{Serialize, Deserialize};
-use super::upgrade::ConnectionContext;
-use crate::error::{DatabaseError};
-use super::upgrade::{Sender, Group};
-use crate::database::{UserID, ChannelID, create_message, recent_messages, valid_group_channel};
+use deadpool_postgres::{Pool, PoolError};
+use super::upgrade::{Sender, Group, ConnectionContext};
+use crate::database::{UserID, ChannelID, create_message, recent_messages};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
@@ -96,10 +93,10 @@ impl<'a> MessageContext<'a> {
 
         let result = match client_message {
             ClientMessage::PostMessage { content, channel_id } => {
-                self.handle_post_message(content, channel_id).await
+                self.post_message(content, channel_id).await
             },
             ClientMessage::RequestRecentMessages { channel_id } => {
-                self.handle_request_recent_messages(channel_id).await
+                self.request_recent_messages(channel_id).await
             }
         };
 
@@ -109,12 +106,13 @@ impl<'a> MessageContext<'a> {
         }
     }
 
-    async fn handle_post_message(&self, content: String, channel_id: ChannelID) -> Result<(), DatabaseError> {
+    async fn post_message(&self, content: String, channel_id: ChannelID)
+        -> Result<(), PoolError>
+    {
         let time = SystemTime::now();
         let timestamp = as_timestamp(time);
 
-        // TODO: Use self.group.channels
-        if !valid_group_channel(self.pool.clone(), self.ctx.group_id, channel_id).await? {
+        if !self.group.channels.contains(&channel_id) {
             self.reply_error("Invalid channel_id");
         }
 
@@ -135,7 +133,10 @@ impl<'a> MessageContext<'a> {
                 debug!("Echoing back to ({}): {}", self.ctx.conn_id, echo_response);
                 send_message(ch_tx, echo_response.clone());
             } else {
-                debug!("Forwarding message from ({}) to ({}): {}", self.ctx.conn_id, other_conn_id, peer_response);
+                debug!(
+                    "Forwarding message from ({}) to ({}): {}",
+                    self.ctx.conn_id, other_conn_id, peer_response
+                );
                 send_message(ch_tx, peer_response.clone());
             }
         }
@@ -143,9 +144,10 @@ impl<'a> MessageContext<'a> {
         create_message(self.pool.clone(), time, self.ctx.user_id, content, channel_id).await
     }
 
-    async fn handle_request_recent_messages(&self, channel_id: ChannelID) -> Result<(), DatabaseError> {
-        // TODO: Use self.group.channels
-        if !valid_group_channel(self.pool.clone(), self.ctx.group_id, channel_id).await? {
+    async fn request_recent_messages(&self, channel_id: ChannelID)
+        -> Result<(), PoolError>
+    {
+        if !self.group.channels.contains(&channel_id) {
             self.reply_error("Invalid channel_id");
         }
 

@@ -4,11 +4,11 @@
     <img class="message-picture" :src="userInfo.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
     <div class="message-right">
       <div>
-        <span class="message-name" :class="{'deleted': deleted}">{{userInfo.name}}</span>
+        <span class="message-name" :class="{'deleted': deleted}">{{ userInfo.name }}</span>
         -
-        <span class="message-time">{{formattedTime}}</span>
+        <span class="message-time">{{ formattedTime }}</span>
       </div>
-      <span class="message-content">{{content}}</span>
+      <span class="message-content">{{ content }}</span>
     </div>
   </div>
 </template>
@@ -43,8 +43,8 @@ export default {
 
   created() {
     this.$watch(
-        () => [this.timestamp, this.updateTime],
-        () => this.formattedTime = this.formatTime()
+      () => [this.timestamp, this.updateTime],
+      () => this.formattedTime = this.formatTime()
     );
   },
 

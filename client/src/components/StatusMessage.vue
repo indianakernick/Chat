@@ -1,6 +1,6 @@
 <template>
   <div>
-    <span>{{status}}</span>
+    <span>{{ status }}</span>
   </div>
 </template>
 

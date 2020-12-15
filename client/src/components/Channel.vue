@@ -1,5 +1,5 @@
 <template>
-  <div class="channel" @click="clicked">{{name}}</div>
+  <div class="channel" @click="clicked">{{ name }}</div>
 </template>
 
 <script>

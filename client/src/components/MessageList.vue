@@ -2,11 +2,11 @@
   <template v-if="loaded">
     <div id="message-list">
       <Message
-          v-for="message in messages"
-          :timestamp="message.timestamp"
-          :userInfo="message.userInfo"
-          :content="message.content"
-          :sending="message.sending"
+        v-for="message in messages"
+        :timestamp="message.timestamp"
+        :userInfo="message.userInfo"
+        :content="message.content"
+        :sending="message.sending"
       />
     </div>
   </template>

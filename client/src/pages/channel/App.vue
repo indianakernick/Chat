@@ -3,12 +3,12 @@
   <ProfileNav :userInfo="userInfo"/>
   <ChannelList @channelSelected="channelSelected"/>
   <MessageList
-      v-for="channelId in channelIds"
-      :key="channelId"
-      v-show="currentChannelId === channelId"
-      :ref="list => messageLists[channelId] = list"
-      :userInfo="userInfo"
-      :userInfoCache="userInfoCache"
+    v-for="channelId in channelIds"
+    :key="channelId"
+    v-show="currentChannelId === channelId"
+    :ref="list => messageLists[channelId] = list"
+    :userInfo="userInfo"
+    :userInfoCache="userInfoCache"
   />
   <MessageSender @sendMessage="sendMessage"/>
 </template>

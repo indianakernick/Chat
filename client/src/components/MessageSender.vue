@@ -1,7 +1,7 @@
 <template>
   <input
-      type="text"
-      @keypress.enter="pressEnter($event.target)"
+    type="text"
+    @keypress.enter="pressEnter($event.target)"
   />
 </template>
 

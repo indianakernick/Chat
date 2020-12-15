@@ -1,4 +1,4 @@
 mod handler;
 mod upgrade;
 
-pub use upgrade::{Connections, upgrade};
+pub use upgrade::{SocketContext, upgrade};

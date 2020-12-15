@@ -1,11 +1,13 @@
 use log::debug;
 use warp::ws::Message;
+use log::{error, debug};
 use std::time::SystemTime;
 use deadpool_postgres::Pool;
 use serde::{Serialize, Deserialize};
-use crate::error::{Error, DatabaseError};
-use super::upgrade::{Sender, ConnectionMap};
-use crate::database::{UserID, ChannelID, GroupID, create_message, recent_messages, valid_group_channel};
+use super::upgrade::ConnectionContext;
+use crate::error::{DatabaseError};
+use super::upgrade::{Sender, Group};
+use crate::database::{UserID, ChannelID, create_message, recent_messages, valid_group_channel};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
@@ -35,7 +37,7 @@ struct GenericRecentMessage {
 #[serde(tag="type")]
 enum ServerMessage {
     #[serde(rename="error")]
-    Error { message: String },
+    Error { message: &'static str },
     #[serde(rename="message receipt")]
     MessageReceipt { timestamp: u64, channel_id: ChannelID },
     #[serde(rename="recent message")]
@@ -48,13 +50,11 @@ fn as_timestamp(time: SystemTime) -> u64 {
     time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
 }
 
-pub struct MessageHandler<'a> {
-    pub conn_id: usize,
-    pub user_id: UserID,
-    pub group_id: GroupID,
-    pub message: Message,
-    pub conns: &'a ConnectionMap,
+pub struct MessageContext<'a> {
+    pub ctx: &'a ConnectionContext,
+    pub group: &'a Group,
     pub pool: &'a Pool,
+    pub message: Message,
 }
 
 fn send_message(ch_tx: &Sender, message: String) {
@@ -63,58 +63,59 @@ fn send_message(ch_tx: &Sender, message: String) {
     }
 }
 
-fn send_error(ch_tx: &Sender, error: String) {
+fn send_error(ch_tx: &Sender, error: &'static str) {
     let response = serde_json::to_string(&ServerMessage::Error {
         message: error
     }).unwrap();
     send_message(ch_tx, response);
 }
 
-impl<'a> MessageHandler<'a> {
-    fn reply_error(&self, error: String) {
-        if let Some(ch_tx) = self.conns.get(&self.conn_id) {
-            send_error(ch_tx, error);
-        }
+impl<'a> MessageContext<'a> {
+    fn reply_error(&self, error: &'static str) {
+        send_error(&self.group.users[&self.ctx.conn_id], error);
     }
 
     fn reply_message(&self, message: String) {
-        if let Some(ch_tx) = self.conns.get(&self.conn_id) {
-            send_message(ch_tx, message);
-        }
+        send_message(&self.group.users[&self.ctx.conn_id], message);
     }
 
     pub async fn handle(self) {
-        if let Err(e) = self.handle_error().await {
-            self.reply_error(e.to_string());
-        }
-    }
-
-    async fn handle_error(&self) -> Result<(), Error> {
         let message = match self.message.to_str() {
             Ok(m) => m,
-            Err(_) => return Ok(())
+            Err(_) => return,
         };
-        let client_message = serde_json::from_str::<ClientMessage>(message)?;
 
-        Ok(match client_message {
+        let client_message = match serde_json::from_str::<ClientMessage>(message) {
+            Ok(m) => m,
+            Err(e) => {
+                error!("{}", e);
+                self.reply_error("JSON");
+                return;
+            }
+        };
+
+        let result = match client_message {
             ClientMessage::PostMessage { content, channel_id } => {
-                self.handle_post_message(content, channel_id).await?
+                self.handle_post_message(content, channel_id).await
             },
             ClientMessage::RequestRecentMessages { channel_id } => {
-                self.handle_request_recent_messages(channel_id).await?
+                self.handle_request_recent_messages(channel_id).await
             }
-        })
+        };
+
+        if let Err(e) = result {
+            error!("{}", e);
+            self.reply_error("Database");
+        }
     }
 
     async fn handle_post_message(&self, content: String, channel_id: ChannelID) -> Result<(), DatabaseError> {
         let time = SystemTime::now();
         let timestamp = as_timestamp(time);
 
-        // TODO: Is there something we can do about this latency?
-        // We need to check that the channel_id is valid before we can continue.
-        // Perhaps use a memory cache on top of the database...?
-        if !valid_group_channel(self.pool.clone(), self.group_id, channel_id).await? {
-            self.reply_error("Invalid channel_id".to_owned());
+        // TODO: Use self.group.channels
+        if !valid_group_channel(self.pool.clone(), self.ctx.group_id, channel_id).await? {
+            self.reply_error("Invalid channel_id");
         }
 
         let echo_response = serde_json::to_string(&ServerMessage::MessageReceipt {
@@ -124,27 +125,28 @@ impl<'a> MessageHandler<'a> {
 
         let peer_response = serde_json::to_string(&ServerMessage::RecentMessage(RecentMessage {
             timestamp,
-            author: self.user_id,
+            author: self.ctx.user_id,
             content: content.clone(),
             channel_id,
         })).unwrap();
 
-        for (&other_conn_id, ch_tx) in self.conns.iter() {
-            if other_conn_id == self.conn_id {
-                debug!("Echoing back to ({}): {}", self.conn_id, echo_response);
+        for (&other_conn_id, ch_tx) in self.group.users.iter() {
+            if other_conn_id == self.ctx.conn_id {
+                debug!("Echoing back to ({}): {}", self.ctx.conn_id, echo_response);
                 send_message(ch_tx, echo_response.clone());
             } else {
-                debug!("Forwarding message from ({}) to ({}): {}", self.conn_id, other_conn_id, peer_response);
+                debug!("Forwarding message from ({}) to ({}): {}", self.ctx.conn_id, other_conn_id, peer_response);
                 send_message(ch_tx, peer_response.clone());
             }
         }
 
-        create_message(self.pool.clone(), time, self.user_id, content, channel_id).await
+        create_message(self.pool.clone(), time, self.ctx.user_id, content, channel_id).await
     }
 
     async fn handle_request_recent_messages(&self, channel_id: ChannelID) -> Result<(), DatabaseError> {
-        if !valid_group_channel(self.pool.clone(), self.group_id, channel_id).await? {
-            self.reply_error("Invalid channel_id".to_owned());
+        // TODO: Use self.group.channels
+        if !valid_group_channel(self.pool.clone(), self.ctx.group_id, channel_id).await? {
+            self.reply_error("Invalid channel_id");
         }
 
         let rows = recent_messages(self.pool.clone(), channel_id).await?;

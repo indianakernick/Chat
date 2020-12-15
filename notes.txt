@@ -38,7 +38,7 @@ npm run build
 Google API console
 https://console.developers.google.com/apis/credentials?project=chat-297602
 
-Creating the anonymous image
+Create anonymous image
 curl "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y&s=512" -o anonymous_512.jpg
 gm convert anonymous_512.jpg -resize 32x32 anonymous_big.png
 pngcrush -brute -rem text anonymous_big.png anonymous.png

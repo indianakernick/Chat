@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import Message, { DELETED_USER_INFO } from "./Message.vue";
+import Message from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
 
 // For plain javascript files, the convention seems to be putting them in
@@ -29,44 +29,19 @@ export default {
   },
 
   props: {
-    userInfo: Object
+    userInfo: Object,
+    userInfoCache: Object
   },
 
   data() {
     return {
       messages: [],
       status: "Loading...",
-      loaded: false,
-      userInfoCache: {
-        0: DELETED_USER_INFO,
-        [USER_ID]: this.userInfo
-      }
+      loaded: false
     }
   },
 
   methods: {
-    getUserInfo(id) {
-      if (!this.userInfoCache.hasOwnProperty(id)) {
-        this.userInfoCache[id] = {
-          name: "",
-          picture: ""
-        };
-
-        const req = new XMLHttpRequest();
-
-        req.onload = () => {
-          this.userInfoCache[id].name = req.response.name;
-          this.userInfoCache[id].picture = req.response.picture;
-        };
-
-        req.responseType = "json";
-        req.open("GET", `/api/user/${id}`);
-        req.send();
-      }
-
-      return this.userInfoCache[id];
-    },
-
     recentMessage(message) {
       const userInfo = this.getUserInfo(message.author);
       this.messages.push({
@@ -97,7 +72,7 @@ export default {
       this.messages = message.messages.map(msg => {
         return {
           timestamp: msg.timestamp,
-          userInfo: this.getUserInfo(msg.author),
+          userInfo: this.userInfoCache.getUserInfo(msg.author),
           content: msg.content,
           sending: false
         };

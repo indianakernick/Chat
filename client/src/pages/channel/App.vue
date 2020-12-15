@@ -2,13 +2,13 @@
   <GroupTitle/>
   <ProfileNav :userInfo="userInfo"/>
   <ChannelList @channelSelected="channelSelected"/>
-  <!-- TODO: Each message list is storing its own user info cache -->
   <MessageList
       v-for="channelId in channelIds"
-      v-show="currentChannelId === channelId"
-      :userInfo="userInfo"
       :key="channelId"
+      v-show="currentChannelId === channelId"
       :ref="list => messageLists[channelId] = list"
+      :userInfo="userInfo"
+      :userInfoCache="userInfoCache"
   />
   <MessageSender @sendMessage="sendMessage"/>
 </template>
@@ -23,6 +23,37 @@ import MessageSender from "@/components/MessageSender.vue";
 const INITIAL_RETRY_DELAY = 125;
 const MAX_RETRY_DELAY = 16000;
 
+import {DELETED_USER_INFO} from "@/components/Message";
+
+const userInfoCache = {
+  cache: {
+    0: DELETED_USER_INFO
+  },
+
+  getUserInfo(userId) {
+    if (!this.cache.hasOwnProperty(userId)) {
+      this.cache[userId] = {
+        name: "",
+        picture: ""
+      };
+
+      const req = new XMLHttpRequest();
+
+      req.onload = () => {
+        this.cache[userId].name = req.response.name;
+        this.cache[userId].picture = req.response.picture;
+      };
+
+      req.responseType = "json";
+      req.open("GET", `/api/user/${userId}`);
+      req.send();
+    }
+
+    return this.cache[userId];
+  },
+};
+
+
 export default {
   name: "App",
 
@@ -35,8 +66,10 @@ export default {
   },
 
   data() {
+    userInfoCache.cache[USER_ID] = USER_INFO;
     return {
       userInfo: USER_INFO,
+      userInfoCache: userInfoCache,
       currentChannelId: CHANNEL_ID,
       channelNames: CHANNEL_LIST.reduce((names, info) => {
         names[info.channel_id] = info.name;

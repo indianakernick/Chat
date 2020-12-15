@@ -5,8 +5,10 @@ fn main() {
     println!("cargo:rerun-if-changed=client/vue.config.js");
 
     println!("cargo:rerun-if-changed=client/public/channel.html");
-    println!("cargo:rerun-if-changed=client/src/pages/channel/App.vue");
-    println!("cargo:rerun-if-changed=client/src/pages/channel/main.js");
+    println!("cargo:rerun-if-changed=client/public/favicon.ico");
+    println!("cargo:rerun-if-changed=client/public/login.html");
+
+    println!("cargo:rerun-if-changed=client/src/assets/anonymous.png");
 
     println!("cargo:rerun-if-changed=client/src/components/Channel.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelList.vue");
@@ -17,8 +19,8 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/ProfileNav.vue");
     println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
 
-    // TODO: This is not just running a script, this is causing the server to be
-    // recompiled each time the client code changes.
+    println!("cargo:rerun-if-changed=client/src/pages/channel/App.vue");
+    println!("cargo:rerun-if-changed=client/src/pages/channel/main.js");
 
     let build = match std::env::var("PROFILE").unwrap().as_str() {
         "debug" => "build-dev",

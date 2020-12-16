@@ -1,8 +1,8 @@
 <template>
   <div class="group-title">
     <!-- https://stackoverflow.com/a/61042200/4093378 -->
-    <img :src="info.picture" alt="" width="64" height="64" referrerpolicy="no-referrer"/>
-    <span>{{ info.name }}</span>
+    <img :src="groupInfo.picture" alt="" width="64" height="64" referrerpolicy="no-referrer"/>
+    <span>{{ groupInfo.name }}</span>
   </div>
 </template>
 
@@ -10,10 +10,8 @@
 export default {
   name: "GroupTitle",
 
-  data() {
-    return {
-      info: GROUP_INFO
-    };
+  props: {
+    groupInfo: Object
   }
 };
 </script>

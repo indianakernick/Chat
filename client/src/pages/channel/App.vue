@@ -1,12 +1,12 @@
 <template>
-  <GroupTitle/>
+  <GroupTitle :groupInfo="groupInfo"/>
   <ProfileNav :userInfo="userInfo"/>
-  <ChannelList @channelSelected="channelSelected"/>
+  <ChannelList @channelSelected="channelSelected" :channelList="channelList"/>
   <MessageList
-    v-for="channelId in channelIds"
-    :key="channelId"
-    v-show="currentChannelId === channelId"
-    :ref="list => messageLists[channelId] = list"
+    v-for="channel in channelList"
+    :key="channel.channel_id"
+    v-show="currentChannelId === channel.channel_id"
+    :ref="list => messageLists[channel.channel_id] = list"
     :userInfo="userInfo"
     :userInfoCache="userInfoCache"
   />
@@ -68,17 +68,11 @@ export default {
   data() {
     userInfoCache.cache[USER_ID] = USER_INFO;
     return {
+      groupInfo: GROUP_INFO,
       userInfo: USER_INFO,
       userInfoCache: userInfoCache,
       currentChannelId: CHANNEL_ID,
-      channelNames: CHANNEL_LIST.reduce((names, info) => {
-        names[info.channel_id] = info.name;
-        return names;
-      }, {}),
-      channelIds: CHANNEL_LIST.reduce((ids, info) => {
-        ids.push(info.channel_id);
-        return ids;
-      }, []),
+      channelList: CHANNEL_LIST,
       messageLists: {},
       retryDelay: INITIAL_RETRY_DELAY,
       connected: false
@@ -93,11 +87,12 @@ export default {
 
   methods: {
     channelSelected(channelId) {
-      console.assert(this.channelNames.hasOwnProperty(channelId));
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
-      // TODO: Make title reactively depend on group info
-      document.title = GROUP_INFO.name + "#" + this.channelNames[channelId];
+      const channelName = this.channelList.find(channel =>
+        channel.channel_id === channelId
+      );
+      document.title = this.groupInfo.name + "#" + channelName;
     },
 
     sendMessage(content) {
@@ -150,9 +145,9 @@ export default {
 
     requestRecent() {
       this.requestRecentFromChannel(this.currentChannelId);
-      for (const channelId of this.channelIds) {
-        if (channelId !== this.currentChannelId) {
-          this.requestRecentFromChannel(channelId);
+      for (const channel of this.channelList) {
+        if (channel.channel_id !== this.currentChannelId) {
+          this.requestRecentFromChannel(channel.channel_id);
         }
       }
     },

@@ -1,7 +1,7 @@
 <template>
   <div class="channel-list">
     <Channel
-      v-for="channel in channels"
+      v-for="channel in channelList"
       :channelId="channel.channel_id"
       :name="channel.name"
       @channelSelected="channelSelected"
@@ -23,10 +23,8 @@ export default {
     "channelSelected"
   ],
 
-  data() {
-    return {
-      channels: CHANNEL_LIST
-    };
+  props: {
+    channelList: Object
   },
 
   methods: {

@@ -36,6 +36,10 @@ fn generate_session_id() -> SessionID {
     }
 }
 
+macro_rules! creation_timeout {
+  () => {"INTERVAL '7 days'"}
+}
+
 pub async fn create_session(pool: Pool, user_id: super::UserID) -> Result<SessionID, Error> {
     let mut session_id = generate_session_id();
 
@@ -59,12 +63,12 @@ pub async fn session_user_id(pool: Pool, session_id: SessionID) -> Result<Option
     }
 
     let conn = pool.get().await?;
-    let stmt = conn.prepare("
+    let stmt = conn.prepare(concat!("
         SELECT user_id
         FROM Session
         WHERE session_id = $1
-        AND creation_time > NOW() - INTERVAL '7 days'
-    ").await?;
+        AND creation_time > NOW() - ", creation_timeout!()
+    )).await?;
 
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
 }
@@ -84,14 +88,13 @@ pub async fn session_info(pool: Pool, session_id: SessionID) -> Result<Option<Se
     }
 
     let conn = pool.get().await?;
-    // TODO: maybe use concat! to define INTERVAL '7 days' in one place
-    let stmt = conn.prepare("
+    let stmt = conn.prepare(concat!("
         SELECT Usr.user_id, name, picture
         FROM Usr
         JOIN Session ON Session.user_id = Usr.user_id
         WHERE session_id = $1
-        AND creation_time > NOW() - INTERVAL '7 days'
-    ").await?;
+        AND creation_time > NOW() - ", creation_timeout!()
+    )).await?;
 
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| {
         SessionInfo {

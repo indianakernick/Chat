@@ -40,6 +40,7 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .recover(rejection)
 }
 
+// TODO: I don't think group or group_channels are necessary any more...
 pub fn group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "group" / GroupID)
         .and(warp::get())

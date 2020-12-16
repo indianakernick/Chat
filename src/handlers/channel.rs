@@ -1,8 +1,7 @@
 use askama::Template;
 use serde::Serialize;
-use crate::database::*;
+use crate::database as db;
 use deadpool_postgres::Pool;
-use futures::future;
 
 #[derive(Template)]
 #[template(path = "../client/dist/channel.html")]
@@ -11,27 +10,27 @@ struct ChannelTemplate {
     user_info: String,
     group_info: String,
     channel_list: String,
-    channel_id: ChannelID,
-    group_id: GroupID,
-    user_id: UserID
+    channel_id: db::ChannelID,
+    group_id: db::GroupID,
+    user_id: db::UserID,
 }
 
 #[derive(Serialize)]
 struct ChannelInfo {
-    channel_id: ChannelID,
-    name: String
+    channel_id: db::ChannelID,
+    name: String,
 }
 
 fn ser_json<T: Serialize>(value: &T) -> String {
     serde_json::to_string(value).unwrap().replace("</script>", "<\\/script>")
 }
 
-pub async fn channel(group_id: GroupID, channel_id: ChannelID, session_id: SessionID, pool: Pool)
+pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_id: db::SessionID, pool: Pool)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    let (group, channel_list, session) = future::join3(
-        group_info(pool.clone(), group_id),
-        group_channels(pool.clone(), group_id),
-        session_info(pool.clone(), session_id)
+    let (group, channel_list, session) = futures::future::join3(
+        db::group_info(pool.clone(), group_id),
+        db::group_channels(pool.clone(), group_id),
+        db::session_info(pool.clone(), session_id)
     ).await;
 
     let group = match group? {
@@ -70,7 +69,7 @@ pub async fn channel(group_id: GroupID, channel_id: ChannelID, session_id: Sessi
         )))
     };
 
-    let user_info = UserInfo {
+    let user_info = db::UserInfo {
         name: session.name,
         picture: session.picture
     };

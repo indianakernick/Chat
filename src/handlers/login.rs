@@ -5,12 +5,12 @@ use crate::utils::cache_long;
 #[derive(Template)]
 #[template(path = "../client/dist/login.html")]
 struct LoginTemplate {
-    google_auth_url: String
+    google_auth_url: String,
 }
 
 #[derive(Deserialize)]
 pub struct LoginQuery {
-    redirect: String
+    redirect: String,
 }
 
 pub async fn login(query: LoginQuery) -> Result<impl warp::Reply, warp::Rejection> {

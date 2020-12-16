@@ -28,7 +28,7 @@ pub async fn create_group(pool: Pool, name: String)
 #[derive(Serialize)]
 pub struct GroupInfo {
     pub name: String,
-    pub picture: String
+    pub picture: String,
 }
 
 /// Get information about a group
@@ -83,6 +83,7 @@ pub async fn group_channel_ids(pool: Pool, group_id: GroupID)
         .collect())
 }
 
+/// Check whether a group ID is valid
 pub async fn valid_group(pool: Pool, group_id: GroupID) -> Result<bool, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("

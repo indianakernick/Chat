@@ -51,7 +51,7 @@ pub struct AuthSuccess {
 
 #[derive(Deserialize)]
 pub struct AuthFail {
-    error: String
+    error: String,
 }
 
 #[derive(Serialize)]
@@ -60,7 +60,7 @@ struct TokenRequest {
     client_secret: &'static str,
     code: String,
     grant_type: &'static str,
-    redirect_uri: &'static str
+    redirect_uri: &'static str,
 }
 
 #[derive(Deserialize)]
@@ -107,7 +107,7 @@ struct Certificate {
 pub struct Certs {
     keys: Vec<Certificate>,
     #[serde(skip_deserializing)]
-    expire: SystemTime
+    expire: SystemTime,
 }
 
 impl Default for Certs {
@@ -159,7 +159,7 @@ pub struct Claims {
 
     // TODO: I feel like this might not belong here
     #[serde(skip)]
-    pub redirect: String
+    pub redirect: String,
 }
 
 fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, Error> {

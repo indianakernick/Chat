@@ -7,7 +7,7 @@ pub type UserID = i32;
 #[derive(Serialize)]
 pub struct UserInfo {
     pub name: String,
-    pub picture: String
+    pub picture: String,
 }
 
 pub async fn user_info(pool: Pool, user_id: UserID) -> Result<Option<UserInfo>, Error> {

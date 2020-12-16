@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS Session (
     session_id CHAR(16) COLLATE "C" NOT NULL,
     creation_time TIMESTAMPTZ NOT NULL,
     user_id INTEGER NOT NULL,
-    -- TODO: Maybe tie some client info to the session
 
     PRIMARY KEY (session_id),
 

@@ -1,32 +1,32 @@
 use warp::ws::Message;
 use log::{error, debug};
 use std::time::SystemTime;
+use crate::database as db;
 use serde::{Serialize, Deserialize};
 use deadpool_postgres::{Pool, PoolError};
 use super::upgrade::{Sender, Group, ConnectionContext};
-use crate::database::{UserID, ChannelID, create_message, recent_messages};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
 enum ClientMessage {
     #[serde(rename="post message")]
-    PostMessage { content: String, channel_id: ChannelID },
+    PostMessage { content: String, channel_id: db::ChannelID },
     #[serde(rename="request recent messages")]
-    RequestRecentMessages { channel_id: ChannelID }
+    RequestRecentMessages { channel_id: db::ChannelID }
 }
 
 #[derive(Serialize)]
 struct RecentMessage {
     timestamp: u64,
-    author: UserID,
+    author: db::UserID,
     content: String,
-    channel_id: ChannelID
+    channel_id: db::ChannelID,
 }
 
 #[derive(Serialize)]
 struct GenericRecentMessage {
     timestamp: u64,
-    author: UserID,
+    author: db::UserID,
     content: String,
 }
 
@@ -36,11 +36,11 @@ enum ServerMessage {
     #[serde(rename="error")]
     Error { message: &'static str },
     #[serde(rename="message receipt")]
-    MessageReceipt { timestamp: u64, channel_id: ChannelID },
+    MessageReceipt { timestamp: u64, channel_id: db::ChannelID },
     #[serde(rename="recent message")]
     RecentMessage(RecentMessage),
     #[serde(rename="recent message list")]
-    RecentMessageList { channel_id: ChannelID, messages: Vec<GenericRecentMessage> }
+    RecentMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> }
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -106,7 +106,7 @@ impl<'a> MessageContext<'a> {
         }
     }
 
-    async fn post_message(&self, content: String, channel_id: ChannelID)
+    async fn post_message(&self, content: String, channel_id: db::ChannelID)
         -> Result<(), PoolError>
     {
         let time = SystemTime::now();
@@ -141,17 +141,17 @@ impl<'a> MessageContext<'a> {
             }
         }
 
-        create_message(self.pool.clone(), time, self.ctx.user_id, content, channel_id).await
+        db::create_message(self.pool.clone(), time, self.ctx.user_id, content, channel_id).await
     }
 
-    async fn request_recent_messages(&self, channel_id: ChannelID)
+    async fn request_recent_messages(&self, channel_id: db::ChannelID)
         -> Result<(), PoolError>
     {
         if !self.group.channels.contains(&channel_id) {
             self.reply_error("Invalid channel_id");
         }
 
-        let rows = recent_messages(self.pool.clone(), channel_id).await?;
+        let rows = db::recent_messages(self.pool.clone(), channel_id).await?;
 
         let response = serde_json::to_string(&ServerMessage::RecentMessageList {
             channel_id,

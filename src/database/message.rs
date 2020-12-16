@@ -1,10 +1,11 @@
+use super::{ChannelID, UserID};
 use deadpool_postgres::{Pool, PoolError};
 use deadpool_postgres::tokio_postgres::Row;
 
 // Currently not needed
 // pub type MessageID = i32;
 
-pub async fn recent_messages(pool: Pool, channel_id: super::ChannelID) -> Result<Vec<Row>, PoolError> {
+pub async fn recent_messages(pool: Pool, channel_id: ChannelID) -> Result<Vec<Row>, PoolError> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         SELECT timestamp, COALESCE(author, 0), content
@@ -24,9 +25,9 @@ pub async fn recent_messages(pool: Pool, channel_id: super::ChannelID) -> Result
 pub async fn create_message(
     pool: Pool,
     time: std::time::SystemTime,
-    user_id: super::UserID,
+    user_id: UserID,
     content: String,
-    channel_id: super::ChannelID
+    channel_id: ChannelID
 ) -> Result<(), PoolError> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("

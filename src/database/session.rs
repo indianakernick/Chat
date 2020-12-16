@@ -1,12 +1,11 @@
 use rand::Rng;
+use super::UserID;
 use crate::error::Error;
 use deadpool_postgres::Pool;
 
 pub const SESSION_ID_LENGTH: usize = 16;
 
 pub type SessionID = String;
-// TODO: Maybe make the session ID a byte array
-// pub type SessionID = [u8; SESSION_ID_LENGTH];
 
 /// Generates a [base64url][1] encoded, cryptographically secure,
 /// random string.
@@ -40,7 +39,7 @@ macro_rules! creation_timeout {
   () => {"INTERVAL '7 days'"}
 }
 
-pub async fn create_session(pool: Pool, user_id: super::UserID) -> Result<SessionID, Error> {
+pub async fn create_session(pool: Pool, user_id: UserID) -> Result<SessionID, Error> {
     let mut session_id = generate_session_id();
 
     let conn = pool.get().await?;
@@ -57,7 +56,7 @@ pub async fn create_session(pool: Pool, user_id: super::UserID) -> Result<Sessio
     Ok(session_id)
 }
 
-pub async fn session_user_id(pool: Pool, session_id: SessionID) -> Result<Option<super::UserID>, Error> {
+pub async fn session_user_id(pool: Pool, session_id: SessionID) -> Result<Option<UserID>, Error> {
     if session_id.len() != SESSION_ID_LENGTH {
         return Ok(None);
     }
@@ -77,9 +76,9 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct SessionInfo {
-    pub user_id: super::UserID,
+    pub user_id: UserID,
     pub name: String,
-    pub picture: String
+    pub picture: String,
 }
 
 pub async fn session_info(pool: Pool, session_id: SessionID) -> Result<Option<SessionInfo>, Error> {

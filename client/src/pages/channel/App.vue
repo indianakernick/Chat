@@ -21,7 +21,8 @@ import MessageList from "@/components/MessageList.vue";
 import MessageSender from "@/components/MessageSender.vue";
 
 const INITIAL_RETRY_DELAY = 125;
-const MAX_RETRY_DELAY = 16000;
+const VISIBLE_MAX_RETRY_DELAY = 8000;
+const HIDDEN_MAX_RETRY_DELAY = 32000;
 
 import {DELETED_USER_INFO} from "@/components/Message";
 
@@ -106,11 +107,11 @@ export default {
     },
 
     getRetryDelay() {
-      // TODO: Retry less often when the page is invisible
-      // Also maybe show a countdown
-      // https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
+      const maximum = document.visibilityState === "hidden"
+        ? HIDDEN_MAX_RETRY_DELAY
+        : VISIBLE_MAX_RETRY_DELAY;
       const delay = this.retryDelay;
-      this.retryDelay = Math.min(MAX_RETRY_DELAY, 2 * this.retryDelay);
+      this.retryDelay = Math.min(maximum, 2 * this.retryDelay);
       return delay;
     },
 

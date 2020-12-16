@@ -43,7 +43,7 @@ export default {
 
   methods: {
     recentMessage(message) {
-      const userInfo = this.getUserInfo(message.author);
+      const userInfo = this.userInfoCache.getUserInfo(message.author);
       this.messages.push({
         timestamp: message.timestamp,
         userInfo: userInfo,
@@ -89,6 +89,10 @@ export default {
         content: content,
         sending: true
       });
+    },
+
+    createEmpty() {
+      this.loaded = true;
     }
   }
 };

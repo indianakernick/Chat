@@ -12,7 +12,9 @@ enum ClientMessage {
     #[serde(rename="post message")]
     PostMessage { content: String, channel_id: db::ChannelID },
     #[serde(rename="request recent messages")]
-    RequestRecentMessages { channel_id: db::ChannelID }
+    RequestRecentMessages { channel_id: db::ChannelID },
+    #[serde(rename="create channel")]
+    CreateChannel { name: String },
 }
 
 #[derive(Serialize)]
@@ -40,7 +42,9 @@ enum ServerMessage {
     #[serde(rename="recent message")]
     RecentMessage(RecentMessage),
     #[serde(rename="recent message list")]
-    RecentMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> }
+    RecentMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> },
+    #[serde(rename="channel created")]
+    ChannelCreated { channel_id: db::ChannelID, name: String },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -97,7 +101,10 @@ impl<'a> MessageContext<'a> {
             },
             ClientMessage::RequestRecentMessages { channel_id } => {
                 self.request_recent_messages(channel_id).await
-            }
+            },
+            ClientMessage::CreateChannel { name } => {
+                self.create_channel(name).await
+            },
         };
 
         if let Err(e) = result {
@@ -165,6 +172,24 @@ impl<'a> MessageContext<'a> {
         }).unwrap();
 
         self.reply_message(response);
+
+        Ok(())
+    }
+
+    async fn create_channel(&self, name: String) -> Result<(), PoolError> {
+        let channel_id = db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await?;
+
+        // TODO: Need to update channels vector
+        // self.group.channels.push(channel_id);
+
+        let response = serde_json::to_string(&ServerMessage::ChannelCreated {
+            channel_id,
+            name
+        }).unwrap();
+
+        for (_, ch_tx) in self.group.users.iter() {
+            send_message(ch_tx, response.clone());
+        }
 
         Ok(())
     }

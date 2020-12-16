@@ -1,7 +1,11 @@
 <template>
   <GroupTitle :groupInfo="groupInfo"/>
   <ProfileNav :userInfo="userInfo"/>
-  <ChannelList @channelSelected="channelSelected" :channelList="channelList"/>
+  <ChannelList
+    @selectChannel="selectChannel"
+    @createChannel="createChannel"
+    :channelList="channelList"
+  />
   <MessageList
     v-for="channel in channelList"
     :key="channel.channel_id"
@@ -87,12 +91,12 @@ export default {
   },
 
   methods: {
-    channelSelected(channelId) {
+    selectChannel(channelId) {
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
       const channelName = this.channelList.find(channel =>
         channel.channel_id === channelId
-      );
+      ).name;
       document.title = this.groupInfo.name + "#" + channelName;
     },
 
@@ -103,6 +107,14 @@ export default {
         type: "post message",
         content: content,
         channel_id: this.currentChannelId
+      }));
+    },
+
+    createChannel(name) {
+      if (!this.connected) return;
+      this.socket.send(JSON.stringify({
+        type: "create channel",
+        name: name
       }));
     },
 
@@ -198,6 +210,15 @@ export default {
 
         case "recent message list":
           this.messageLists[message.channel_id].recentMessageList(message);
+          break;
+
+        case "channel created":
+          this.channelList.push({
+            channel_id: message.channel_id, name: message.name
+          });
+          // TODO: Apparently v-for doesn't run immediately after the array changes...
+          // Need to work something out
+          setTimeout(() => this.messageLists[message.channel_id].createEmpty(), 100);
           break;
       }
     }

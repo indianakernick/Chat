@@ -12,12 +12,12 @@ export default {
   },
 
   emits: [
-    "channelSelected"
+    "selectChannel"
   ],
 
   methods: {
     clicked() {
-      this.$emit("channelSelected", this.channelId);
+      this.$emit("selectChannel", this.channelId);
     }
   }
 };

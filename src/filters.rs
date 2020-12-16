@@ -40,7 +40,8 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .recover(rejection)
 }
 
-// TODO: I don't think group or group_channels are necessary any more...
+// group and group_channels are currently unused but if we introduce some way to
+// navigate between groups then it may become necessary.
 pub fn group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "group" / GroupID)
         .and(warp::get())

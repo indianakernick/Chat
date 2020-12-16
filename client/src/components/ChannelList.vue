@@ -4,23 +4,29 @@
       v-for="channel in channelList"
       :channelId="channel.channel_id"
       :name="channel.name"
-      @channelSelected="channelSelected"
+      @selectChannel="selectChannel"
     />
+    <MessageSender @sendMessage="createChannel"/>
   </div>
 </template>
 
 <script>
 import Channel from "./Channel.vue";
+import MessageSender from "./MessageSender.vue";
+
+// TODO: Using the MessageSender is just a quick hack for testing
 
 export default {
   name: "ChannelList",
 
   components: {
-    Channel
+    Channel,
+    MessageSender
   },
 
   emits: [
-    "channelSelected"
+    "selectChannel",
+    "createChannel"
   ],
 
   props: {
@@ -28,8 +34,12 @@ export default {
   },
 
   methods: {
-    channelSelected(channelId) {
-      this.$emit("channelSelected", channelId);
+    selectChannel(channelId) {
+      this.$emit("selectChannel", channelId);
+    },
+
+    createChannel(name) {
+      this.$emit("createChannel", name);
     }
   }
 };

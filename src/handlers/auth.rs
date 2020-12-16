@@ -45,9 +45,8 @@ certificate expires.
 #[derive(Deserialize)]
 pub struct AuthSuccess {
     code: String,
-    state: String
-    // TODO: Do we need to check that scope is as expected?
-    // scope: String
+    state: String,
+    scope: String,
 }
 
 #[derive(Deserialize)]
@@ -74,7 +73,9 @@ struct TokenResponse {
     // refresh_token: String,
 }
 
-async fn request_id_token(client: &reqwest::Client, authorization_code: String) -> Result<TokenResponse, Error> {
+async fn request_id_token(client: &reqwest::Client, authorization_code: String)
+    -> Result<TokenResponse, Error>
+{
     let request = TokenRequest {
         client_id: include_str!("../../api/client_id.txt"),
         client_secret: include_str!("../../api/client_secret.txt"),
@@ -120,7 +121,9 @@ impl Default for Certs {
 
 pub type CertificateCache = std::sync::Arc<tokio::sync::Mutex<Certs>>;
 
-async fn update_cert_cache(client: &reqwest::Client, cached_certs: &mut Certs) -> Result<(), Error> {
+async fn update_cert_cache(client: &reqwest::Client, cached_certs: &mut Certs)
+    -> Result<(), Error>
+{
     let now = SystemTime::now();
     if cached_certs.expire > now {
         return Ok(());
@@ -196,7 +199,12 @@ fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, Error> {
     Err(JWTError::from(JWTErrorKind::InvalidAlgorithmName).into())
 }
 
-pub async fn auth_success(client: reqwest::Client, cache: CertificateCache, res: AuthSuccess) -> Result<Claims, warp::Rejection> {
+pub async fn auth_success(client: reqwest::Client, cache: CertificateCache, res: AuthSuccess)
+    -> Result<Claims, warp::Rejection>
+{
+    if res.scope != "profile https://www.googleapis.com/auth/userinfo.profile" {
+        return Err(warp::reject::not_found());
+    }
     let token = request_id_token(&client, res.code).await?;
     let mut certs = cache.lock().await;
     update_cert_cache(&client, &mut *certs).await?;

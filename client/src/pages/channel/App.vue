@@ -231,9 +231,7 @@ export default {
           this.channelList.push({
             channel_id: message.channel_id, name: message.name
           });
-          // TODO: Apparently v-for doesn't run immediately after the array changes...
-          // Need to work something out
-          setTimeout(() => this.messageLists[message.channel_id].createEmpty(), 100);
+          this.$nextTick(() => this.messageLists[message.channel_id].createEmpty());
           break;
 
         case "channel list":

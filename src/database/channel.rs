@@ -32,6 +32,20 @@ pub async fn valid_channel(pool: Pool, channel_id: ChannelID) -> Result<bool, Er
 }
 */
 
+pub async fn existing_channel_name(pool: Pool, group_id: GroupID, name: &String)
+    -> Result<bool, PoolError>
+{
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT 1
+        FROM Channel
+        WHERE group_id = $1
+        AND name = $2
+        LIMIT 1
+    ").await?;
+    Ok(conn.query_opt(&stmt, &[&group_id, &name]).await?.is_some())
+}
+
 const MAX_CHANNEL_NAME_LENGTH: usize = 32;
 
 pub fn valid_channel_name(name: &String) -> bool {

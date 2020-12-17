@@ -1,7 +1,14 @@
 use super::GroupID;
+use serde::Serialize;
 use deadpool_postgres::{Pool, PoolError};
 
 pub type ChannelID = i32;
+
+#[derive(Serialize)]
+pub struct Channel {
+    pub channel_id: ChannelID,
+    pub name: String,
+}
 
 /*
 pub async fn channel_name(pool: Pool, channel_id: ChannelID) -> Result<Option<String>, Error> {

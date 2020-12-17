@@ -1,8 +1,7 @@
+use super::Channel;
 use serde::Serialize;
-use super::ChannelID;
 use crate::error::Error;
-use deadpool_postgres::{Pool, PoolError};
-use deadpool_postgres::tokio_postgres::Row;
+use deadpool_postgres::Pool;
 
 pub type GroupID = i32;
 
@@ -53,21 +52,33 @@ pub async fn group_info(pool: Pool, group_id: GroupID)
 }
 
 /// Get the channels in a group
-pub async fn group_channels(pool: Pool, group_id: GroupID) -> Result<Vec<Row>, Error> {
+///
+/// Returns an empty vector if the group is invalid (or if there are no channels
+/// in a valid group)
+pub async fn group_channels(pool: Pool, group_id: GroupID)
+    -> Result<Vec<Channel>, Error>
+{
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         SELECT channel_id, name
         FROM Channel
         WHERE group_id = $1
     ").await?;
-    conn.query(&stmt, &[&group_id]).await.map_err(|e| e.into())
+    Ok(conn.query(&stmt, &[&group_id])
+        .await?
+        .iter()
+        .map(|row| Channel {
+            channel_id: row.get(0),
+            name: row.get(1),
+        })
+        .collect())
 }
 
 /// Get the vector of ChannelIDs in a group.
 ///
 /// Returns an empty vector if the group is invalid (or if there are no channels
 /// in a valid group).
-pub async fn group_channel_ids(pool: Pool, group_id: GroupID)
+/*pub async fn group_channel_ids(pool: Pool, group_id: GroupID)
     -> Result<Vec<ChannelID>, PoolError>
 {
     let conn = pool.get().await?;
@@ -81,7 +92,7 @@ pub async fn group_channel_ids(pool: Pool, group_id: GroupID)
         .iter()
         .map(|row| row.get(0))
         .collect())
-}
+}*/
 
 /// Check whether a group ID is valid
 pub async fn valid_group(pool: Pool, group_id: GroupID) -> Result<bool, Error> {

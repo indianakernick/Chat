@@ -4,7 +4,7 @@ use std::time::SystemTime;
 use crate::database as db;
 use serde::{Serialize, Deserialize};
 use deadpool_postgres::{Pool, PoolError};
-use super::upgrade::{Sender, Group, ConnectionContext};
+use super::upgrade::{Sender, Group, Groups, ConnectionContext};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
@@ -35,14 +35,8 @@ struct GenericRecentMessage {
 }
 
 #[derive(Serialize)]
-struct Channel {
-    channel_id: db::ChannelID,
-    name: String,
-}
-
-#[derive(Serialize)]
 #[serde(tag="type")]
-enum ServerMessage {
+enum ServerMessage<'a> {
     #[serde(rename="error")]
     Error { message: &'static str },
     #[serde(rename="message receipt")]
@@ -52,9 +46,9 @@ enum ServerMessage {
     #[serde(rename="recent message list")]
     RecentMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> },
     #[serde(rename="channel created")]
-    ChannelCreated { channel_id: db::ChannelID, name: String },
+    ChannelCreated { channel_id: db::ChannelID, name: &'a String },
     #[serde(rename="channel list")]
-    ChannelList { channels: Vec<Channel> }
+    ChannelList { channels: &'a Vec<db::Channel> }
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -63,7 +57,7 @@ fn as_timestamp(time: SystemTime) -> u64 {
 
 pub struct MessageContext<'a> {
     pub ctx: &'a ConnectionContext,
-    pub group: &'a Group,
+    pub groups: &'a Groups,
     pub pool: &'a Pool,
     pub message: Message,
 }
@@ -81,13 +75,22 @@ fn send_error(ch_tx: &Sender, error: &'static str) {
     send_message(ch_tx, response);
 }
 
+fn contains_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> bool {
+    for channel in channels.iter() {
+        if channel.channel_id == channel_id {
+            return true;
+        }
+    }
+    return false;
+}
+
 impl<'a> MessageContext<'a> {
-    fn reply_error(&self, error: &'static str) {
-        send_error(&self.group.users[&self.ctx.conn_id], error);
+    fn reply_error(&self, group: &Group, error: &'static str) {
+        send_error(&group.users[&self.ctx.conn_id], error);
     }
 
-    fn reply_message(&self, message: String) {
-        send_message(&self.group.users[&self.ctx.conn_id], message);
+    fn reply_message(&self, group: &Group, message: String) {
+        send_message(&group.users[&self.ctx.conn_id], message);
     }
 
     pub async fn handle(self) {
@@ -100,7 +103,10 @@ impl<'a> MessageContext<'a> {
             Ok(m) => m,
             Err(e) => {
                 error!("{}", e);
-                self.reply_error("JSON");
+                // This is kind of annoying..
+                let groups_guard = self.groups.read().await;
+                let group = &groups_guard[&self.ctx.group_id];
+                self.reply_error(group, "JSON");
                 return;
             }
         };
@@ -122,7 +128,10 @@ impl<'a> MessageContext<'a> {
 
         if let Err(e) = result {
             error!("{}", e);
-            self.reply_error("Database");
+            // This is kind of annoying...
+            let groups_guard = self.groups.read().await;
+            let group = &groups_guard[&self.ctx.group_id];
+            self.reply_error(group, "Database");
         }
     }
 
@@ -132,8 +141,11 @@ impl<'a> MessageContext<'a> {
         let time = SystemTime::now();
         let timestamp = as_timestamp(time);
 
-        if !self.group.channels.contains(&channel_id) {
-            self.reply_error("Invalid channel_id");
+        let groups_guard = self.groups.read().await;
+        let group = &groups_guard[&self.ctx.group_id];
+
+        if !contains_channel(&group.channels, channel_id) {
+            self.reply_error(group, "Invalid channel_id");
         }
 
         let echo_response = serde_json::to_string(&ServerMessage::MessageReceipt {
@@ -148,7 +160,7 @@ impl<'a> MessageContext<'a> {
             channel_id,
         })).unwrap();
 
-        for (&other_conn_id, ch_tx) in self.group.users.iter() {
+        for (&other_conn_id, ch_tx) in group.users.iter() {
             if other_conn_id == self.ctx.conn_id {
                 debug!("Echoing back to ({}): {}", self.ctx.conn_id, echo_response);
                 send_message(ch_tx, echo_response.clone());
@@ -167,8 +179,11 @@ impl<'a> MessageContext<'a> {
     async fn request_recent_messages(&self, channel_id: db::ChannelID)
         -> Result<(), PoolError>
     {
-        if !self.group.channels.contains(&channel_id) {
-            self.reply_error("Invalid channel_id");
+        let groups_guard = self.groups.read().await;
+        let group = &groups_guard[&self.ctx.group_id];
+
+        if !contains_channel(&group.channels, channel_id) {
+            self.reply_error(group, "Invalid channel_id");
         }
 
         let rows = db::recent_messages(self.pool.clone(), channel_id).await?;
@@ -184,23 +199,28 @@ impl<'a> MessageContext<'a> {
                 .collect()
         }).unwrap();
 
-        self.reply_message(response);
+        self.reply_message(group, response);
 
         Ok(())
     }
 
     async fn create_channel(&self, name: String) -> Result<(), PoolError> {
-        let channel_id = db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await?;
+        let mut groups_guard = self.groups.write().await;
+        let group = &mut groups_guard.get_mut(&self.ctx.group_id).unwrap();
 
-        // TODO: Update self.group.channels
-        // self.group.channels.push(channel_id);
+        let channel_id = db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await?;
 
         let response = serde_json::to_string(&ServerMessage::ChannelCreated {
             channel_id,
-            name
+            name: &name,
         }).unwrap();
 
-        for (_, ch_tx) in self.group.users.iter() {
+        group.channels.push(db::Channel {
+            channel_id,
+            name
+        });
+
+        for (_, ch_tx) in group.users.iter() {
             send_message(ch_tx, response.clone());
         }
 
@@ -208,23 +228,14 @@ impl<'a> MessageContext<'a> {
     }
 
     async fn request_channels(&self) -> Result<(), PoolError> {
-        // TODO: Read this from self.group.channels
-
-        let channels = db::group_channels(self.pool.clone(), self.ctx.group_id)
-            .await
-            .unwrap() // Unwrapping because of different error types
-            .iter() // this is temporary so it doesn't matter
-            .map(|row| Channel {
-                channel_id: row.get(0),
-                name: row.get(1),
-            })
-            .collect();
+        let groups_guard = self.groups.read().await;
+        let group = &groups_guard[&self.ctx.group_id];
 
         let response = serde_json::to_string(&ServerMessage::ChannelList {
-            channels
+            channels: &group.channels
         }).unwrap();
 
-        self.reply_message(response);
+        self.reply_message(group, response);
 
         Ok(())
     }

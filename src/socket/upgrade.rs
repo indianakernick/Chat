@@ -1,7 +1,7 @@
-use tokio::sync::mpsc;
 use log::{debug, error};
 use crate::database as db;
 use deadpool_postgres::Pool;
+use tokio::sync::{RwLock, mpsc};
 use futures::{FutureExt, StreamExt};
 use warp::ws::{Ws, WebSocket, Message};
 use std::collections::hash_map::{HashMap, Entry};
@@ -13,15 +13,12 @@ static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
 pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 
 pub struct Group {
-    // Could use a HashSet for the channels but a Vec is probably faster
-    // considering that each group will probably have around 5-10 channels at
-    // the most.
-    pub channels: Vec<db::ChannelID>,
+    pub channels: Vec<db::Channel>,
     pub users: HashMap<ConnID, Sender>,
 }
 
-type GroupMap = HashMap<db::GroupID, Group>;
-type Groups = Arc<tokio::sync::RwLock<GroupMap>>;
+pub type GroupMap = HashMap<db::GroupID, Group>;
+pub type Groups = Arc<RwLock<GroupMap>>;
 
 #[derive(Clone)]
 pub struct SocketContext {
@@ -102,7 +99,7 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
         let mut guard = sock_ctx.groups.write().await;
         match guard.entry(conn_ctx.group_id) {
             Entry::Vacant(entry) => {
-                let channels = match db::group_channel_ids(sock_ctx.pool.clone(), conn_ctx.group_id).await {
+                let channels = match db::group_channels(sock_ctx.pool.clone(), conn_ctx.group_id).await {
                     Ok(c) => c,
                     Err(e) => {
                         error!("{}", e);
@@ -130,10 +127,15 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
             }
         };
 
-        let guard = sock_ctx.groups.read().await;
+        // perhaps don't lock the groups map
+        // instead, pass it to the message handler as is
+        // let the message handler decide whether it needs to lock for reading or writing
+        // wrapping something in a lock adds 6 * 8 (48) bytes of overhead
+        // probably pretty inefficient
+
         let msg_ctx = super::handler::MessageContext {
             ctx: &conn_ctx,
-            group: &guard[&conn_ctx.group_id],
+            groups: &sock_ctx.groups,
             pool: &sock_ctx.pool,
             message,
         };

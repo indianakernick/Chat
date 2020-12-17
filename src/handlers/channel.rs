@@ -15,12 +15,6 @@ struct ChannelTemplate {
     user_id: db::UserID,
 }
 
-#[derive(Serialize)]
-struct ChannelInfo {
-    channel_id: db::ChannelID,
-    name: String,
-}
-
 fn ser_json<T: Serialize>(value: &T) -> String {
     serde_json::to_string(value).unwrap().replace("</script>", "<\\/script>")
 }
@@ -38,15 +32,7 @@ pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_i
         None => return Ok(Box::new(warp::http::StatusCode::NOT_FOUND))
     };
 
-    let channel_list = channel_list?
-        .iter()
-        .map(|row| {
-            ChannelInfo {
-                channel_id: row.get(0),
-                name: row.get(1)
-            }
-        })
-        .collect::<Vec::<_>>();
+    let channel_list = channel_list?;
 
     let mut channel_name = None;
     for info in &channel_list {

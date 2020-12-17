@@ -15,6 +15,8 @@ enum ClientMessage {
     RequestRecentMessages { channel_id: db::ChannelID },
     #[serde(rename="create channel")]
     CreateChannel { name: String },
+    #[serde(rename="request channels")]
+    RequestChannels,
 }
 
 #[derive(Serialize)]
@@ -33,6 +35,12 @@ struct GenericRecentMessage {
 }
 
 #[derive(Serialize)]
+struct Channel {
+    channel_id: db::ChannelID,
+    name: String,
+}
+
+#[derive(Serialize)]
 #[serde(tag="type")]
 enum ServerMessage {
     #[serde(rename="error")]
@@ -45,6 +53,8 @@ enum ServerMessage {
     RecentMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> },
     #[serde(rename="channel created")]
     ChannelCreated { channel_id: db::ChannelID, name: String },
+    #[serde(rename="channel list")]
+    ChannelList { channels: Vec<Channel> }
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -105,6 +115,9 @@ impl<'a> MessageContext<'a> {
             ClientMessage::CreateChannel { name } => {
                 self.create_channel(name).await
             },
+            ClientMessage::RequestChannels => {
+                self.request_channels().await
+            }
         };
 
         if let Err(e) = result {
@@ -179,7 +192,7 @@ impl<'a> MessageContext<'a> {
     async fn create_channel(&self, name: String) -> Result<(), PoolError> {
         let channel_id = db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await?;
 
-        // TODO: Need to update channels vector
+        // TODO: Update self.group.channels
         // self.group.channels.push(channel_id);
 
         let response = serde_json::to_string(&ServerMessage::ChannelCreated {
@@ -190,6 +203,28 @@ impl<'a> MessageContext<'a> {
         for (_, ch_tx) in self.group.users.iter() {
             send_message(ch_tx, response.clone());
         }
+
+        Ok(())
+    }
+
+    async fn request_channels(&self) -> Result<(), PoolError> {
+        // TODO: Read this from self.group.channels
+
+        let channels = db::group_channels(self.pool.clone(), self.ctx.group_id)
+            .await
+            .unwrap() // Unwrapping because of different error types
+            .iter() // this is temporary so it doesn't matter
+            .map(|row| Channel {
+                channel_id: row.get(0),
+                name: row.get(1),
+            })
+            .collect();
+
+        let response = serde_json::to_string(&ServerMessage::ChannelList {
+            channels
+        }).unwrap();
+
+        self.reply_message(response);
 
         Ok(())
     }

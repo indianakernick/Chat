@@ -165,6 +165,21 @@ export default {
       }
     },
 
+    requestChannels() {
+      this.socket.send('{"type":"request channels"}');
+      // TODO: Also request the current channel so we can load it faster
+      // Need to deal with the situation where the current channel has been deleted
+    },
+
+    checkCurrentChannelValid() {
+      const foundChannel = this.channelList.find(channel =>
+        channel.channel_id === this.currentChannelId
+      );
+      if (foundChannel === undefined) {
+        this.selectChannel(this.channelList[0].channel_id);
+      }
+    },
+
     retryConnection() {
       this.initSocket();
 
@@ -176,7 +191,7 @@ export default {
         this.connected = true;
         this.resetRetryDelay();
         this.initListeners();
-        this.requestRecent();
+        this.requestChannels();
       };
     },
 
@@ -219,6 +234,12 @@ export default {
           // TODO: Apparently v-for doesn't run immediately after the array changes...
           // Need to work something out
           setTimeout(() => this.messageLists[message.channel_id].createEmpty(), 100);
+          break;
+
+        case "channel list":
+          this.channelList = message.channels;
+          this.checkCurrentChannelValid();
+          this.requestRecent();
           break;
       }
     }

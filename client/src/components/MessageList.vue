@@ -43,10 +43,9 @@ export default {
 
   methods: {
     recentMessage(message) {
-      const userInfo = this.userInfoCache.getUserInfo(message.author);
       this.messages.push({
         timestamp: message.timestamp,
-        userInfo: userInfo,
+        userInfo: this.userInfoCache.getUserInfo(message.author),
         content: message.content,
         sending: false
       });
@@ -54,14 +53,10 @@ export default {
 
     messageReceipt(message) {
       // All messages arrive in the same order that they are sent.
-      // Also, I think for-in has an undefined order.
-      // Not sure about for-of though
-      const messages = this.messages
-      const length = messages.length;
-      for (let idx = 0; idx !== length; ++idx) {
-        if (messages[idx].sending) {
-          messages[idx].sending = false;
-          messages[idx].timestamp = message.timestamp;
+      for (const msg of this.messages) {
+        if (msg.sending) {
+          msg.sending = false;
+          msg.timestamp = message.timestamp;
           return;
         }
       }

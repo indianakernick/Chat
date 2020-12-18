@@ -11,6 +11,7 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/assets/anonymous.png");
 
     println!("cargo:rerun-if-changed=client/src/components/Channel.vue");
+    println!("cargo:rerun-if-changed=client/src/components/ChannelCreate.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelList.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupTitle.vue");
     println!("cargo:rerun-if-changed=client/src/components/Message.vue");

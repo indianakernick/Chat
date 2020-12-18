@@ -6,22 +6,20 @@
       :name="channel.name"
       @selectChannel="selectChannel"
     />
-    <MessageSender @sendMessage="createChannel"/>
+    <ChannelCreate @createChannel="createChannel"/>
   </div>
 </template>
 
 <script>
 import Channel from "./Channel.vue";
-import MessageSender from "./MessageSender.vue";
-
-// TODO: Using the MessageSender is just a quick hack for testing
+import ChannelCreate from "./ChannelCreate.vue";
 
 export default {
   name: "ChannelList",
 
   components: {
     Channel,
-    MessageSender
+    ChannelCreate
   },
 
   emits: [

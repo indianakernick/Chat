@@ -146,6 +146,7 @@ impl<'a> MessageContext<'a> {
 
         if !contains_channel(&group.channels, channel_id) {
             self.reply_error(group, "Invalid channel_id");
+            return Ok(());
         }
 
         let echo_response = serde_json::to_string(&ServerMessage::MessageReceipt {
@@ -184,6 +185,7 @@ impl<'a> MessageContext<'a> {
 
         if !contains_channel(&group.channels, channel_id) {
             self.reply_error(group, "Invalid channel_id");
+            return Ok(());
         }
 
         let rows = db::recent_messages(self.pool.clone(), channel_id).await?;
@@ -208,7 +210,22 @@ impl<'a> MessageContext<'a> {
         let mut groups_guard = self.groups.write().await;
         let group = &mut groups_guard.get_mut(&self.ctx.group_id).unwrap();
 
-        let channel_id = db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await?;
+        if !db::valid_channel_name(&name) {
+            // This shouldn't happen unless someone is bypassing the JavaScript
+            // validation.
+            self.reply_error(group, "Channel name invalid");
+            return Ok(());
+        }
+
+        let channel_id = match db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await? {
+            Some(id) => id,
+            None => {
+                // JavaScript can check for this but the JavaScript can be wrong
+                // if two people try to create channels at the same time.
+                self.reply_error(group, "Channel name exists");
+                return Ok(());
+            }
+        };
 
         let response = serde_json::to_string(&ServerMessage::ChannelCreated {
             channel_id,

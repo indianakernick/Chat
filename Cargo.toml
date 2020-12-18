@@ -27,8 +27,5 @@ headers = "0.3"
 rand = "0.7"
 form_urlencoded = "1"
 
-# I'm considering using rocket due to the amount of boilerplate required to
-# get the database working.
-
 [profile.release]
 lto = true

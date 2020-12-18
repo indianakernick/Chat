@@ -127,12 +127,6 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
             }
         };
 
-        // perhaps don't lock the groups map
-        // instead, pass it to the message handler as is
-        // let the message handler decide whether it needs to lock for reading or writing
-        // wrapping something in a lock adds 6 * 8 (48) bytes of overhead
-        // probably pretty inefficient
-
         let msg_ctx = super::handler::MessageContext {
             ctx: &conn_ctx,
             groups: &sock_ctx.groups,

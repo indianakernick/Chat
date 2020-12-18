@@ -80,7 +80,10 @@ export default {
       channelList: CHANNEL_LIST,
       messageLists: {},
       retryDelay: INITIAL_RETRY_DELAY,
-      connected: false
+      connected: false,
+      startTime: 0,
+      currPingCount: 0,
+      pingCount: 0
     }
   },
 
@@ -205,7 +208,26 @@ export default {
       };
     },
 
+    startPingPong(count) {
+      this.pingCount = this.currPingCount = count;
+      this.startTime = performance.now();
+      this.socket.send("a");
+    },
+
     receiveMessage(event) {
+      if (event.data === "b") {
+        const endTime = performance.now();
+        this.currPingCount -= 1;
+        if (this.currPingCount > 0) {
+          this.socket.send("a");
+        } else if (this.currPingCount === 0) {
+          const total = endTime - this.startTime;
+          console.log("Total duration:", total);
+          console.log("Average duration:", total / this.pingCount);
+        }
+        return;
+      }
+
       console.log(event.data);
       const message = JSON.parse(event.data);
       switch (message.type) {

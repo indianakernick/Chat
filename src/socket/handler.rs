@@ -99,13 +99,17 @@ impl<'a> MessageContext<'a> {
             Err(_) => return,
         };
 
+        if message == "a" {
+            let group = &self.groups.read().await[&self.ctx.group_id];
+            self.reply_message(group, String::from("b"));
+            return;
+        }
+
         let client_message = match serde_json::from_str::<ClientMessage>(message) {
             Ok(m) => m,
             Err(e) => {
                 error!("{}", e);
-                // This is kind of annoying..
-                let groups_guard = self.groups.read().await;
-                let group = &groups_guard[&self.ctx.group_id];
+                let group = &self.groups.read().await[&self.ctx.group_id];
                 self.reply_error(group, "JSON");
                 return;
             }
@@ -128,9 +132,7 @@ impl<'a> MessageContext<'a> {
 
         if let Err(e) = result {
             error!("{}", e);
-            // This is kind of annoying...
-            let groups_guard = self.groups.read().await;
-            let group = &groups_guard[&self.ctx.group_id];
+            let group = &self.groups.read().await[&self.ctx.group_id];
             self.reply_error(group, "Database");
         }
     }

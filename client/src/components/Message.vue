@@ -106,7 +106,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss">
 .message {
   display: flex;
   flex-direction: row;

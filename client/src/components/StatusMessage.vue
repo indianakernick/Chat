@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="status">
     <span>{{ status }}</span>
   </div>
 </template>
@@ -14,8 +14,8 @@ export default {
 };
 </script>
 
-<style scoped>
-div {
+<style lang="scss">
+.status {
   width: 100%;
   height: 100%;
   display: flex;
@@ -23,7 +23,7 @@ div {
   align-items: center;
 }
 
-div > span {
+.status > span {
   text-align: center;
 }
 </style>

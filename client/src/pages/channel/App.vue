@@ -1,20 +1,28 @@
 <template>
   <GroupTitle :groupInfo="groupInfo"/>
   <ProfileNav :userInfo="userInfo"/>
-  <ChannelList
-    @selectChannel="selectChannel"
-    @createChannel="createChannel"
-    :channelList="channelList"
-  />
-  <MessageList
-    v-for="channel in channelList"
-    :key="channel.channel_id"
-    v-show="currentChannelId === channel.channel_id"
-    :ref="list => messageLists[channel.channel_id] = list"
-    :userInfo="userInfo"
-    :userInfoCache="userInfoCache"
-  />
-  <MessageSender @sendMessage="sendMessage"/>
+  <div class="row">
+    <ChannelList
+      class="col-4"
+      @selectChannel="selectChannel"
+      @createChannel="createChannel"
+      :channelList="channelList"
+      :currentChannelId="currentChannelId"
+    />
+    <div class="col-8">
+      <div class="message-list-container">
+        <MessageList
+          v-for="channel in channelList"
+          :key="channel.channel_id"
+          v-show="currentChannelId === channel.channel_id"
+          :ref="list => messageLists[channel.channel_id] = list"
+          :userInfo="userInfo"
+          :userInfoCache="userInfoCache"
+        />
+      </div>
+      <MessageSender @sendMessage="sendMessage"/>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -270,5 +278,10 @@ export default {
 #app {
   width: 100%;
   height: 100%;
+}
+
+.message-list-container {
+  overflow-y: scroll;
+  height: 500px; // TEMPORARY
 }
 </style>

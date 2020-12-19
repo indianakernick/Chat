@@ -1,5 +1,11 @@
 <template>
-  <div class="channel" @click="clicked">{{ name }}</div>
+  <li
+    :class="{'list-group-item': true, 'list-group-item-action': true, 'active': channelId === currentChannelId}"
+    @click="clicked"
+  >
+    {{ name }}
+    <span class="badge badge-secondary badge-pill">1</span>
+  </li>
 </template>
 
 <script>
@@ -8,7 +14,8 @@ export default {
 
   props: {
     channelId: Number,
-    name: String
+    name: String,
+    currentChannelId: Number
   },
 
   emits: [

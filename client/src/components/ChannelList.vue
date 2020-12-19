@@ -1,13 +1,14 @@
 <template>
-  <div class="channel-list">
+  <ul class="list-group">
     <Channel
       v-for="channel in channelList"
       :channelId="channel.channel_id"
       :name="channel.name"
+      :currentChannelId="currentChannelId"
       @selectChannel="selectChannel"
     />
     <ChannelCreate @createChannel="createChannel"/>
-  </div>
+  </ul>
 </template>
 
 <script>
@@ -28,7 +29,8 @@ export default {
   ],
 
   props: {
-    channelList: Object
+    channelList: Object,
+    currentChannelId: Number
   },
 
   methods: {

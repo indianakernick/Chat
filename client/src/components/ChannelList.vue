@@ -7,25 +7,21 @@
       :currentChannelId="currentChannelId"
       @selectChannel="selectChannel"
     />
-    <ChannelCreate @createChannel="createChannel"/>
   </ul>
 </template>
 
 <script>
 import Channel from "./Channel.vue";
-import ChannelCreate from "./ChannelCreate.vue";
 
 export default {
   name: "ChannelList",
 
   components: {
-    Channel,
-    ChannelCreate
+    Channel
   },
 
   emits: [
-    "selectChannel",
-    "createChannel"
+    "selectChannel"
   ],
 
   props: {
@@ -36,10 +32,6 @@ export default {
   methods: {
     selectChannel(channelId) {
       this.$emit("selectChannel", channelId);
-    },
-
-    createChannel(name) {
-      this.$emit("createChannel", name);
     }
   }
 };

@@ -1,6 +1,7 @@
 <template>
   <li
-    :class="{'list-group-item': true, 'list-group-item-action': true, 'active': channelId === currentChannelId}"
+    class="d-flex justify-content-between align-items-center list-group-item list-group-item-action"
+    :class="{'active': channelId === currentChannelId}"
     @click="clicked"
   >
     {{ name }}
@@ -31,5 +32,9 @@ export default {
 </script>
 
 <style>
-
+/*.channel {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+}*/
 </style>

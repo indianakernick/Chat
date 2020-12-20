@@ -1,26 +1,38 @@
 <template>
-  <GroupTitle :groupInfo="groupInfo"/>
-  <ProfileNav :userInfo="userInfo"/>
-  <div class="row">
-    <ChannelList
-      class="col-4"
-      @selectChannel="selectChannel"
-      @createChannel="createChannel"
-      :channelList="channelList"
-      :currentChannelId="currentChannelId"
-    />
-    <div class="col-8">
-      <div class="message-list-container">
-        <MessageList
-          v-for="channel in channelList"
-          :key="channel.channel_id"
-          v-show="currentChannelId === channel.channel_id"
-          :ref="list => messageLists[channel.channel_id] = list"
-          :userInfo="userInfo"
-          :userInfoCache="userInfoCache"
-        />
+  <div class="container-fluid w-100 h-100 d-flex flex-column">
+    <div class="row">
+      <GroupTitle :groupInfo="groupInfo"/>
+      <ProfileNav :userInfo="userInfo"/>
+    </div>
+    <div class="row main-content flex-grow-1">
+      <div class="col-3 d-flex flex-column">
+        <div class="channel-heading">
+          <h2>Channels</h2>
+          <button class="btn btn-primary">+</button>
+        </div>
+        <div class="channel-list-container position-relative">
+          <ChannelList
+            class="position-absolute w-100"
+            @selectChannel="selectChannel"
+            :channelList="channelList"
+            :currentChannelId="currentChannelId"
+          />
+        </div>
       </div>
-      <MessageSender @sendMessage="sendMessage"/>
+      <div class="col-9 d-flex flex-column">
+        <div class="message-list-container position-relative">
+          <MessageList
+            class="position-absolute w-100"
+            v-for="channel in channelList"
+            :key="channel.channel_id"
+            v-show="currentChannelId === channel.channel_id"
+            :ref="list => messageLists[channel.channel_id] = list"
+            :userInfo="userInfo"
+            :userInfoCache="userInfoCache"
+          />
+        </div>
+        <MessageSender @sendMessage="sendMessage"/>
+      </div>
     </div>
   </div>
 </template>
@@ -276,12 +288,23 @@ export default {
 
 <style lang="scss">
 #app {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+}
+
+.channel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .message-list-container {
   overflow-y: scroll;
-  height: 500px; // TEMPORARY
+  flex: 1 1 auto;
+}
+
+.channel-list-container {
+  overflow-y: scroll;
+  flex: 1 1 auto;
 }
 </style>

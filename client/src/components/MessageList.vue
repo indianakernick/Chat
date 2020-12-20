@@ -1,6 +1,6 @@
 <template>
   <template v-if="loaded">
-    <div id="message-list">
+    <div>
       <Message
         v-for="message in messages"
         :timestamp="message.timestamp"

@@ -4,15 +4,15 @@
       <GroupTitle :groupInfo="groupInfo"/>
       <ProfileNav :userInfo="userInfo"/>
     </div>
-    <div class="row main-content flex-grow-1">
+    <div class="row flex-grow-1">
       <div class="col-3 d-flex flex-column">
         <div class="channel-heading">
           <h2>Channels</h2>
           <button class="btn btn-primary">+</button>
         </div>
-        <div class="channel-list-container position-relative">
+        <div class="scrollable-container">
           <ChannelList
-            class="position-absolute w-100"
+            class="scrollable-block"
             @selectChannel="selectChannel"
             :channelList="channelList"
             :currentChannelId="currentChannelId"
@@ -20,9 +20,9 @@
         </div>
       </div>
       <div class="col-9 d-flex flex-column">
-        <div class="message-list-container position-relative">
+        <div class="scrollable-container">
           <MessageList
-            class="position-absolute w-100"
+            class="scrollable-block"
             v-for="channel in channelList"
             :key="channel.channel_id"
             v-show="currentChannelId === channel.channel_id"
@@ -298,13 +298,14 @@ export default {
   align-items: center;
 }
 
-.message-list-container {
+.scrollable-container {
+  position: relative;
   overflow-y: scroll;
   flex: 1 1 auto;
 }
 
-.channel-list-container {
-  overflow-y: scroll;
-  flex: 1 1 auto;
+.scrollable-block {
+  position: absolute;
+  width: 100%;
 }
 </style>

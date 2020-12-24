@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="col-9 d-flex flex-column">
-        <div class="scrollable-container">
+        <div class="scrollable-container d-flex flex-column-reverse">
           <MessageList
             class="scrollable-block"
             v-for="channel in channelList"

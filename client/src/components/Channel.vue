@@ -1,12 +1,9 @@
 <template>
   <li
-    class="d-flex justify-content-between align-items-center list-group-item list-group-item-action"
+    class="list-group-item list-group-item-action"
     :class="{'active': channelId === currentChannelId}"
     @click="clicked"
-  >
-    {{ name }}
-    <span class="badge badge-secondary badge-pill">1</span>
-  </li>
+  >{{ name }}</li>
 </template>
 
 <script>

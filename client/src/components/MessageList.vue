@@ -1,5 +1,5 @@
 <template>
-  <template v-if="loaded">
+  <template v-if="loaded && messages.length > 0">
     <div>
       <Message
         v-for="message in messages"
@@ -72,6 +72,9 @@ export default {
           sending: false
         };
       });
+      if (this.messages.length === 0) {
+        this.setNoMessageStatus();
+      }
       this.loaded = true;
     },
 
@@ -87,7 +90,12 @@ export default {
     },
 
     createEmpty() {
+      this.setNoMessageStatus();
       this.loaded = true;
+    },
+
+    setNoMessageStatus() {
+      this.status = "This channel has no messages";
     }
   }
 };

@@ -140,7 +140,6 @@ export default {
     },
 
     createChannel(name) {
-      console.log("Creating channel", name);
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
         type: "create channel",
@@ -197,8 +196,6 @@ export default {
 
     requestChannels() {
       this.socket.send('{"type":"request channels"}');
-      // TODO: Also request the current channel so we can load it faster
-      // Need to deal with the situation where the current channel has been deleted
     },
 
     checkCurrentChannelValid() {

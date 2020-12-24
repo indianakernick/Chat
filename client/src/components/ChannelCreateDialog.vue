@@ -56,7 +56,7 @@ const REGEX_SPACE = /\p{White_Space}+/gu;
 const REGEX_BAD_CHARS = /[#@]+/g;
 
 export default {
-  name: "ChannelCreateModal",
+  name: "ChannelCreateDialog",
 
   emits: [
     "createChannel"

@@ -35,7 +35,7 @@
       </div>
     </div>
   </div>
-  <ChannelCreateModal @createChannel="createChannel" ref="createChannelDialog"/>
+  <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
 </template>
 
 <script>
@@ -44,7 +44,7 @@ import ProfileNav from "@/components/ProfileNav.vue";
 import ChannelList from "@/components/ChannelList.vue";
 import MessageList from "@/components/MessageList.vue";
 import MessageSender from "@/components/MessageSender.vue";
-import ChannelCreateModal from "@/components/ChannelCreateModal.vue";
+import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -89,7 +89,7 @@ export default {
     ChannelList,
     MessageList,
     MessageSender,
-    ChannelCreateModal
+    ChannelCreateDialog
   },
 
   data() {

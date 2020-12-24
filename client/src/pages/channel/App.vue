@@ -11,13 +11,16 @@
           <button class="btn btn-primary" @click="showCreateChannelDialog">+</button>
         </div>
         <div class="scrollable-container">
-          <ChannelList
-            class="scrollable-block"
-            @selectChannel="selectChannel"
-            @deleteChannel="showDeleteChannelDialog"
-            :channelList="channelList"
-            :currentChannelId="currentChannelId"
-          />
+          <ul class="scrollable-container list-group">
+            <Channel
+              v-for="channel in channelList"
+              :channelId="channel.channel_id"
+              :name="channel.name"
+              :currentChannelId="currentChannelId"
+              @selectChannel="selectChannel"
+              @deleteChannel="showDeleteChannelDialog"
+            />
+          </ul>
         </div>
       </div>
       <div class="col-9 d-flex flex-column">
@@ -41,9 +44,9 @@
 </template>
 
 <script>
+import Channel from "@/components/Channel.vue";
 import GroupTitle from "@/components/GroupTitle.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
-import ChannelList from "@/components/ChannelList.vue";
 import MessageList from "@/components/MessageList.vue";
 import MessageSender from "@/components/MessageSender.vue";
 import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
@@ -87,9 +90,9 @@ export default {
   name: "App",
 
   components: {
+    Channel,
     GroupTitle,
     ProfileNav,
-    ChannelList,
     MessageList,
     MessageSender,
     ChannelCreateDialog,
@@ -129,7 +132,6 @@ export default {
     },
 
     selectChannel(channelId) {
-      console.log("Select", channelId);
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
       const channelName = this.channelList.find(channel =>

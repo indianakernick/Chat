@@ -14,6 +14,7 @@
           <ChannelList
             class="scrollable-block"
             @selectChannel="selectChannel"
+            @deleteChannel="showDeleteChannelDialog"
             :channelList="channelList"
             :currentChannelId="currentChannelId"
           />
@@ -36,6 +37,7 @@
     </div>
   </div>
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
+  <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
 </template>
 
 <script>
@@ -45,6 +47,7 @@ import ChannelList from "@/components/ChannelList.vue";
 import MessageList from "@/components/MessageList.vue";
 import MessageSender from "@/components/MessageSender.vue";
 import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
+import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -89,7 +92,8 @@ export default {
     ChannelList,
     MessageList,
     MessageSender,
-    ChannelCreateDialog
+    ChannelCreateDialog,
+    ChannelDeleteDialog
   },
 
   data() {
@@ -120,7 +124,12 @@ export default {
       this.$refs.createChannelDialog.show();
     },
 
+    showDeleteChannelDialog(channelId, name) {
+      this.$refs.deleteChannelDialog.show(channelId, name);
+    },
+
     selectChannel(channelId) {
+      console.log("Select", channelId);
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
       const channelName = this.channelList.find(channel =>
@@ -144,6 +153,14 @@ export default {
       this.socket.send(JSON.stringify({
         type: "create channel",
         name: name
+      }));
+    },
+
+    deleteChannel(channelId) {
+      if (!this.connected) return;
+      this.socket.send(JSON.stringify({
+        type: "delete channel",
+        channel_id: channelId
       }));
     },
 
@@ -245,6 +262,10 @@ export default {
           this.$refs.createChannelDialog.channelError();
           break;
 
+        case "Channel already deleted":
+          this.$refs.deleteChannelDialog.channelError();
+          break;
+
         default:
           console.error("Server error:", message);
           this.status = "An error has occurred";
@@ -297,6 +318,17 @@ export default {
           this.channelList = message.channels;
           this.checkCurrentChannelValid();
           this.requestRecent();
+          break;
+
+        case "channel deleted":
+          const index = this.channelList.findIndex(channel =>
+            channel.channel_id === message.channel_id
+          );
+          if (index !== -1) {
+            this.channelList.splice(index, 1);
+            this.checkCurrentChannelValid();
+          }
+          this.$refs.deleteChannelDialog.channelDeleted(message.channel_id);
           break;
       }
     }

@@ -6,11 +6,14 @@
       :name="channel.name"
       :currentChannelId="currentChannelId"
       @selectChannel="selectChannel"
+      @deleteChannel="deleteChannel"
     />
   </ul>
 </template>
 
 <script>
+// TODO: Does this component even need to exist?
+
 import Channel from "./Channel.vue";
 
 export default {
@@ -21,7 +24,8 @@ export default {
   },
 
   emits: [
-    "selectChannel"
+    "selectChannel",
+    "deleteChannel"
   ],
 
   props: {
@@ -32,6 +36,10 @@ export default {
   methods: {
     selectChannel(channelId) {
       this.$emit("selectChannel", channelId);
+    },
+
+    deleteChannel(channelId, name) {
+      this.$emit("deleteChannel", channelId, name);
     }
   }
 };

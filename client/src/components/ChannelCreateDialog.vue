@@ -29,7 +29,7 @@
                     maxlength="32"
                     pattern="[^#@\p{White_Space}]+"
                     @input="validate"
-                    :readonly="readonly"
+                    :readonly="waiting"
                     required
                     placeholder="my-new-channel"
                   />
@@ -41,7 +41,7 @@
 
               <div class="modal-footer">
                 <input type="button" class="btn btn-secondary" @click="hide" value="Cancel"/>
-                <input type="submit" class="btn btn-primary" value="Create"/>
+                <input type="submit" class="btn btn-primary" value="Create" :disabled="waiting"/>
               </div>
             </form>
           </div>
@@ -66,14 +66,14 @@ export default {
     return {
       name: "",
       shown: false,
-      readonly: false,
+      waiting: false,
       invalid: false
     }
   },
 
   methods: {
     show() {
-      this.readonly = false;
+      this.waiting = false;
       this.invalid = false;
       this.shown = true;
       this.$nextTick(() => document.getElementById("channel-name-input").focus());
@@ -91,19 +91,19 @@ export default {
     },
 
     submitForm() {
-      this.readonly = true;
+      this.waiting = true;
       this.$emit("createChannel", this.name);
     },
 
     channelCreated(name) {
-      if (this.readonly && name === this.name) {
+      if (this.waiting && name === this.name) {
         this.shown = false;
       }
     },
 
     channelError() {
-      if (this.readonly) {
-        this.readonly = false;
+      if (this.waiting) {
+        this.waiting = false;
         this.invalid = true;
       }
     }

@@ -2,8 +2,13 @@
   <li
     class="list-group-item list-group-item-action"
     :class="{'active': channelId === currentChannelId}"
-    @click="clicked"
-  >{{ name }}</li>
+    @click="selectChannel"
+  >
+    {{ name }}
+    <button @click.stop="deleteChannel" type="button" class="close">
+      <span>&times;</span>
+    </button>
+  </li>
 </template>
 
 <script>
@@ -17,21 +22,22 @@ export default {
   },
 
   emits: [
-    "selectChannel"
+    "selectChannel",
+    "deleteChannel"
   ],
 
   methods: {
-    clicked() {
+    selectChannel() {
       this.$emit("selectChannel", this.channelId);
+    },
+
+    deleteChannel() {
+      this.$emit("deleteChannel", this.channelId, this.name);
     }
   }
 };
 </script>
 
 <style>
-/*.channel {
-  display: flex !important;
-  justify-content: space-between;
-  align-items: center;
-}*/
+
 </style>

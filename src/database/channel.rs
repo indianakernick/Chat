@@ -66,7 +66,8 @@ pub fn valid_channel_name(name: &String) -> bool {
 ///
 /// Returns Ok(None) if the channel name is not unique
 pub async fn create_channel(pool: Pool, group_id: GroupID, name: &String)
-    -> Result<Option<ChannelID>, PoolError> {
+    -> Result<Option<ChannelID>, PoolError>
+{
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         INSERT INTO Channel (name, group_id)
@@ -80,4 +81,18 @@ pub async fn create_channel(pool: Pool, group_id: GroupID, name: &String)
         RETURNING channel_id
     ").await?;
     Ok(conn.query_opt(&stmt, &[name, &group_id]).await?.map(|row| row.get(0)))
+}
+
+/// Delete a channel.
+///
+/// Returns true if the channel was actually deleted.
+pub async fn delete_channel(pool: Pool, channel_id: ChannelID)
+    -> Result<bool, PoolError>
+{
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        DELETE FROM Channel
+        WHERE channel_id = $1
+    ").await?;
+    Ok(conn.execute(&stmt, &[&channel_id]).await? > 0)
 }

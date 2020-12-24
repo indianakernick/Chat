@@ -17,6 +17,8 @@ enum ClientMessage {
     CreateChannel { name: String },
     #[serde(rename="request channels")]
     RequestChannels,
+    #[serde(rename="delete channel")]
+    DeleteChannel { channel_id: db::ChannelID },
 }
 
 #[derive(Serialize)]
@@ -48,7 +50,9 @@ enum ServerMessage<'a> {
     #[serde(rename="channel created")]
     ChannelCreated { channel_id: db::ChannelID, name: &'a String },
     #[serde(rename="channel list")]
-    ChannelList { channels: &'a Vec<db::Channel> }
+    ChannelList { channels: &'a Vec<db::Channel> },
+    #[serde(rename="channel deleted")]
+    ChannelDeleted { channel_id: db::ChannelID },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -75,13 +79,17 @@ fn send_error(ch_tx: &Sender, error: &'static str) {
     send_message(ch_tx, response);
 }
 
-fn contains_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> bool {
-    for channel in channels.iter() {
-        if channel.channel_id == channel_id {
-            return true;
+fn find_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> usize {
+    for i in 0..channels.len() {
+        if channels[i].channel_id == channel_id {
+            return i;
         }
     }
-    return false;
+    return usize::MAX;
+}
+
+fn contains_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> bool {
+    find_channel(channels, channel_id) != usize::MAX
 }
 
 impl<'a> MessageContext<'a> {
@@ -127,7 +135,10 @@ impl<'a> MessageContext<'a> {
             },
             ClientMessage::RequestChannels => {
                 self.request_channels().await
-            }
+            },
+            ClientMessage::DeleteChannel { channel_id } => {
+                self.delete_channel(channel_id).await
+            },
         };
 
         if let Err(e) = result {
@@ -255,6 +266,28 @@ impl<'a> MessageContext<'a> {
         }).unwrap();
 
         self.reply_message(group, response);
+
+        Ok(())
+    }
+
+    async fn delete_channel(&self, channel_id: db::ChannelID) -> Result<(), PoolError> {
+        let mut groups_guard = self.groups.write().await;
+        let group = &mut groups_guard.get_mut(&self.ctx.group_id).unwrap();
+
+        if !db::delete_channel(self.pool.clone(), channel_id).await? {
+            self.reply_error(group, "Channel already deleted");
+            return Ok(());
+        }
+
+        group.channels.remove(find_channel(&group.channels, channel_id));
+
+        let response = serde_json::to_string(&ServerMessage::ChannelDeleted {
+            channel_id
+        }).unwrap();
+
+        for (_, ch_tx) in group.users.iter() {
+            send_message(ch_tx, response.clone());
+        }
 
         Ok(())
     }

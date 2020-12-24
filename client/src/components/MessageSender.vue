@@ -20,8 +20,7 @@ export default {
       if (!e.shiftKey) {
         e.preventDefault();
         if (e.target.innerText.length !== 0) {
-          // this.$emit("sendMessage", e.target.innerText);
-          console.log(`Send message "${e.target.innerText}"`);
+          this.$emit("sendMessage", e.target.innerText);
         }
         e.target.innerHTML = "";
       }

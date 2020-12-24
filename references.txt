@@ -1,15 +1,19 @@
 OAuth
 https://developer.okta.com/blog/2017/06/21/what-the-heck-is-oauth
 
-Session management
-https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
-
 Authentication
 https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
 
-Websocket
-https://hpbn.co/websocket/
+Google OAuth
+https://developers.google.com/identity/protocols/oauth2/web-server#httprest_3
+https://developers.google.com/identity/sign-in/web/sign-in
+
+Session management
+https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
 
 JWT
 https://blog.logrocket.com/jwt-authentication-best-practices
 https://developer.okta.com/blog/2017/08/17/why-jwts-suck-as-session-tokens
+
+Websocket
+https://hpbn.co/websocket/

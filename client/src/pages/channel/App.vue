@@ -8,7 +8,7 @@
       <div class="col-3 d-flex flex-column">
         <div class="channel-heading">
           <h2>Channels</h2>
-          <button class="btn btn-primary">+</button>
+          <button class="btn btn-primary" @click="showCreateChannelDialog">+</button>
         </div>
         <div class="scrollable-container">
           <ChannelList
@@ -35,6 +35,7 @@
       </div>
     </div>
   </div>
+  <ChannelCreateModal @createChannel="createChannel" ref="createChannelDialog"/>
 </template>
 
 <script>
@@ -43,6 +44,7 @@ import ProfileNav from "@/components/ProfileNav.vue";
 import ChannelList from "@/components/ChannelList.vue";
 import MessageList from "@/components/MessageList.vue";
 import MessageSender from "@/components/MessageSender.vue";
+import ChannelCreateModal from "@/components/ChannelCreateModal.vue";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -86,7 +88,8 @@ export default {
     ProfileNav,
     ChannelList,
     MessageList,
-    MessageSender
+    MessageSender,
+    ChannelCreateModal
   },
 
   data() {
@@ -113,6 +116,10 @@ export default {
   },
 
   methods: {
+    showCreateChannelDialog() {
+      this.$refs.createChannelDialog.show();
+    },
+
     selectChannel(channelId) {
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
@@ -133,6 +140,7 @@ export default {
     },
 
     createChannel(name) {
+      console.log("Creating channel", name);
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
         type: "create channel",
@@ -233,6 +241,20 @@ export default {
       this.socket.send("a");
     },
 
+    handleError(message) {
+      switch (message) {
+        case "Channel name invalid":
+        case "Channel name exists":
+          this.$refs.createChannelDialog.channelError();
+          break;
+
+        default:
+          console.error("Server error:", message);
+          this.status = "An error has occurred";
+          this.socket.close(1000);
+      }
+    },
+
     receiveMessage(event) {
       if (event.data === "b") {
         const endTime = performance.now();
@@ -251,9 +273,7 @@ export default {
       const message = JSON.parse(event.data);
       switch (message.type) {
         case "error":
-          console.error("Server error:", message.message);
-          this.status = "An error has occurred";
-          this.socket.close(1000);
+          this.handleError(message.message);
           break;
 
         case "recent message":
@@ -273,6 +293,7 @@ export default {
             channel_id: message.channel_id, name: message.name
           });
           this.$nextTick(() => this.messageLists[message.channel_id].createEmpty());
+          this.$refs.createChannelDialog.channelCreated(message.name);
           break;
 
         case "channel list":

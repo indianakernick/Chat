@@ -76,6 +76,7 @@ export default {
       this.readonly = false;
       this.invalid = false;
       this.shown = true;
+      this.$nextTick(() => document.getElementById("channel-name-input").focus());
     },
 
     hide() {

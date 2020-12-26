@@ -33,7 +33,7 @@ Update package-lock.json
 npm install
 
 Compile the client
-npm run build
+npm run build-dev
 
 Google API console
 https://console.developers.google.com/apis/credentials?project=chat-297602

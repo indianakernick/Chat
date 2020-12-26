@@ -50,6 +50,17 @@ pub fn group_channels(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Err
         .recover(rejection)
 }
 
+// TODO: Validate session even though we don't use the session ID
+pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("api" / "group" / "create")
+        .and(warp::post())
+        .and(with_pool(pool))
+        .and(warp::body::content_length_limit(handlers::CREATE_GROUP_LIMIT))
+        .and(warp::body::json())
+        .and_then(handlers::create_group)
+        .recover(rejection)
+}
+
 pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("favicon.ico")
         .and(warp::get())

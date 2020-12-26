@@ -9,20 +9,22 @@ pub type GroupID = i32;
 ///
 /// Returns Ok(None) if the name is not unique.
 /// Returns Err if a database error occurred.
-/*
-pub async fn create_group(pool: Pool, name: String)
+pub async fn create_group(pool: Pool, name: String, picture: String)
     -> Result<Option<GroupID>, Error>
 {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
-        INSERT INTO Groop (name)
-        SELECT $1
-        WHERE NOT EXISTS (SELECT * FROM Groop WHERE name = $1)
+        INSERT INTO Groop (name, picture)
+        SELECT $1, $2
+        WHERE NOT EXISTS (
+            SELECT *
+            FROM Groop
+            WHERE name = $1
+        )
         RETURNING group_id
     ").await?;
-    Ok(conn.query_opt(&stmt, &[&name]).await?.map(|row| row.get(0)))
+    Ok(conn.query_opt(&stmt, &[&name, &picture]).await?.map(|row| row.get(0)))
 }
-*/
 
 #[derive(Serialize)]
 pub struct GroupInfo {

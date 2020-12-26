@@ -47,6 +47,7 @@ async fn main() {
         .or(filters::channel(pool.clone()))
         .or(filters::group(pool.clone()))
         .or(filters::group_channels(pool.clone()))
+        .or(filters::create_group(pool.clone()))
         .or(filters::favicon())
         .or(filters::js())
         .or(filters::css())

@@ -24,7 +24,7 @@
               </div>
 
               <div class="modal-footer">
-                <input type="button" class="btn btn-secondary" @click="hide" value="Cancel"/>
+                <input type="button" class="btn btn-secondary" @click="hide" value="Cancel" :disabled="waiting"/>
                 <input type="submit" class="btn btn-primary" value="Delete" :disabled="waiting"/>
               </div>
             </form>

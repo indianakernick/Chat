@@ -23,6 +23,7 @@ pub async fn get_group_channels(group_id: db::GroupID, pool: Pool)
 }
 
 #[derive(Serialize)]
+#[serde(tag="type")]
 enum Response {
     #[serde(rename="error")]
     Error { message: &'static str },

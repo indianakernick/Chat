@@ -5,13 +5,23 @@
       <ProfileNav :userInfo="userInfo"/>
     </div>
     <div class="row flex-grow-1">
+
+      <div class="d-flex flex-column" style="flex-basis: 64px">
+        <div class="scrollable-container">
+          <ul class="scrollable-block list-group">
+            <!-- <Group v-for > -->
+            <li><button class="btn btn-primary" @click="showCreateGroupDialog">+</button></li>
+          </ul>
+        </div>
+      </div>
+
       <div class="col-3 d-flex flex-column">
         <div class="channel-heading">
           <h2>Channels</h2>
           <button class="btn btn-primary" @click="showCreateChannelDialog">+</button>
         </div>
         <div class="scrollable-container">
-          <ul class="scrollable-container list-group">
+          <ul class="scrollable-block list-group">
             <Channel
               v-for="channel in channelList"
               :channelId="channel.channel_id"
@@ -23,7 +33,8 @@
           </ul>
         </div>
       </div>
-      <div class="col-9 d-flex flex-column">
+
+      <div class="col-8 d-flex flex-column">
         <div class="scrollable-container d-flex flex-column-reverse">
           <MessageList
             class="scrollable-block"
@@ -37,10 +48,13 @@
         </div>
         <MessageSender @sendMessage="sendMessage"/>
       </div>
+
     </div>
   </div>
+
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
   <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
+  <GroupCreateDialog ref="createGroupDialog"/>
 </template>
 
 <script>
@@ -49,6 +63,7 @@ import GroupTitle from "@/components/GroupTitle.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
 import MessageList from "@/components/MessageList.vue";
 import MessageSender from "@/components/MessageSender.vue";
+import GroupCreateDialog from "@/components/GroupCreateDialog.vue";
 import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 
@@ -95,6 +110,7 @@ export default {
     ProfileNav,
     MessageList,
     MessageSender,
+    GroupCreateDialog,
     ChannelCreateDialog,
     ChannelDeleteDialog
   },
@@ -129,6 +145,10 @@ export default {
 
     showDeleteChannelDialog(channelId, name) {
       this.$refs.deleteChannelDialog.show(channelId, name);
+    },
+
+    showCreateGroupDialog() {
+      this.$refs.createGroupDialog.show();
     },
 
     selectChannel(channelId) {

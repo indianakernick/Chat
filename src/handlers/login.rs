@@ -3,7 +3,7 @@ use serde::Deserialize;
 use crate::utils::cache_long;
 
 #[derive(Template)]
-#[template(path = "../client/dist/login.html")]
+#[template(path = "login.html")]
 struct LoginTemplate {
     google_auth_url: String,
 }

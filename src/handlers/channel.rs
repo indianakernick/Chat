@@ -4,7 +4,7 @@ use crate::database as db;
 use deadpool_postgres::Pool;
 
 #[derive(Template)]
-#[template(path = "../client/dist/channel.html")]
+#[template(path = "channel.html")]
 struct ChannelTemplate {
     title: String,
     user_info: String,

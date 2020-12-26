@@ -11,14 +11,6 @@ fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> +
     warp::any().map(move || pool.clone())
 }
 
-pub fn hello() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("hello" / String)
-        .and(warp::get())
-        .and_then(handlers::hello)
-        .map(cache_long)
-        .recover(rejection)
-}
-
 pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("login")
         .and(warp::get())

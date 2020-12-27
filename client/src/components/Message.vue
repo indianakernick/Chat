@@ -22,6 +22,96 @@ export const DELETED_USER_INFO = {
   deleted: true
 };
 
+const timeFormatManager = {
+  timeFormatter: new Intl.DateTimeFormat([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  }),
+
+  dateTimeFormatter: new Intl.DateTimeFormat([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  }),
+
+  yearDateTimeFormatter: new Intl.DateTimeFormat([], {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }),
+
+  initialized: false,
+  todayMessages: { date: null, messages: new Set() },
+  thisYearMessages: { date: null, messages: new Set() },
+  today: null,
+  thisYear: null,
+
+  initialize() {
+    if (!this.initialized) {
+      this.initialized = true;
+      this.update();
+      window.timeFormatManager = this;
+    }
+  },
+
+  update() {
+    const now = new Date().getTime();
+
+    this.today = new Date(now);
+    const today = this.today.setHours(0, 0, 0, 0);
+    const tomorrow = this.today.setDate(this.today.getDate() + 1);
+    this.today = today;
+
+    this.thisYear = new Date(this.today);
+    const thisYear = this.thisYear.setMonth(0, 1);
+    const nextYear = this.thisYear.setFullYear(this.thisYear.getFullYear() + 1);
+    this.thisYear = thisYear;
+
+    if (this.todayMessages.date <= now) {
+      this.updateMessages(this.todayMessages, tomorrow);
+    }
+
+    if (this.thisYearMessages.date <= now) {
+      this.updateMessages(this.thisYearMessages, nextYear);
+    }
+
+    // TODO: This fails if the computer sleeps (laptop lid closes)
+    setTimeout(this.update, tomorrow - now);
+  },
+
+  updateMessages(messages, newDate) {
+    messages.date = newDate;
+    for (const message of messages.messages) {
+      message.formattedTime = this.formatTime(message);
+    }
+  },
+
+  removeFromList(message) {
+    this.todayMessages.messages.delete(message);
+    this.thisYearMessages.messages.delete(message);
+  },
+
+  formatTime(message) {
+    this.removeFromList(message);
+    const time = new Date(message.timestamp * 1000);
+
+    if (time >= this.today) {
+      this.todayMessages.messages.add(message);
+      return this.timeFormatter.format(time);
+    }
+
+    if (time >= this.thisYear) {
+      this.thisYearMessages.messages.add(message);
+      return this.dateTimeFormatter.format(time);
+    }
+
+    return this.yearDateTimeFormatter.format(time);
+  },
+};
+
 export default {
   name: "Message",
 
@@ -33,74 +123,20 @@ export default {
   },
 
   data() {
+    timeFormatManager.initialize();
     return {
-      timeoutId: -1,
-      formattedTime: this.formatTime(),
-      updateTime: true,
+      formattedTime: timeFormatManager.formatTime(this),
       deleted: this.userInfo.hasOwnProperty("deleted")
     }
   },
 
-  created() {
-    this.$watch(
-      () => [this.timestamp, this.updateTime],
-      () => this.formattedTime = this.formatTime()
-    );
-  },
-
   beforeUnmount() {
-    clearTimeout(this.timeoutId);
+    timeFormatManager.removeFromList(this);
   },
 
-  methods: {
-    formatTime() {
-      clearTimeout(this.timeoutId);
-
-      const timeFormatter = new Intl.DateTimeFormat([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-      const dateTimeFormatter = new Intl.DateTimeFormat([], {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-      const yearDateTimeFormatter = new Intl.DateTimeFormat([], {
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-
-      const now = new Date();
-      const time = new Date(this.timestamp * 1000);
-
-      const dayStart = new Date(now.getTime());
-      dayStart.setHours(0, 0, 0, 0);
-      if (time >= dayStart) {
-        dayStart.setDate(dayStart.getDate() + 1);
-        const delay = dayStart.getTime() - now.getTime();
-        this.timeoutId = setTimeout(() => {
-          this.updateTime = !this.updateTime;
-        }, delay);
-        return timeFormatter.format(time);
-      }
-
-      const yearStart = dayStart;
-      yearStart.setMonth(0, 1);
-      if (time >= yearStart) {
-        yearStart.setFullYear(yearStart.getFullYear() + 1);
-        const delay = Math.min(2 ** 31 - 1, yearStart.getTime() - now.getTime());
-        this.timeoutId = setTimeout(() => {
-          this.updateTime = !this.updateTime;
-        }, delay);
-        return dateTimeFormatter.format(time);
-      }
-
-      this.timeoutId = -1;
-      return yearDateTimeFormatter.format(time);
+  watch: {
+    timestamp() {
+      this.formattedTime = timeFormatManager.formatTime(this);
     }
   }
 };

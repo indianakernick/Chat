@@ -1,62 +1,58 @@
 <template>
-  <transition name="fade">
-    <div v-if="shown" class="modal-mask">
-      <div class="modal-wrapper">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <form @submit.prevent="submitForm">
-              <div class="modal-header">
-                <h5 class="modal-title">Create a new group</h5>
-              </div>
+  <ModalDialog :shown="shown" @submitForm="submitForm">
+    <template v-slot:header>
+      Create a new group
+    </template>
 
-              <div class="modal-body">
-                <label for="group-name-input">Group name</label>
-                <input
-                  id="group-name-input"
-                  class="form-control"
-                  :class="invalidName ? 'is-invalid' : ''"
-                  type="text"
-                  maxlength="32"
-                  :readonly="waiting"
-                  required
-                  placeholder="My New Group"
-                  v-model="name"
-                />
-                <small class="form-text text-muted">
-                  Must be 1-32 characters long, and unique
-                </small>
+    <template v-slot:body>
+      <label for="group-name-input">Group name</label>
+      <input
+        id="group-name-input"
+        class="form-control"
+        :class="invalidName ? 'is-invalid' : ''"
+        type="text"
+        maxlength="32"
+        :readonly="waiting"
+        required
+        placeholder="My New Group"
+        v-model="name"
+      />
+      <small class="form-text text-muted">
+        Must be 1-32 characters long, and unique
+      </small>
 
-                <label for="group-picture-input">Group image URL</label>
-                <input
-                  id="group-picture-input"
-                  class="form-control"
-                  :class="invalidPicture ? 'is-invalid' : ''"
-                  type="url"
-                  maxlength="2048"
-                  :readonly="waiting"
-                  placeholder="http://somesite/someimage.png"
-                  v-model="picture"
-                />
-                <small class="form-text text-muted">
-                  Must be 1-2048 characters, or empty
-                </small>
-              </div>
+      <label for="group-picture-input">Group image URL</label>
+      <input
+        id="group-picture-input"
+        class="form-control"
+        :class="invalidPicture ? 'is-invalid' : ''"
+        type="url"
+        maxlength="2048"
+        :readonly="waiting"
+        placeholder="http://somesite/someimage.png"
+        v-model="picture"
+      />
+      <small class="form-text text-muted">
+        Must be 1-2048 characters, or empty
+      </small>
+    </template>
 
-              <div class="modal-footer">
-                <input type="button" class="btn btn-secondary" @click="hide" value="Cancel" :disabled="waiting"/>
-                <input type="submit" class="btn btn-primary" value="Create" :disabled="waiting"/>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  </transition>
+    <template v-slot:footer>
+      <input type="button" class="btn btn-secondary" @click="hide" value="Cancel" :disabled="waiting"/>
+      <input type="submit" class="btn btn-primary" value="Create" :disabled="waiting"/>
+    </template>
+  </ModalDialog>
 </template>
 
 <script>
+import ModalDialog from "./ModalDialog.vue";
+
 export default {
   name: "GroupCreateDialog",
+
+  components: {
+    ModalDialog
+  },
 
   data() {
     return {

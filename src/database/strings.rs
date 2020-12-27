@@ -39,5 +39,14 @@ pub fn valid_group_name(name: &String) -> bool {
 // TODO: valid_user_name
 
 pub fn valid_url(url: &String) -> bool {
-    return url.len() < 4 * MAX_URL_LENGTH && url.chars().count() <= MAX_URL_LENGTH;
+    if url.is_empty() {
+        return true;
+    }
+    if url.len() > 4 * MAX_URL_LENGTH {
+        return false;
+    }
+    if url.chars().count() > MAX_URL_LENGTH {
+        return false;
+    }
+    return reqwest::Url::parse(url).is_ok();
 }

@@ -52,8 +52,6 @@ pub async fn create_group(pool: Pool, request: Request)
         )));
     }
 
-    // TODO: Should we also GET the url and check if we get a 200 status and an
-    // image file?
     if !db::valid_url(&request.picture) {
         return Ok(Box::new(warp::reply::json(
             &Response::Error {

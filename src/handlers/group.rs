@@ -28,6 +28,7 @@ enum Response {
     #[serde(rename="error")]
     Error { message: &'static str },
     #[serde(rename="success")]
+    // TODO: Don't need channel_id
     Success { group_id: db::GroupID, channel_id: db::ChannelID }
 }
 

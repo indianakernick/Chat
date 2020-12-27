@@ -60,7 +60,7 @@
 
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
   <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
-  <GroupCreateDialog ref="createGroupDialog"/>
+  <GroupCreateDialog @createGroup="createGroup" ref="createGroupDialog"/>
 </template>
 
 <script>
@@ -173,7 +173,18 @@ export default {
 
     selectGroup(groupId) {
       if (this.currentGroupId === groupId) return;
-      console.log("Selecting group", groupId);
+      this.socket.close(1000);
+      this.currentGroupId = groupId;
+      // This will connect to the socket, fetch the channel list, update the
+      // current channel, then fetch the message lists.
+      this.retryConnection();
+    },
+
+    createGroup(group) {
+      this.socket.close(1000);
+      this.groupList.push(group);
+      this.currentGroupId = group.group_id;
+      this.retryConnection();
     },
 
     sendMessage(content) {

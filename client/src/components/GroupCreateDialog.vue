@@ -69,6 +69,10 @@ export default {
     }
   },
 
+  emits: [
+    "createGroup"
+  ],
+
   methods: {
     show() {
       this.waiting = false;
@@ -93,7 +97,7 @@ export default {
           if (req.response.type === "error") {
             this.handleError(req.response.message);
           } else if (req.response.type === "success") {
-            this.handleSuccess(req.response.group_id, req.response.channel_id);
+            this.handleSuccess(req.response.group_id);
           }
         }
       };
@@ -123,11 +127,11 @@ export default {
       }
     },
 
-    handleSuccess(groupId, channelId) {
+    handleSuccess(groupId) {
       this.shown = false;
-      // TODO: This will work correctly but it reloads the page unnecessarily
-      // The socket connection needs to be reset when changing groups.
-      window.location.href = `https://localhost/channel/${groupId}/${channelId}`;
+      this.$emit("createGroup", {
+        group_id: groupId, name: this.name, picture: this.picture
+      });
     }
   }
 };

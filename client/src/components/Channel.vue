@@ -5,7 +5,7 @@
     @click="selectChannel"
   >
     {{ name }}
-    <button @click.stop="deleteChannel" type="button" class="close">
+    <button @click.stop="deleteChannel" class="close" :disabled="!connected">
       <span>&times;</span>
     </button>
   </li>
@@ -18,7 +18,8 @@ export default {
   props: {
     channelId: Number,
     name: String,
-    currentChannelId: Number
+    currentChannelId: Number,
+    connected: Boolean
   },
 
   emits: [

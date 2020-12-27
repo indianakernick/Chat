@@ -1,7 +1,7 @@
 <template>
   <div
     class="form-control"
-    contenteditable="true"
+    :contenteditable="connected"
     aria-multiline="true"
     @keypress.enter="pressEnter"
   ></div>
@@ -10,6 +10,10 @@
 <script>
 export default {
   name: "MessageSender",
+
+  props: {
+    connected: Boolean
+  },
 
   emits: [
     "sendMessage"

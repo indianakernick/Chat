@@ -16,7 +16,12 @@
               :currentGroupId="currentGroupId"
               @selectGroup="selectGroup"
             />
-            <li><button class="btn btn-primary" @click="showCreateGroupDialog" title="Create group">+</button></li>
+            <li><button
+              class="btn btn-primary"
+              @click="showCreateGroupDialog"
+              title="Create group"
+              :disabled="!connected"
+            >+</button></li>
           </ul>
         </div>
       </div>
@@ -24,7 +29,12 @@
       <div class="col-3 d-flex flex-column">
         <div class="channel-heading">
           <h2>Channels</h2>
-          <button class="btn btn-primary" @click="showCreateChannelDialog" title="Create channel">+</button>
+          <button
+            class="btn btn-primary"
+            @click="showCreateChannelDialog"
+            title="Create channel"
+            :disabled="!connected"
+          >+</button>
         </div>
         <div class="scrollable-container">
           <ul class="scrollable-block list-group">
@@ -33,6 +43,7 @@
               :channelId="channel.channel_id"
               :name="channel.name"
               :currentChannelId="currentChannelId"
+              :connected="connected"
               @selectChannel="selectChannel"
               @deleteChannel="showDeleteChannelDialog"
             />
@@ -52,7 +63,7 @@
             :userInfoCache="userInfoCache"
           />
         </div>
-        <MessageSender @sendMessage="sendMessage"/>
+        <MessageSender @sendMessage="sendMessage" :connected="connected"/>
       </div>
 
     </div>
@@ -147,14 +158,17 @@ export default {
 
   methods: {
     showCreateChannelDialog() {
+      if (!this.connected) return;
       this.$refs.createChannelDialog.show();
     },
 
     showDeleteChannelDialog(channelId, name) {
+      if (!this.connected) return;
       this.$refs.deleteChannelDialog.show(channelId, name);
     },
 
     showCreateGroupDialog() {
+      if (!this.connected) return;
       this.$refs.createGroupDialog.show();
     },
 
@@ -172,6 +186,7 @@ export default {
     },
 
     selectGroup(groupId) {
+      if (!this.connected) return;
       if (this.currentGroupId === groupId) return;
       this.socket.close(1000);
       this.currentGroupId = groupId;
@@ -181,6 +196,7 @@ export default {
     },
 
     createGroup(group) {
+      if (!this.connected) return;
       this.socket.close(1000);
       this.groupList.push(group);
       this.currentGroupId = group.group_id;

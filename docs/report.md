@@ -9,6 +9,8 @@
   - There’s that interesting problem with the date representation that I’m yet 
     to implement as of writing.
   - How do we handle accounts? Google
+  - Perhaps also talk about the problems that I didn't solve, or didn't try to
+    solve. e.g. roles for users within a group, binary message format
 - Skills I learnt and how I applied them
   - Rust, warp, postgres
   - Database modelling

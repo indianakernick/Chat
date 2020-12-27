@@ -1,7 +1,7 @@
-use super::Channel;
 use serde::Serialize;
 use crate::error::Error;
 use deadpool_postgres::Pool;
+use super::{Channel, UserID};
 
 pub type GroupID = i32;
 
@@ -121,3 +121,25 @@ pub async fn valid_group_channel(pool: Pool, group_id: GroupID, channel_id: Chan
     Ok(conn.query_opt(&stmt, &[&group_id, &channel_id]).await?.is_some())
 }
 */
+
+#[derive(Serialize)]
+pub struct Group {
+    pub group_id: GroupID,
+    pub name: String,
+    pub picture: String,
+}
+
+/// Get the list of groups that a user is a member of.
+pub async fn group_list(pool: Pool, user_id: UserID) -> Result<Vec<Group>, Error> {
+    // Group membership isn't currently stored in the database
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT group_id, name, picture
+        FROM Groop
+    ").await?;
+    Ok(conn.query(&stmt, &[]).await?.iter().map(|row| Group {
+        group_id: row.get(0),
+        name: row.get(1),
+        picture: row.get(2),
+    }).collect())
+}

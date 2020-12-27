@@ -88,6 +88,9 @@ export default {
     channelCreated(name) {
       if (this.waiting && name === this.name) {
         this.shown = false;
+        return true;
+      } else {
+        return false;
       }
     },
 

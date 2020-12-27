@@ -376,7 +376,9 @@ export default {
             channel_id: message.channel_id, name: message.name
           });
           this.$nextTick(() => this.messageLists[message.channel_id].createEmpty());
-          this.$refs.createChannelDialog.channelCreated(message.name);
+          if (this.$refs.createChannelDialog.channelCreated(message.name)) {
+            this.selectChannel(message.channel_id);
+          }
           break;
 
         case "channel list":

@@ -28,8 +28,7 @@ enum Response {
     #[serde(rename="error")]
     Error { message: &'static str },
     #[serde(rename="success")]
-    // TODO: Don't need channel_id
-    Success { group_id: db::GroupID, channel_id: db::ChannelID }
+    Success { group_id: db::GroupID },
 }
 
 #[derive(Deserialize)]
@@ -77,14 +76,13 @@ pub async fn create_group(pool: Pool, request: Request)
     // Unwrapping the Option returned by create_channel because it is None if
     // the channel name is not unique within the group. We just created the
     // group so it must be unique.
-    let channel_id = db::create_channel(
+    db::create_channel(
         pool.clone(), group_id, &"general".to_owned()
     ).await.map_err(|e| crate::error::Error::Database(e))?.unwrap();
 
     Ok(Box::new(warp::reply::json(
         &Response::Success {
-            group_id,
-            channel_id
+            group_id
         }
     )))
 }

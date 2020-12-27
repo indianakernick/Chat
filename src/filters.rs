@@ -32,24 +32,6 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .recover(rejection)
 }
 
-// group and group_channels are currently unused but if we introduce some way to
-// navigate between groups then it may become necessary.
-pub fn group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("api" / "group" / GroupID)
-        .and(warp::get())
-        .and(with_pool(pool))
-        .and_then(handlers::get_group_info)
-        .recover(rejection)
-}
-
-pub fn group_channels(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("api" / "group" / GroupID / "channels")
-        .and(warp::get())
-        .and(with_pool(pool))
-        .and_then(handlers::get_group_channels)
-        .recover(rejection)
-}
-
 // TODO: Validate session even though we don't use the session ID
 pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "group" / "create")

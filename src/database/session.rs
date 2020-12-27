@@ -1,5 +1,6 @@
 use rand::Rng;
 use super::UserID;
+use serde::Serialize;
 use crate::error::Error;
 use deadpool_postgres::Pool;
 
@@ -71,8 +72,6 @@ pub async fn session_user_id(pool: Pool, session_id: SessionID) -> Result<Option
 
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
 }
-
-use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct SessionInfo {

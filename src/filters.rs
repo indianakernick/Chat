@@ -32,11 +32,11 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .recover(rejection)
 }
 
-// TODO: Validate session even though we don't use the session ID
 pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "group" / "create")
         .and(warp::post())
         .and(with_pool(pool))
+        .and(warp::cookie("session_id"))
         .and(warp::body::content_length_limit(handlers::CREATE_GROUP_LIMIT))
         .and(warp::body::json())
         .and_then(handlers::create_group)

@@ -21,8 +21,8 @@ pub struct Request {
 pub const CREATE_GROUP_LIMIT: u64 =
     (4 * db::MAX_GROUP_NAME_LENGTH + 4 * db::MAX_URL_LENGTH + 24) as u64;
 
-pub async fn create_group(pool: Pool, request: Request)
-    -> Result<impl warp::Reply, warp::Rejection>
+pub async fn create_group(pool: Pool, session_id: String, request: Request)
+    -> Result<Box<dyn warp::Reply>, warp::Rejection>
 {
     if !db::valid_group_name(&request.name) {
         return Ok(Box::new(warp::reply::json(
@@ -38,6 +38,12 @@ pub async fn create_group(pool: Pool, request: Request)
                 message: "Invalid url"
             }
         )));
+    }
+
+    // Someone without an account could check if a group name exists but I don't
+    // see why that would be a problem.
+    if !db::valid_session(pool.clone(), session_id).await? {
+        return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED));
     }
 
     let group_id = match db::create_group(pool.clone(), request.name, request.picture).await? {

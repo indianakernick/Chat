@@ -73,6 +73,26 @@ pub async fn session_user_id(pool: Pool, session_id: SessionID) -> Result<Option
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
 }
 
+pub async fn valid_session(pool: Pool, session_id: SessionID) -> Result<bool, Error> {
+    // This would work...
+    // Ok(session_user_id(pool, session_id).await?.is_some())
+    // but it's a slightly less efficient query
+
+    if session_id.len() != SESSION_ID_LENGTH {
+        return Ok(false);
+    }
+
+    let conn = pool.get().await?;
+    let stmt = conn.prepare(concat!("
+        SELECT 1
+        FROM Session
+        WHERE session_id = $1
+        AND creation_time > NOW() - ", creation_timeout!()
+    )).await?;
+
+    Ok(conn.query_opt(&stmt, &[&session_id]).await?.is_some())
+}
+
 #[derive(Serialize)]
 pub struct SessionInfo {
     pub user_id: UserID,

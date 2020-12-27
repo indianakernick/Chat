@@ -274,12 +274,24 @@ impl<'a> MessageContext<'a> {
         let mut groups_guard = self.groups.write().await;
         let group = &mut groups_guard.get_mut(&self.ctx.group_id).unwrap();
 
+        if group.channels.len() == 1 {
+            self.reply_error(group, "Cannot delete lone channel");
+            return Ok(());
+        }
+
+        let channel_index = find_channel(&group.channels, channel_id);
+        if channel_index == usize::MAX {
+            self.reply_error(group, "Channel not in group");
+            return Ok(());
+        }
+
         if !db::delete_channel(self.pool.clone(), channel_id).await? {
+            // If the above checks pass then this cannot happen
             self.reply_error(group, "Channel already deleted");
             return Ok(());
         }
 
-        group.channels.remove(find_channel(&group.channels, channel_id));
+        group.channels.remove(channel_index);
 
         let response = serde_json::to_string(&ServerMessage::ChannelDeleted {
             channel_id

@@ -327,8 +327,10 @@ export default {
           this.$refs.createChannelDialog.channelError();
           break;
 
+        case "Cannot delete lone channel":
+        case "Channel not in group":
         case "Channel already deleted":
-          this.$refs.deleteChannelDialog.channelError();
+          this.$refs.deleteChannelDialog.channelError(message);
           break;
 
         default:

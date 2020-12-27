@@ -5,11 +5,14 @@
     </template>
 
     <template v-slot:body>
-      <span>
+      <span :class="errorMessage.length > 0 ? 'is-invalid' : ''">
         Are you sure you want to delete #{{ channelName }}?
         Doing so will delete all messages within the channel.
         This operation cannot be undone.
       </span>
+      <div class="invalid-feedback">
+        {{ errorMessage }}
+      </div>
     </template>
 
     <template v-slot:footer>
@@ -38,7 +41,8 @@ export default {
       channelId: -1,
       channelName: 0,
       shown: false,
-      waiting: false
+      waiting: false,
+      errorMessage: ""
     }
   },
 
@@ -47,6 +51,7 @@ export default {
       this.channelId = channelId;
       this.channelName = channelName;
       this.waiting = false;
+      this.errorMessage = "";
       this.shown = true;
     },
 
@@ -65,8 +70,13 @@ export default {
       }
     },
 
-    channelError() {
-      this.shown = false;
+    channelError(error) {
+      this.waiting = false;
+      if (error === "Cannot delete lone channel") {
+        this.errorMessage = "You cannot delete a channel if it is the only channel in a group.";
+      } else {
+        this.errorMessage = "Error occurred while trying to delete channel.";
+      }
     }
   }
 };

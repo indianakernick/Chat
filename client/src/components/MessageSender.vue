@@ -35,6 +35,12 @@ export default {
 
 <style>
 div.form-control {
-  height: unset;
+  /*
+  form-control height is set to this calc expression.
+  Duplicating it here seems a bit fragile but I'm not sure what else to do.
+  Could maybe use SCSS somehow...
+  */
+  min-height: calc(1.5em + 0.75rem + 2px);
+  height: auto;
 }
 </style>

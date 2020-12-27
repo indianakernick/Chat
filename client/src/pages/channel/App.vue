@@ -1,16 +1,22 @@
 <template>
   <div class="container-fluid w-100 h-100 d-flex flex-column">
     <div class="row">
-      <GroupTitle :groupInfo="groupInfo"/>
       <ProfileNav :userInfo="userInfo"/>
     </div>
     <div class="row flex-grow-1">
 
-      <div class="d-flex flex-column" style="flex-basis: 64px">
+      <div class="d-flex flex-column" style="flex-basis: 90px">
         <div class="scrollable-container">
           <ul class="scrollable-block list-group">
-            <!-- <Group v-for > -->
-            <li><button class="btn btn-primary" @click="showCreateGroupDialog">+</button></li>
+            <Group
+              v-for="group in groupList"
+              :groupId="group.group_id"
+              :name="group.name"
+              :picture="group.picture"
+              :currentGroupId="currentGroupId"
+              @selectGroup="selectGroup"
+            />
+            <li><button class="btn btn-primary" @click="showCreateGroupDialog" title="Create group">+</button></li>
           </ul>
         </div>
       </div>
@@ -18,7 +24,7 @@
       <div class="col-3 d-flex flex-column">
         <div class="channel-heading">
           <h2>Channels</h2>
-          <button class="btn btn-primary" @click="showCreateChannelDialog">+</button>
+          <button class="btn btn-primary" @click="showCreateChannelDialog" title="Create channel">+</button>
         </div>
         <div class="scrollable-container">
           <ul class="scrollable-block list-group">
@@ -58,8 +64,8 @@
 </template>
 
 <script>
+import Group from "@/components/Group.vue";
 import Channel from "@/components/Channel.vue";
-import GroupTitle from "@/components/GroupTitle.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
 import MessageList from "@/components/MessageList.vue";
 import MessageSender from "@/components/MessageSender.vue";
@@ -106,7 +112,7 @@ export default {
 
   components: {
     Channel,
-    GroupTitle,
+    Group,
     ProfileNav,
     MessageList,
     MessageSender,
@@ -118,7 +124,8 @@ export default {
   data() {
     userInfoCache.cache[USER_ID] = USER_INFO;
     return {
-      groupInfo: GROUP_INFO,
+      groupList: GROUP_LIST,
+      currentGroupId: GROUP_ID,
       userInfo: USER_INFO,
       userInfoCache: userInfoCache,
       currentChannelId: CHANNEL_ID,
@@ -152,12 +159,21 @@ export default {
     },
 
     selectChannel(channelId) {
+      if (this.currentChannelId === channelId) return;
       this.currentChannelId = channelId;
-      window.history.replaceState(null, "", `/channel/${GROUP_ID}/${channelId}`);
+      window.history.replaceState(null, "", `/channel/${this.currentGroupId}/${channelId}`);
       const channelName = this.channelList.find(channel =>
         channel.channel_id === channelId
       ).name;
-      document.title = this.groupInfo.name + "#" + channelName;
+      const groupName = this.groupList.find(group =>
+        group.group_id === this.currentGroupId
+      ).name;
+      document.title = groupName + "#" + channelName;
+    },
+
+    selectGroup(groupId) {
+      if (this.currentGroupId === groupId) return;
+      console.log("Selecting group", groupId);
     },
 
     sendMessage(content) {
@@ -200,7 +216,7 @@ export default {
     },
 
     initSocket() {
-      this.socket = new WebSocket(`wss://${window.location.host}/api/socket/${GROUP_ID}`);
+      this.socket = new WebSocket(`wss://${window.location.host}/api/socket/${this.currentGroupId}`);
     },
 
     initListeners() {

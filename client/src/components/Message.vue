@@ -58,7 +58,7 @@ const timeFormatManager = {
   },
 
   update() {
-    const now = new Date().getTime();
+    const now = Date.now();
 
     this.today = new Date(now);
     const today = this.today.setHours(0, 0, 0, 0);
@@ -78,8 +78,9 @@ const timeFormatManager = {
       this.updateMessages(this.thisYearMessages, nextYear);
     }
 
-    // TODO: This fails if the computer sleeps (laptop lid closes)
-    setTimeout(this.update, tomorrow - now);
+    let nextMinute = new Date(now);
+    nextMinute = nextMinute.setMinutes(nextMinute.getMinutes() + 1, 0, 0);
+    setTimeout(() => this.update(), nextMinute - now);
   },
 
   updateMessages(messages, newDate) {

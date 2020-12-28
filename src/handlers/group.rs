@@ -42,9 +42,10 @@ pub async fn create_group(pool: Pool, session_id: String, request: Request)
 
     // Someone without an account could check if a group name exists but I don't
     // see why that would be a problem.
-    if !db::valid_session(pool.clone(), session_id).await? {
-        return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED));
-    }
+    let user_id = match db::session_user_id(pool.clone(), session_id).await? {
+        Some(id) => id,
+        None => return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED))
+    };
 
     let group_id = match db::create_group(pool.clone(), request.name, request.picture).await? {
         Some(id) => id,
@@ -57,12 +58,16 @@ pub async fn create_group(pool: Pool, session_id: String, request: Request)
         }
     };
 
+    let (channel_id, joined) = futures::future::join(
+        db::create_channel(pool.clone(), group_id, &"general".to_owned()),
+        db::join_group(pool.clone(), user_id, group_id)
+    ).await;
+
     // Unwrapping the Option returned by create_channel because it is None if
     // the channel name is not unique within the group. We just created the
     // group so it must be unique.
-    db::create_channel(
-        pool.clone(), group_id, &"general".to_owned()
-    ).await.map_err(|e| crate::error::Error::Database(e))?.unwrap();
+    channel_id.map_err(|e| crate::error::Error::Database(e))?.unwrap();
+    joined?;
 
     Ok(Box::new(warp::reply::json(
         &Response::Success {

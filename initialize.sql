@@ -95,3 +95,16 @@ CREATE TABLE IF NOT EXISTS Membership (
 -- fast. Getting the list of users in a group would require a separate index.
 CREATE UNIQUE INDEX IF NOT EXISTS membership_user_group_idx
     ON Membership (user_id, group_id);
+
+CREATE TABLE IF NOT EXISTS Invitation (
+    invite_id CHAR(16) COLLATE "C" NOT NULL,
+    group_id INTEGER NOT NULL,
+    creation_time TIMESTAMPTZ NOT NULL,
+
+    PRIMARY KEY (invite_id),
+
+    FOREIGN KEY (group_id)
+        REFERENCES Groop (group_id)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);

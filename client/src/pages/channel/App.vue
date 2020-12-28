@@ -35,6 +35,12 @@
             title="Create channel"
             :disabled="!connected"
           >+</button>
+          <button
+            class="btn btn-primary"
+            @click="showInviteDialog"
+            title="Create an invite link"
+            :disabled="!connected"
+          >i</button>
         </div>
         <div class="scrollable-container">
           <ul class="scrollable-block list-group">
@@ -72,6 +78,7 @@
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
   <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
   <GroupCreateDialog @createGroup="createGroup" ref="createGroupDialog"/>
+  <InviteDialog :groupId="currentGroupId" :groupName="currentGroupName" ref="inviteDialog"/>
 </template>
 
 <script>
@@ -79,6 +86,7 @@ import Group from "@/components/Group.vue";
 import Channel from "@/components/Channel.vue";
 import ProfileNav from "@/components/ProfileNav.vue";
 import MessageList from "@/components/MessageList.vue";
+import InviteDialog from "@/components/InviteDialog.vue";
 import MessageSender from "@/components/MessageSender.vue";
 import GroupCreateDialog from "@/components/GroupCreateDialog.vue";
 import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
@@ -126,6 +134,7 @@ export default {
     Group,
     ProfileNav,
     MessageList,
+    InviteDialog,
     MessageSender,
     GroupCreateDialog,
     ChannelCreateDialog,
@@ -156,6 +165,14 @@ export default {
     window.app = this;
   },
 
+  computed: {
+    currentGroupName() {
+      return this.groupList.find(group =>
+        group.group_id === this.currentGroupId
+      ).name;
+    }
+  },
+
   methods: {
     showCreateChannelDialog() {
       if (!this.connected) return;
@@ -172,6 +189,11 @@ export default {
       this.$refs.createGroupDialog.show();
     },
 
+    showInviteDialog() {
+      if (!this.connected) return;
+      this.$refs.inviteDialog.show();
+    },
+
     selectChannel(channelId) {
       if (this.currentChannelId === channelId) return;
       this.currentChannelId = channelId;
@@ -179,10 +201,7 @@ export default {
       const channelName = this.channelList.find(channel =>
         channel.channel_id === channelId
       ).name;
-      const groupName = this.groupList.find(group =>
-        group.group_id === this.currentGroupId
-      ).name;
-      document.title = groupName + "#" + channelName;
+      document.title = this.currentGroupName + "#" + channelName;
     },
 
     selectGroup(groupId) {

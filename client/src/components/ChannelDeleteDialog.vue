@@ -1,12 +1,12 @@
 <template>
   <ModalDialog :shown="shown" @submitForm="submitForm">
     <template v-slot:header>
-      Delete #{{ channelName }}
+      Delete <em>#{{ channelName }}</em>
     </template>
 
     <template v-slot:body>
       <span :class="errorMessage.length > 0 ? 'is-invalid' : ''">
-        Are you sure you want to delete #{{ channelName }}?
+        Are you sure you want to delete <em>#{{ channelName }}</em>?
         Doing so will delete all messages within the channel.
         This operation cannot be undone.
       </span>

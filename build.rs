@@ -13,6 +13,7 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/ChannelDeleteDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/Group.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupCreateDialog.vue");
+    println!("cargo:rerun-if-changed=client/src/components/InviteDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/Message.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageList.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageSender.vue");

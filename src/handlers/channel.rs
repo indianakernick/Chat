@@ -20,19 +20,15 @@ fn ser_json<T: Serialize>(value: &T) -> String {
     serde_json::to_string(value).unwrap().replace("</script>", "<\\/script>")
 }
 
-// TODO: Maybe we can do this better...
-// Invalid channel takes the user to the first channel of the group
-// Invalid group takes the user to the first group of the user
-// Careful not to reveal any information to an attacker
-
-pub async fn channel(group_id: db::GroupID, channel_id: Option<db::ChannelID>, session_id: db::SessionID, pool: Pool)
+// TODO: Handle invalid group_id
+pub async fn channel(group_id: db::GroupID, mut channel_id: db::ChannelID, session_id: db::SessionID, pool: Pool)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let user = match db::session_user(pool.clone(), &session_id).await? {
         Some(user) => user,
-        None => return Ok(Box::new(warp::redirect(match channel_id {
-            Some(id) => format!("/login?redirect=/channel/{}/{}", group_id, id),
-            None => format!("/login?redirect=/group/{}", group_id),
-        }.parse::<warp::http::Uri>().unwrap())))
+        None => return Ok(Box::new(warp::redirect(
+            format!("/login?redirect=/channel/{}/{}", group_id, channel_id)
+                 .parse::<warp::http::Uri>().unwrap()
+        )))
     };
 
     let (group_list, channel_list) = futures::future::join(
@@ -51,13 +47,12 @@ pub async fn channel(group_id: db::GroupID, channel_id: Option<db::ChannelID>, s
         Some(group) => group.name.clone(),
         None => return Ok(Box::new(warp::http::StatusCode::NOT_FOUND))
     };
-    let channel_id = match channel_id {
-        Some(id) => id,
-        None => channel_list[0].channel_id
-    };
     let channel_name = match channel_list.iter().find(|c| c.channel_id == channel_id) {
         Some(channel) => channel.name.as_str(),
-        None => return Ok(Box::new(warp::http::StatusCode::NOT_FOUND))
+        None => {
+            channel_id = channel_list[0].channel_id;
+            channel_list[0].name.as_str()
+        }
     };
 
     let user_info = db::AnonUser {

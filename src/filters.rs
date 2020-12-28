@@ -30,18 +30,17 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .and(warp::get())
         .and(session_id())
         .and(with_pool(pool))
-        .map(|group_id, channel_id, session_id, pool| (group_id, Some(channel_id), session_id, pool))
-        .untuple_one()
         .and_then(handlers::channel)
         .recover(rejection)
 }
 
+// TODO: Do we need this?
 pub fn group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("group" / GroupID)
         .and(warp::get())
         .and(session_id())
         .and(with_pool(pool))
-        .map(|group_id, session_id, pool| (group_id, None, session_id, pool))
+        .map(|group_id, session_id, pool| (group_id, 0, session_id, pool))
         .untuple_one()
         .and_then(handlers::channel)
         .recover(rejection)

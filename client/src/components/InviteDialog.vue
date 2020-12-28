@@ -1,7 +1,7 @@
 <template>
   <ModalDialog :shown="shown" @submitForm="submitForm">
     <template v-slot:header>
-      Invite users to <em>{{ groupName }}</em>
+      Invite people to <em>{{ groupName }}</em>
     </template>
 
     <template v-slot:body>

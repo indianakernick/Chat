@@ -23,7 +23,7 @@ pub async fn accept_invite(invite_id: db::InviteID, session_id: db::SessionID, p
     // doesn't matter because either way, we should take the user to the group.
     db::join_group(pool.clone(), user_id, group_id).await?;
 
-    super::channel(group_id, None, session_id, pool).await
+    super::channel(group_id, 0, session_id, pool).await
 }
 
 #[derive(Serialize)]

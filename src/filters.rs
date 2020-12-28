@@ -54,6 +54,17 @@ pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error
         .recover(rejection)
 }
 
+pub fn create_invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("api" / "invite" / "create")
+        .and(warp::post())
+        .and(with_pool(pool))
+        .and(warp::cookie("session_id"))
+        .and(warp::body::content_length_limit(handlers::CREATE_INVITE_LIMIT))
+        .and(warp::body::json())
+        .and_then(handlers::create_invite)
+        .recover(rejection)
+}
+
 pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("favicon.ico")
         .and(warp::get())

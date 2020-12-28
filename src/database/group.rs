@@ -83,3 +83,17 @@ pub async fn group_list(pool: Pool, user_id: UserID) -> Result<Vec<Group>, Error
         picture: row.get(2),
     }).collect())
 }
+
+/// Determine whether a user is a member of a group
+pub async fn group_member(pool: Pool, user_id: UserID, group_id: GroupID)
+    -> Result<bool, Error>
+{
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT 1
+        FROM Membership
+        WHERE user_id = $1
+        AND group_id = $2
+    ").await?;
+    Ok(conn.query_opt(&stmt, &[&user_id, &group_id]).await?.is_some())
+}

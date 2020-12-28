@@ -12,16 +12,15 @@ enum Response {
 }
 
 #[derive(Deserialize)]
-pub struct Request {
+pub struct CreateGroupRequest {
     name: String,
     picture: String,
 }
 
-// {"name":"","picture":""}
 pub const CREATE_GROUP_LIMIT: u64 =
-    (4 * db::MAX_GROUP_NAME_LENGTH + 4 * db::MAX_URL_LENGTH + 24) as u64;
+    ("{'name':'','picture':''}".len() + 4 * db::MAX_GROUP_NAME_LENGTH + 4 * db::MAX_URL_LENGTH) as u64;
 
-pub async fn create_group(pool: Pool, session_id: String, request: Request)
+pub async fn create_group(pool: Pool, session_id: String, request: CreateGroupRequest)
     -> Result<Box<dyn warp::Reply>, warp::Rejection>
 {
     if !db::valid_group_name(&request.name) {

@@ -230,6 +230,7 @@ dependencies = [
  "futures",
  "headers",
  "jsonwebtoken",
+ "lexical-core",
  "log",
  "pretty_env_logger",
  "rand 0.7.3",

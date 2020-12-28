@@ -5,12 +5,12 @@ use deadpool_postgres::Pool;
 pub type UserID = i32;
 
 #[derive(Serialize)]
-pub struct UserInfo {
+pub struct AnonUser {
     pub name: String,
     pub picture: String,
 }
 
-pub async fn user_info(pool: Pool, user_id: UserID) -> Result<Option<UserInfo>, Error> {
+pub async fn user(pool: Pool, user_id: UserID) -> Result<Option<AnonUser>, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         SELECT name, picture
@@ -18,7 +18,7 @@ pub async fn user_info(pool: Pool, user_id: UserID) -> Result<Option<UserInfo>, 
         WHERE user_id = $1
     ").await?;
     Ok(conn.query_opt(&stmt, &[&user_id]).await?.map(|row| {
-        UserInfo {
+        AnonUser {
             name: row.get(0),
             picture: row.get(1)
         }
@@ -27,7 +27,7 @@ pub async fn user_info(pool: Pool, user_id: UserID) -> Result<Option<UserInfo>, 
 
 // TODO: Maybe use a struct named GoogleUserInfo
 
-pub async fn user_from_google(pool: Pool, claims: &crate::handlers::Claims) -> Result<UserID, Error> {
+pub async fn user_id_from_google(pool: Pool, claims: &crate::handlers::Claims) -> Result<UserID, Error> {
     let conn = pool.get().await?;
     // https://stackoverflow.com/a/6722460/4093378
     let stmt = conn.prepare("

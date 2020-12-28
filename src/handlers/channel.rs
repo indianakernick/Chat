@@ -21,7 +21,7 @@ fn ser_json<T: Serialize>(value: &T) -> String {
 
 pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_id: db::SessionID, pool: Pool)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    let session = match db::session_info(pool.clone(), session_id).await? {
+    let user = match db::session_user(pool.clone(), session_id).await? {
         Some(s) => s,
         None => return Ok(Box::new(warp::redirect(
             format!("/login?redirect=/channel/{}/{}", group_id, channel_id)
@@ -30,7 +30,7 @@ pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_i
     };
 
     let (group_list, channel_list) = futures::future::join(
-        db::group_list(pool.clone(), session.user_id),
+        db::group_list(pool.clone(), user.user_id),
         db::group_channels(pool.clone(), group_id)
     ).await;
 
@@ -50,9 +50,9 @@ pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_i
         None => return Ok(Box::new(warp::http::StatusCode::NOT_FOUND))
     };
 
-    let user_info = db::UserInfo {
-        name: session.name,
-        picture: session.picture
+    let user_info = db::AnonUser {
+        name: user.name,
+        picture: user.picture
     };
 
     Ok(Box::new(ChannelTemplate {
@@ -62,6 +62,6 @@ pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_i
         channel_list: ser_json(&channel_list),
         channel_id,
         group_id,
-        user_id: session.user_id
+        user_id: user.user_id
     }))
 }

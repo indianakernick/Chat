@@ -11,7 +11,8 @@
   - How do we handle accounts? Google
   - Perhaps also talk about the problems that I didn't solve, or didn't try to
     solve. e.g. roles for users within a group, binary message format, legal
-    stuff around deleted users (note in initialize.sql)
+    stuff around deleted users (note in initialize.sql), login with something
+    other than google
 - Skills I learnt and how I applied them
   - Rust, warp, postgres
   - Database modelling

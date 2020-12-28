@@ -52,16 +52,15 @@ pub async fn session_user_id(pool: Pool, session_id: SessionID)
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
 }
 
-// TODO: Might make more sense to call this UserInfo or User
 #[derive(Serialize)]
-pub struct SessionInfo {
+pub struct User {
     pub user_id: UserID,
     pub name: String,
     pub picture: String,
 }
 
-pub async fn session_info(pool: Pool, session_id: SessionID)
-    -> Result<Option<SessionInfo>, Error>
+pub async fn session_user(pool: Pool, session_id: SessionID)
+    -> Result<Option<User>, Error>
 {
     if session_id.len() != SESSION_ID_LENGTH {
         return Ok(None);
@@ -77,7 +76,7 @@ pub async fn session_info(pool: Pool, session_id: SessionID)
     )).await?;
 
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| {
-        SessionInfo {
+        User {
             user_id: row.get(0),
             name: row.get(1),
             picture: row.get(2)

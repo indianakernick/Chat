@@ -75,3 +75,23 @@ CREATE TABLE IF NOT EXISTS Message (
 
 CREATE UNIQUE INDEX IF NOT EXISTS channel_message_idx
     ON Message (channel_id, message_id);
+
+CREATE TABLE IF NOT EXISTS Membership (
+    user_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
+
+    FOREIGN KEY (user_id)
+        REFERENCES Usr (user_id)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (group_id)
+        REFERENCES Groop (group_id)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);
+
+-- Indexing on user then group so that getting the list of groups for a user is
+-- fast. Getting the list of users in a group would require a separate index.
+CREATE UNIQUE INDEX IF NOT EXISTS membership_user_group_idx
+    ON Membership (user_id, group_id);

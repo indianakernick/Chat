@@ -28,8 +28,7 @@ pub async fn create_group(pool: Pool, name: String, picture: String)
 
 /// Get the channels in a group
 ///
-/// Returns an empty vector if the group is invalid (or if there are no channels
-/// in a valid group)
+/// Returns an empty vector if the group is invalid.
 pub async fn group_channels(pool: Pool, group_id: GroupID)
     -> Result<Vec<Channel>, Error>
 {
@@ -38,6 +37,7 @@ pub async fn group_channels(pool: Pool, group_id: GroupID)
         SELECT channel_id, name
         FROM Channel
         WHERE group_id = $1
+        ORDER BY channel_id
     ").await?;
     Ok(conn.query(&stmt, &[&group_id])
         .await?
@@ -69,13 +69,15 @@ pub struct Group {
 
 /// Get the list of groups that a user is a member of.
 pub async fn group_list(pool: Pool, user_id: UserID) -> Result<Vec<Group>, Error> {
-    // Group membership isn't currently stored in the database
     let conn = pool.get().await?;
     let stmt = conn.prepare("
-        SELECT group_id, name, COALESCE(picture, '')
+        SELECT Groop.group_id, name, COALESCE(picture, '')
         FROM Groop
+        JOIN Membership ON Membership.group_id = Groop.group_id
+        WHERE Membership.user_id = $1
+        ORDER BY Groop.group_id
     ").await?;
-    Ok(conn.query(&stmt, &[]).await?.iter().map(|row| Group {
+    Ok(conn.query(&stmt, &[&user_id]).await?.iter().map(|row| Group {
         group_id: row.get(0),
         name: row.get(1),
         picture: row.get(2),

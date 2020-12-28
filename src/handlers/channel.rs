@@ -30,7 +30,7 @@ pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_i
     };
 
     let (group_list, channel_list) = futures::future::join(
-        db::group_list(pool.clone(), group_id),
+        db::group_list(pool.clone(), session.user_id),
         db::group_channels(pool.clone(), group_id)
     ).await;
 

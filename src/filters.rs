@@ -30,6 +30,19 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .and(warp::get())
         .and(session_id())
         .and(with_pool(pool))
+        .map(|group_id, channel_id, session_id, pool| (group_id, Some(channel_id), session_id, pool))
+        .untuple_one()
+        .and_then(handlers::channel)
+        .recover(rejection)
+}
+
+pub fn group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("group" / GroupID)
+        .and(warp::get())
+        .and(session_id())
+        .and(with_pool(pool))
+        .map(|group_id, session_id, pool| (group_id, None, session_id, pool))
+        .untuple_one()
         .and_then(handlers::channel)
         .recover(rejection)
 }
@@ -62,30 +75,6 @@ pub fn create_invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Erro
         .and(warp::body::content_length_limit(handlers::CREATE_INVITE_LIMIT))
         .and(warp::body::json())
         .and_then(handlers::create_invite)
-        .recover(rejection)
-}
-
-pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("favicon.ico")
-        .and(warp::get())
-        .and(warp::fs::file("client/dist/favicon.ico"))
-        .map(cache_long)
-        .recover(rejection)
-}
-
-pub fn js() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path("js")
-        .and(warp::get())
-        .and(warp::fs::dir("client/dist/js"))
-        .map(cache_long)
-        .recover(rejection)
-}
-
-pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path("css")
-        .and(warp::get())
-        .and(warp::fs::dir("client/dist/css"))
-        .map(cache_long)
         .recover(rejection)
 }
 
@@ -128,6 +117,30 @@ pub fn auth_fail() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reje
         .and(warp::get())
         .and(warp::query::<handlers::AuthFail>())
         .and_then(handlers::auth_fail)
+        .recover(rejection)
+}
+
+pub fn favicon() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("favicon.ico")
+        .and(warp::get())
+        .and(warp::fs::file("client/dist/favicon.ico"))
+        .map(cache_long)
+        .recover(rejection)
+}
+
+pub fn js() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path("js")
+        .and(warp::get())
+        .and(warp::fs::dir("client/dist/js"))
+        .map(cache_long)
+        .recover(rejection)
+}
+
+pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path("css")
+        .and(warp::get())
+        .and(warp::fs::dir("client/dist/css"))
+        .map(cache_long)
         .recover(rejection)
 }
 

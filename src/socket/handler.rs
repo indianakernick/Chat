@@ -233,8 +233,6 @@ impl<'a> MessageContext<'a> {
         let channel_id = match db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await? {
             Some(id) => id,
             None => {
-                // JavaScript can check for this but the JavaScript can be wrong
-                // if two people try to create channels at the same time.
                 self.reply_error(group, "Channel name exists");
                 return Ok(());
             }

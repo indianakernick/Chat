@@ -7,26 +7,32 @@ use deadpool_postgres::Pool;
 #[template(path = "channel.html")]
 struct ChannelTemplate {
     title: String,
+    group_id: db::GroupID,
+    channel_id: db::ChannelID,
+    user_id: db::UserID,
     user_info: String,
     group_list: String,
     channel_list: String,
-    channel_id: db::ChannelID,
-    group_id: db::GroupID,
-    user_id: db::UserID,
+    url: String,
 }
 
 fn ser_json<T: Serialize>(value: &T) -> String {
     serde_json::to_string(value).unwrap().replace("</script>", "<\\/script>")
 }
 
-pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_id: db::SessionID, pool: Pool)
+// TODO: Maybe we can do this better...
+// Invalid channel takes the user to the first channel of the group
+// Invalid group takes the user to the first group of the user
+// Careful not to reveal any information to an attacker
+
+pub async fn channel(group_id: db::GroupID, channel_id: Option<db::ChannelID>, session_id: db::SessionID, pool: Pool)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    let user = match db::session_user(pool.clone(), session_id).await? {
-        Some(s) => s,
-        None => return Ok(Box::new(warp::redirect(
-            format!("/login?redirect=/channel/{}/{}", group_id, channel_id)
-                .parse::<warp::http::Uri>().unwrap()
-        )))
+    let user = match db::session_user(pool.clone(), &session_id).await? {
+        Some(user) => user,
+        None => return Ok(Box::new(warp::redirect(match channel_id {
+            Some(id) => format!("/login?redirect=/channel/{}/{}", group_id, id),
+            None => format!("/login?redirect=/group/{}", group_id),
+        }.parse::<warp::http::Uri>().unwrap())))
     };
 
     let (group_list, channel_list) = futures::future::join(
@@ -45,6 +51,10 @@ pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_i
         Some(group) => group.name.clone(),
         None => return Ok(Box::new(warp::http::StatusCode::NOT_FOUND))
     };
+    let channel_id = match channel_id {
+        Some(id) => id,
+        None => channel_list[0].channel_id
+    };
     let channel_name = match channel_list.iter().find(|c| c.channel_id == channel_id) {
         Some(channel) => channel.name.as_str(),
         None => return Ok(Box::new(warp::http::StatusCode::NOT_FOUND))
@@ -57,11 +67,12 @@ pub async fn channel(group_id: db::GroupID, channel_id: db::ChannelID, session_i
 
     Ok(Box::new(ChannelTemplate {
         title: group_name + "#" + channel_name,
+        group_id,
+        channel_id,
+        user_id: user.user_id,
         user_info: ser_json(&user_info),
         group_list: ser_json(&group_list),
         channel_list: ser_json(&channel_list),
-        channel_id,
-        group_id,
-        user_id: user.user_id
+        url: format!("/channel/{}/{}", group_id, channel_id),
     }))
 }

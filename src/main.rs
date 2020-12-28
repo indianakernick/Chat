@@ -45,16 +45,17 @@ async fn main() {
 
     let routes = filters::login()
         .or(filters::channel(pool.clone()))
+        .or(filters::group(pool.clone()))
         .or(filters::invite(pool.clone()))
         .or(filters::create_group(pool.clone()))
         .or(filters::create_invite(pool.clone()))
-        .or(filters::favicon())
-        .or(filters::js())
-        .or(filters::css())
         .or(filters::user(pool.clone()))
         .or(filters::socket(pool.clone()))
         .or(filters::auth_success(pool.clone()))
         .or(filters::auth_fail())
+        .or(filters::favicon())
+        .or(filters::js())
+        .or(filters::css())
         .recover(filters::leaked_rejection);
 
     warp::serve(routes.with(warp::log("chat")))

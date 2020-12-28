@@ -33,7 +33,7 @@ pub async fn create_session(pool: Pool, user_id: UserID)
     Ok(session_id)
 }
 
-pub async fn session_user_id(pool: Pool, session_id: SessionID)
+pub async fn session_user_id(pool: Pool, session_id: &SessionID)
     -> Result<Option<UserID>, Error>
 {
     // This function is nearly identical to invitation_group_id
@@ -49,7 +49,7 @@ pub async fn session_user_id(pool: Pool, session_id: SessionID)
         AND creation_time > NOW() - ", creation_timeout!()
     )).await?;
 
-    Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
+    Ok(conn.query_opt(&stmt, &[session_id]).await?.map(|row| row.get(0)))
 }
 
 #[derive(Serialize)]
@@ -59,7 +59,7 @@ pub struct User {
     pub picture: String,
 }
 
-pub async fn session_user(pool: Pool, session_id: SessionID)
+pub async fn session_user(pool: Pool, session_id: &SessionID)
     -> Result<Option<User>, Error>
 {
     if session_id.len() != SESSION_ID_LENGTH {
@@ -75,7 +75,7 @@ pub async fn session_user(pool: Pool, session_id: SessionID)
         AND creation_time > NOW() - ", creation_timeout!()
     )).await?;
 
-    Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| {
+    Ok(conn.query_opt(&stmt, &[session_id]).await?.map(|row| {
         User {
             user_id: row.get(0),
             name: row.get(1),

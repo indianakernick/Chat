@@ -41,7 +41,7 @@ pub async fn create_group(pool: Pool, session_id: String, request: CreateGroupRe
 
     // Someone without an account could check if a group name exists but I don't
     // see why that would be a problem.
-    let user_id = match db::session_user_id(pool.clone(), session_id).await? {
+    let user_id = match db::session_user_id(pool.clone(), &session_id).await? {
         Some(id) => id,
         None => return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED))
     };

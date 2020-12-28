@@ -21,7 +21,6 @@ pub async fn recent_messages(pool: Pool, channel_id: ChannelID) -> Result<Vec<Ro
     conn.query(&stmt, &[&channel_id]).await.map_err(|e| e.into())
 }
 
-// TODO: Maybe use a struct here
 pub async fn create_message(
     pool: Pool,
     time: std::time::SystemTime,

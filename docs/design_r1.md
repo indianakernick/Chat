@@ -65,7 +65,7 @@ All rooms are private.
    - Remember that Bootstrap isn't meant to solve everything. You'll still need
      to write a lot of CSS yourself.
  - **[4]** Rename channels
-   - Any member a group can rename channels within the group.
+   - Any member of a group can rename channels within the group.
    - The new channel name must be unique within the group.
  - **[4]** Rename groups (including changing the picture)
    - Any member of a group can change the name or picture of that group.

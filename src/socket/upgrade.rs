@@ -44,7 +44,7 @@ pub struct ConnectionContext {
 pub async fn upgrade(group_id: db::GroupID, ws: Ws, session_id: db::SessionID, ctx: SocketContext)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let (user_id, valid) = futures::future::join(
-        db::session_user_id(ctx.pool.clone(), session_id),
+        db::session_user_id(ctx.pool.clone(), &session_id),
         db::valid_group(ctx.pool.clone(), group_id)
     ).await;
 

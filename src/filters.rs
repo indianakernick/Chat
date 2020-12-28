@@ -5,7 +5,7 @@ use crate::error::Error;
 use deadpool_postgres::Pool;
 use std::convert::Infallible;
 use crate::utils::cache_long;
-use crate::database::{ChannelID, UserID, GroupID};
+use crate::database::{ChannelID, UserID, GroupID, InviteID, SessionID};
 
 fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> + Clone {
     warp::any().map(move || pool.clone())
@@ -19,16 +19,27 @@ pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
-pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let session_id = warp::any()
+fn session_id() -> impl Filter<Extract = (SessionID,), Error = Infallible> + Clone {
+    warp::any()
         .and(warp::cookie::optional("session_id"))
-        .map(|session_id: Option<String>| session_id.unwrap_or(String::new()));
+        .map(|session_id: Option<String>| session_id.unwrap_or(String::new()))
+}
 
+pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("channel" / GroupID / ChannelID)
         .and(warp::get())
-        .and(session_id)
+        .and(session_id())
         .and(with_pool(pool))
         .and_then(handlers::channel)
+        .recover(rejection)
+}
+
+pub fn invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("invite" / InviteID)
+        .and(warp::get())
+        .and(session_id())
+        .and(with_pool(pool))
+        .and_then(handlers::accept_invite)
         .recover(rejection)
 }
 

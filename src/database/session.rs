@@ -52,6 +52,7 @@ pub async fn session_user_id(pool: Pool, session_id: SessionID)
     Ok(conn.query_opt(&stmt, &[&session_id]).await?.map(|row| row.get(0)))
 }
 
+// TODO: Might make more sense to call this UserInfo or User
 #[derive(Serialize)]
 pub struct SessionInfo {
     pub user_id: UserID,

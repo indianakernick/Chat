@@ -354,8 +354,8 @@ export default {
         return;
       }
 
-      console.log(event.data);
       const message = JSON.parse(event.data);
+      console.log(message);
       switch (message.type) {
         case "error":
           this.handleError(message.message);

@@ -36,8 +36,6 @@ pub fn valid_group_name(name: &String) -> bool {
     return name.chars().count() <= MAX_GROUP_NAME_LENGTH;
 }
 
-// TODO: valid_user_name
-
 pub fn valid_url(url: &String) -> bool {
     if url.is_empty() {
         return true;

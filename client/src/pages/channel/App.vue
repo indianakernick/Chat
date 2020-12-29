@@ -154,11 +154,16 @@ export default {
   },
 
   data() {
-    userInfoCache.cache[USER_ID] = USER_INFO;
+    for (const user of USER_LIST) {
+      userInfoCache.cache[user.user_id] = {
+        name: user.name,
+        picture: user.picture
+      };
+    }
     return {
       groupList: GROUP_LIST,
       currentGroupId: GROUP_ID,
-      userInfo: USER_INFO,
+      userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,
       currentChannelId: CHANNEL_ID,
       channelList: CHANNEL_LIST,

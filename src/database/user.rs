@@ -1,8 +1,16 @@
+use super::GroupID;
 use serde::Serialize;
 use crate::error::Error;
 use deadpool_postgres::Pool;
 
 pub type UserID = i32;
+
+#[derive(Serialize)]
+pub struct User {
+    pub user_id: UserID,
+    pub name: String,
+    pub picture: String,
+}
 
 #[derive(Serialize)]
 pub struct AnonUser {
@@ -43,4 +51,20 @@ pub async fn user_id_from_google(pool: Pool, claims: &crate::handlers::Claims) -
         LIMIT 1
     ").await?;
     Ok(conn.query_one(&stmt, &[&claims.sub, &claims.name, &claims.picture]).await?.get(0))
+}
+
+pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, Error> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT Usr.user_id, name, picture
+        FROM Usr
+        JOIN Membership ON Membership.user_id = Usr.user_id
+        WHERE Membership.group_id = $1
+        ORDER BY Usr.user_id
+    ").await?;
+    Ok(conn.query(&stmt, &[&group_id]).await?.iter().map(|row| User {
+        user_id: row.get(0),
+        name: row.get(1),
+        picture: row.get(2),
+    }).collect())
 }

@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="/favicon.ico">
     <title>{{title}}</title>
+    {% for url in preload_images %}
+    <link rel="preload" as="image" href="{{url|safe}}"/>
+    {% endfor %}
   </head>
   <body>
     <noscript>
@@ -16,8 +19,8 @@
     whitespace is removed though. Also need to use var to be compatible with the
     legacy build.
     -->
-    <script type="text/javascript">
-      var GROUP_ID={{group_id|safe}};var CHANNEL_ID={{channel_id|safe}};var USER_ID={{user_id|safe}};var USER_INFO={{user_info|safe}};var GROUP_LIST={{group_list|safe}};var CHANNEL_LIST={{channel_list|safe}};window.history.replaceState(null,"","{{url|safe}}")
+    <script>
+      var GROUP_ID={{group_id|safe}};var CHANNEL_ID={{channel_id|safe}};var USER_ID={{user_id|safe}};var USER_LIST={{user_list|safe}};var GROUP_LIST={{group_list|safe}};var CHANNEL_LIST={{channel_list|safe}};window.history.replaceState(null,"","{{url|safe}}")
     </script>
     <div id="app"></div>
     <!-- built files will be auto injected -->

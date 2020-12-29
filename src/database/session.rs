@@ -1,6 +1,5 @@
-use super::UserID;
-use serde::Serialize;
 use crate::error::Error;
+use super::{User, UserID};
 use deadpool_postgres::Pool;
 use crate::utils::generate_random_base64url;
 
@@ -50,13 +49,6 @@ pub async fn session_user_id(pool: Pool, session_id: &SessionID)
     )).await?;
 
     Ok(conn.query_opt(&stmt, &[session_id]).await?.map(|row| row.get(0)))
-}
-
-#[derive(Serialize)]
-pub struct User {
-    pub user_id: UserID,
-    pub name: String,
-    pub picture: String,
 }
 
 pub async fn session_user(pool: Pool, session_id: &SessionID)

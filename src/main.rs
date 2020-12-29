@@ -43,9 +43,9 @@ async fn main() {
 
     pretty_env_logger::init();
 
-    let routes = filters::login()
+    let routes = filters::root(pool.clone())
+        .or(filters::login())
         .or(filters::channel(pool.clone()))
-        .or(filters::group(pool.clone()))
         .or(filters::invite(pool.clone()))
         .or(filters::create_group(pool.clone()))
         .or(filters::create_invite(pool.clone()))

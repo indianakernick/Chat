@@ -11,6 +11,17 @@ fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> +
     warp::any().map(move || pool.clone())
 }
 
+pub fn root(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path::end()
+        .and(warp::get())
+        .and(session_id())
+        .and(with_pool(pool))
+        .map(|session_id, pool| (0, 0, session_id, pool))
+        .untuple_one()
+        .and_then(handlers::channel)
+        .recover(rejection)
+}
+
 pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("login")
         .and(warp::get())
@@ -30,18 +41,6 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
         .and(warp::get())
         .and(session_id())
         .and(with_pool(pool))
-        .and_then(handlers::channel)
-        .recover(rejection)
-}
-
-// TODO: Do we need this?
-pub fn group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("group" / GroupID)
-        .and(warp::get())
-        .and(session_id())
-        .and(with_pool(pool))
-        .map(|group_id, session_id, pool| (group_id, 0, session_id, pool))
-        .untuple_one()
         .and_then(handlers::channel)
         .recover(rejection)
 }

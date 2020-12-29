@@ -3,76 +3,88 @@
     <div class="row">
       <ProfileNav :userInfo="userInfo"/>
     </div>
-    <div class="row flex-grow-1">
 
-      <div class="d-flex flex-column" style="flex-basis: 90px">
-        <div class="scrollable-container">
-          <ul class="scrollable-block list-group">
-            <Group
-              v-for="group in groupList"
-              :groupId="group.group_id"
-              :name="group.name"
-              :picture="group.picture"
-              :currentGroupId="currentGroupId"
-              @selectGroup="selectGroup"
-            />
-            <li><button
+    <template v-if="groupList.length > 0">
+      <div class="row flex-grow-1">
+
+        <div class="d-flex flex-column" style="flex-basis: 90px">
+          <div class="scrollable-container">
+            <ul class="scrollable-block list-group">
+              <Group
+                v-for="group in groupList"
+                :groupId="group.group_id"
+                :name="group.name"
+                :picture="group.picture"
+                :currentGroupId="currentGroupId"
+                @selectGroup="selectGroup"
+              />
+              <li><button
+                class="btn btn-primary"
+                @click="showCreateGroupDialog"
+                title="Create group"
+              >+</button></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="col-3 d-flex flex-column">
+          <div class="channel-heading">
+            <h2>Channels</h2>
+            <button
               class="btn btn-primary"
-              @click="showCreateGroupDialog"
-              title="Create group"
+              @click="showCreateChannelDialog"
+              title="Create channel"
               :disabled="!connected"
-            >+</button></li>
-          </ul>
+            >+</button>
+            <button
+              class="btn btn-primary"
+              @click="showInviteDialog"
+              title="Create an invite link"
+              :disabled="!connected"
+            >i</button>
+          </div>
+          <div class="scrollable-container">
+            <ul class="scrollable-block list-group">
+              <Channel
+                v-for="channel in channelList"
+                :channelId="channel.channel_id"
+                :name="channel.name"
+                :currentChannelId="currentChannelId"
+                :connected="connected"
+                @selectChannel="selectChannel"
+                @deleteChannel="showDeleteChannelDialog"
+              />
+            </ul>
+          </div>
         </div>
-      </div>
 
-      <div class="col-3 d-flex flex-column">
-        <div class="channel-heading">
-          <h2>Channels</h2>
-          <button
-            class="btn btn-primary"
-            @click="showCreateChannelDialog"
-            title="Create channel"
-            :disabled="!connected"
-          >+</button>
-          <button
-            class="btn btn-primary"
-            @click="showInviteDialog"
-            title="Create an invite link"
-            :disabled="!connected"
-          >i</button>
-        </div>
-        <div class="scrollable-container">
-          <ul class="scrollable-block list-group">
-            <Channel
+        <div class="col-8 d-flex flex-column">
+          <div class="scrollable-container d-flex flex-column-reverse">
+            <MessageList
+              class="scrollable-block"
               v-for="channel in channelList"
-              :channelId="channel.channel_id"
-              :name="channel.name"
-              :currentChannelId="currentChannelId"
-              :connected="connected"
-              @selectChannel="selectChannel"
-              @deleteChannel="showDeleteChannelDialog"
+              :key="channel.channel_id"
+              v-show="currentChannelId === channel.channel_id"
+              :ref="list => messageLists[channel.channel_id] = list"
+              :userInfo="userInfo"
+              :userInfoCache="userInfoCache"
             />
-          </ul>
+          </div>
+          <MessageSender @sendMessage="sendMessage" :connected="connected"/>
         </div>
-      </div>
 
-      <div class="col-8 d-flex flex-column">
-        <div class="scrollable-container d-flex flex-column-reverse">
-          <MessageList
-            class="scrollable-block"
-            v-for="channel in channelList"
-            :key="channel.channel_id"
-            v-show="currentChannelId === channel.channel_id"
-            :ref="list => messageLists[channel.channel_id] = list"
-            :userInfo="userInfo"
-            :userInfoCache="userInfoCache"
-          />
-        </div>
-        <MessageSender @sendMessage="sendMessage" :connected="connected"/>
       </div>
+    </template>
 
-    </div>
+    <template v-else>
+      You're not a member of any groups. Accept an invitation or create your own
+      group and invite others.
+      <button
+        class="btn btn-primary"
+        @click="showCreateGroupDialog"
+        title="Create group"
+      >Create group</button>
+    </template>
   </div>
 
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
@@ -160,16 +172,22 @@ export default {
   },
 
   created() {
-    this.openConnection();
+    if (this.groupList.length > 0) {
+      this.openConnection();
+    }
     // TODO: Don't forget to remove this
     window.app = this;
   },
 
   computed: {
     currentGroupName() {
-      return this.groupList.find(group =>
-        group.group_id === this.currentGroupId
-      ).name;
+      if (this.groupList.length > 0) {
+        return this.groupList.find(group =>
+          group.group_id === this.currentGroupId
+        ).name;
+      } else {
+        return "";
+      }
     }
   },
 

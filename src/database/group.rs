@@ -57,7 +57,7 @@ pub struct Group {
 }
 
 /// Get the list of groups that a user is a member of.
-pub async fn group_list(pool: Pool, user_id: UserID) -> Result<Vec<Group>, Error> {
+pub async fn user_groups(pool: Pool, user_id: UserID) -> Result<Vec<Group>, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         SELECT Groop.group_id, name, COALESCE(picture, '')

@@ -43,23 +43,18 @@ pub struct ConnectionContext {
 
 pub async fn upgrade(group_id: db::GroupID, ws: Ws, session_id: db::SessionID, ctx: SocketContext)
     -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    let (user_id, valid) = futures::future::join(
-        db::session_user_id(ctx.pool.clone(), &session_id),
-        db::valid_group(ctx.pool.clone(), group_id)
-    ).await;
-
     // The JavaScript that invokes this is only loaded when the session cookie
     // is valid. The only way that this error could happen is if the session
     // expires between loading the page and running the JavaScript. Another
     // possibility is someone directly accessing this endpoint but failing to
     // provide the cookie.
-    let user_id = match user_id? {
+    let user_id = match db::session_user_id(ctx.pool.clone(), &session_id).await? {
         Some(id) => id,
         None => return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR))
     };
 
     // Can only happen if someone is directly accessing the socket.
-    if !valid? {
+    if !db::group_member(ctx.pool.clone(), user_id, group_id).await? {
         return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR));
     }
 

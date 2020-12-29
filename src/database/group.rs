@@ -49,17 +49,6 @@ pub async fn group_channels(pool: Pool, group_id: GroupID)
         .collect())
 }
 
-/// Check whether a group ID is valid
-pub async fn valid_group(pool: Pool, group_id: GroupID) -> Result<bool, Error> {
-    let conn = pool.get().await?;
-    let stmt = conn.prepare("
-        SELECT 1
-        FROM Groop
-        WHERE group_id = $1
-    ").await?;
-    Ok(conn.query_opt(&stmt, &[&group_id]).await?.is_some())
-}
-
 #[derive(Serialize)]
 pub struct Group {
     pub group_id: GroupID,

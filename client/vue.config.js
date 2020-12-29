@@ -10,6 +10,11 @@ module.exports = {
       .end();
   },
 
+  // This configureWebpack thing seems to disable JavaScript preloading in the
+  // channel page. JavaScript preloading seems to disable JavaScript caching for
+  // some reason... I'm not 100% sure about that but it's what I observed.
+  // There's hardly any HTML between the preload and the script tags (just the
+  // block of JSON) so it's not really doing much anyway.
   configureWebpack: () => {
     let minify = false;
     if (process.env.NODE_ENV === "production") {

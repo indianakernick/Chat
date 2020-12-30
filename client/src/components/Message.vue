@@ -5,8 +5,7 @@
     <div class="message-right">
       <div>
         <span class="message-name" :class="{'deleted': deleted}">{{ userInfo.name }}</span>
-        -
-        <span class="message-time">{{ formattedTime }}</span>
+        &nbsp;<span class="message-time">{{ formattedTime }}</span>
       </div>
       <span class="message-content">{{ content }}</span>
     </div>
@@ -144,9 +143,47 @@ export default {
 </script>
 
 <style lang="scss">
+$padding: 8px;
+
 .message {
   display: flex;
   flex-direction: row;
+  padding: $padding $padding 0 $padding;
+}
+
+.message:last-child {
+  padding-bottom: $padding;
+}
+
+.message:hover {
+  background-color: gray;
+}
+
+.message-name {
+  font-weight: 500;
+  color: white;
+}
+
+.message-time {
+  color: silver;
+  font-size: 0.8rem;
+}
+
+.message-content {
+  color: gainsboro;
+}
+
+.sending span {
+  color: darkgray;
+}
+
+.message span {
+  transition: color 0.1s ease;
+}
+
+.message-picture {
+  border-radius: 16px;
+  margin-right: 8px;
 }
 
 .message-right {
@@ -154,11 +191,8 @@ export default {
   flex-direction: column;
 }
 
-.sending {
-  color: #555;
-}
-
 .deleted {
-  color: #F00;
+  color: silver;
+  font-style: italic;
 }
 </style>

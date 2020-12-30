@@ -1,91 +1,63 @@
 <template>
-  <div class="container-fluid w-100 h-100 d-flex flex-column">
-    <div class="row">
-      <ProfileNav :userInfo="userInfo"/>
-    </div>
+  <template v-if="groupList.length > 0">
+    <div class="d-flex flex-row h-100">
+      <GroupList
+        :groupList="groupList"
+        :currentGroupId="currentGroupId"
+        @selectGroup="selectGroup"
+        @createGroup="showCreateGroupDialog"
+      />
 
-    <template v-if="groupList.length > 0">
-      <div class="row flex-grow-1">
-
-        <div class="d-flex flex-column" style="flex-basis: 90px">
-          <div class="scrollable-container">
-            <ul class="scrollable-block list-group">
-              <Group
-                v-for="group in groupList"
-                :groupId="group.group_id"
-                :name="group.name"
-                :picture="group.picture"
-                :currentGroupId="currentGroupId"
-                @selectGroup="selectGroup"
-              />
-              <li><button
-                class="btn btn-primary"
-                @click="showCreateGroupDialog"
-                title="Create group"
-              >+</button></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="col-3 d-flex flex-column">
-          <div class="channel-heading">
-            <h2>Channels</h2>
-            <button
-              class="btn btn-primary"
-              @click="showCreateChannelDialog"
-              title="Create channel"
-              :disabled="!connected"
-            >+</button>
-            <button
-              class="btn btn-primary"
-              @click="showInviteDialog"
-              title="Create an invite link"
-              :disabled="!connected"
-            >i</button>
-          </div>
-          <div class="scrollable-container">
-            <ul class="scrollable-block list-group">
-              <Channel
-                v-for="channel in channelList"
-                :channelId="channel.channel_id"
-                :name="channel.name"
-                :currentChannelId="currentChannelId"
-                :connected="connected"
-                @selectChannel="selectChannel"
-                @deleteChannel="showDeleteChannelDialog"
-              />
-            </ul>
-          </div>
-        </div>
-
-        <div class="col-8 d-flex flex-column">
-          <div class="scrollable-container d-flex flex-column-reverse">
-            <MessageList
-              class="scrollable-block"
-              v-for="channel in channelList"
-              :key="channel.channel_id"
-              v-show="currentChannelId === channel.channel_id"
-              :ref="list => messageLists[channel.channel_id] = list"
-              :userInfo="userInfo"
-              :userInfoCache="userInfoCache"
-            />
-          </div>
-          <MessageSender @sendMessage="sendMessage" :connected="connected"/>
-        </div>
-
+      <div class="channel-column">
+        <GroupTitle :currentGroupName="currentGroupName"/>
+        <ChannelList
+          :channelList="channelList"
+          :currentChannelId="currentChannelId"
+          :connected="connected"
+          @selectChannel="selectChannel"
+          @deleteChannel="showDeleteChannelDialog"
+        />
       </div>
-    </template>
 
-    <template v-else>
-      You're not a member of any groups. Accept an invitation or create your own
-      group and invite others.
-      <button
-        class="btn btn-primary"
-        @click="showCreateGroupDialog"
-        title="Create group"
-      >Create group</button>
-    </template>
-  </div>
+      <div class="message-column">
+        <ChannelTitle :currentChannelName="currentChannelName"/>
+        <div class="message-list-container scrollable-container">
+          <MessageList
+            class="scrollable-block"
+            v-for="channel in channelList"
+            :key="channel.channel_id"
+            v-show="currentChannelId === channel.channel_id"
+            :ref="list => messageLists[channel.channel_id] = list"
+            :userInfo="userInfo"
+            :userInfoCache="userInfoCache"
+          />
+        </div>
+        <MessageSender
+          :connected="connected"
+          :currentChannelName="currentChannelName"
+          @sendMessage="sendMessage"
+        />
+      </div>
+
+      <div class="channel-column">
+        <UserTitle :userInfo="userInfo"/>
+        <UserList
+          :userList="userList"
+        />
+      </div>
+    </div>
+  </template>
+
+  <template v-else>
+    <!-- TODO: Need to style this. Also the login page -->
+    You're not a member of any groups. Accept an invitation or create your own
+    group and invite others.
+    <button
+      class="btn btn-primary"
+      @click="showCreateGroupDialog"
+      title="Create group"
+    >Create group</button>
+  </template>
 
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
   <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
@@ -94,9 +66,12 @@
 </template>
 
 <script>
-import Group from "@/components/Group.vue";
-import Channel from "@/components/Channel.vue";
-import ProfileNav from "@/components/ProfileNav.vue";
+import ChannelTitle from "@/components/ChannelTitle.vue";
+import GroupTitle from "@/components/GroupTitle.vue";
+import GroupList from "@/components/GroupList.vue";
+import ChannelList from "@/components/ChannelList.vue";
+import UserTitle from "@/components/UserTitle.vue";
+import UserList from "@/components/UserList.vue";
 import MessageList from "@/components/MessageList.vue";
 import InviteDialog from "@/components/InviteDialog.vue";
 import MessageSender from "@/components/MessageSender.vue";
@@ -142,9 +117,12 @@ export default {
   name: "App",
 
   components: {
-    Channel,
-    Group,
-    ProfileNav,
+    ChannelTitle,
+    GroupTitle,
+    ChannelList,
+    GroupList,
+    UserTitle,
+    UserList,
     MessageList,
     InviteDialog,
     MessageSender,
@@ -165,6 +143,7 @@ export default {
       currentGroupId: GROUP_ID,
       userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,
+      userList: USER_LIST,
       currentChannelId: CHANNEL_ID,
       channelList: CHANNEL_LIST,
       messageLists: {},
@@ -189,6 +168,16 @@ export default {
       if (this.groupList.length > 0) {
         return this.groupList.find(group =>
           group.group_id === this.currentGroupId
+        ).name;
+      } else {
+        return "";
+      }
+    },
+
+    currentChannelName() {
+      if (this.channelList.length > 0) {
+        return this.channelList.find(channel =>
+          channel.channel_id === this.currentChannelId
         ).name;
       } else {
         return "";
@@ -221,10 +210,7 @@ export default {
       if (this.currentChannelId === channelId) return;
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${this.currentGroupId}/${channelId}`);
-      const channelName = this.channelList.find(channel =>
-        channel.channel_id === channelId
-      ).name;
-      document.title = this.currentGroupName + "#" + channelName;
+      document.title = this.currentGroupName + "#" + this.currentChannelName;
     },
 
     selectGroup(groupId) {
@@ -448,15 +434,15 @@ export default {
 </script>
 
 <style lang="scss">
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 #app {
   width: 100vw;
   height: 100vh;
-}
-
-.channel-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .scrollable-container {
@@ -468,5 +454,25 @@ export default {
 .scrollable-block {
   position: absolute;
   width: 100%;
+}
+
+.channel-column {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 calc(100% / 6);
+  max-width: calc(100% / 6);
+  min-width: 120px;
+}
+
+.message-column {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.message-list-container {
+  display: flex;
+  flex-direction: column-reverse;
+  background-color: dimgray;
 }
 </style>

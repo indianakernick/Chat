@@ -1,14 +1,12 @@
 <template>
-  <li
-    class="list-group-item list-group-item-action"
+  <div
+    class="channel-list-item"
     :class="{'active': channelId === currentChannelId}"
     @click="selectChannel"
   >
-    {{ name }}
-    <button @click.stop="deleteChannel" class="close" :disabled="!connected">
-      <span>&times;</span>
-    </button>
-  </li>
+    <div class="channel-name"><span>#&nbsp;</span>{{ name }}</div>
+    <div class="channel-edit" @click.stop="deleteChannel">&nbsp;=</div>
+  </div>
 </template>
 
 <script>

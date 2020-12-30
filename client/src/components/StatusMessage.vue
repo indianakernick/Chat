@@ -14,7 +14,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style>
 .status {
   width: 100%;
   height: 100%;
@@ -24,6 +24,7 @@ export default {
 }
 
 .status > span {
-  text-align: center;
+  color: white;
+  font-size: 2rem;
 }
 </style>

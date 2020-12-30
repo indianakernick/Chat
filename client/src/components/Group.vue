@@ -1,12 +1,16 @@
 <template>
-  <li
-    class="list-group-item list-group-item-action"
+  <!-- https://stackoverflow.com/a/61042200/4093378 -->
+  <img
+    class="group-list-item"
     :class="{'active': groupId === currentGroupId}"
     @click="selectGroup"
-  >
-    <!-- https://stackoverflow.com/a/61042200/4093378 -->
-    <img :src="picture" :title="name" alt="" width="64" height="64" referrerpolicy="no-referrer"/>
-  </li>
+    :src="picture"
+    :title="name"
+    alt=""
+    width="64"
+    height="64"
+    referrerpolicy="no-referrer"
+  />
 </template>
 
 <script>

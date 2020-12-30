@@ -11,15 +11,20 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/Channel.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelCreateDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelDeleteDialog.vue");
+    println!("cargo:rerun-if-changed=client/src/components/ChannelList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/ChannelTitle.vue");
     println!("cargo:rerun-if-changed=client/src/components/Group.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupCreateDialog.vue");
+    println!("cargo:rerun-if-changed=client/src/components/GroupList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/GroupTitle.vue");
     println!("cargo:rerun-if-changed=client/src/components/InviteDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/Message.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageList.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageSender.vue");
     println!("cargo:rerun-if-changed=client/src/components/ModalDialog.vue");
-    println!("cargo:rerun-if-changed=client/src/components/ProfileNav.vue");
     println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
+    println!("cargo:rerun-if-changed=client/src/components/UserList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/UserTitle.vue");
 
     println!("cargo:rerun-if-changed=client/src/pages/channel/App.vue");
     println!("cargo:rerun-if-changed=client/src/pages/channel/main.js");

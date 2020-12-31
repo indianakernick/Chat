@@ -66,7 +66,7 @@ $imageSize: 64px;
 
 .group-list-item {
   margin: $padding $padding 0 $padding;
-  background-color: $group-item-back;
+  background-image: radial-gradient($group-item-back $imageSize - 1, transparent $imageSize);
   flex: 0 0 64px;
 }
 

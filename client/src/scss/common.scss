@@ -40,7 +40,7 @@
 .user-picture {
   border-radius: 16px;
   margin-right: 8px;
-  background-color: $user-picture-back;
+  background-image: radial-gradient($user-picture-back 15px, transparent 16px);
 }
 
 .user-name {

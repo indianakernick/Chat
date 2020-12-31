@@ -149,17 +149,6 @@ export default {
   },
 
   created() {
-    // TODO: Find a better workaround for the edge that appears around images
-    setInterval(() => {
-      for (const img of document.getElementsByTagName("img")) {
-        if (img.style.border.length) {
-          img.style.border = "";
-        } else {
-          img.style.border = "0 solid transparent";
-        }
-      }
-    }, 500);
-
     if (this.groupList.length > 0) {
       this.openConnection();
     }

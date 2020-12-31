@@ -3,7 +3,7 @@
     <img
       class="user-picture"
       :src="userInfo.picture"
-      :alt="userInfo.name"
+      alt="User picture"
       width="32"
       height="32"
       referrerpolicy="no-referrer"

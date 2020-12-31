@@ -1,54 +1,38 @@
-/*
-black      #000000
-dimgray    #696969
-gray       #808080
-darkgray   #a9a9a9
-silver     #c0c0c0
-lightgray  #d3d3d3
-gainsboro  #dcdcdc
-white      #ffffff
-*/
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
 
-$white: white;
-$gray-1: gainsboro;
-$gray-2: lightgray;
-$gray-3: silver;
-$gray-4: darkgray;
-$gray-5: gray;
-$gray-6: dimgray;
-$gray-7: #212529; // gray-900 from Bootstrap
-$black: black;
+$column-group-back: $gray-800;
+$column-channel-back: $gray-700;
+$column-message-back: $gray-800;
+$column-user-back: $gray-700;
 
-$column-group-back: $gray-6;
-$column-channel-back: $gray-5;
-$column-message-back: $gray-6;
-$column-user-back: $gray-5;
-
-$channel-list-text: $gray-2;
-$channel-item-hover-back: $gray-4;
+$channel-list-text: $gray-400;
+$channel-item-hover-back: $gray-600;
 $channel-item-hover-text: $white;
 
-$group-item-back: $gray-2;
-$group-create-text: $gray-7;
+$group-item-back: $gray-200;
+$group-create-back: $gray-500;
+$group-create-text: $gray-900;
 
-$message-time-text: $gray-3;
-$message-content-text: $gray-1;
-$message-sending-text: $gray-4;
+$message-time-text: $gray-500;
+$message-content-text: $gray-300;
+$message-sending-text: $gray-600;
 
-$sender-box-back: $gray-5;
-$sender-box-text: $gray-1;
-$sender-placeholder-text: $gray-3;
+$sender-box-back: $gray-700;
+$sender-box-text: $gray-300;
+$sender-placeholder-text: $gray-500;
 
 $char-count-text: $white;
-$char-count-back: rgba($gray-6, 0.5);
+$char-count-back: rgba($gray-900, 0.5);
 
 $status-text: $white;
 
-$user-section-text: $gray-2;
+$user-section-text: $gray-300;
 $user-name-text: $white;
-$user-name-deleted-text: $gray-3;
+$user-name-deleted-text: $gray-400;
+$user-picture-back: $gray-200;
 
-$edit-text: $gray-2;
+$edit-text: $gray-400;
 $edit-hover-text: $white;
 
 $column-title-border: $black;

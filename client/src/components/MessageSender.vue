@@ -90,6 +90,7 @@ export default {
 
 .message-sender {
   border-top: 1px solid $column-title-border;
+  position: relative;
 }
 
 .message-box {
@@ -112,7 +113,6 @@ export default {
 }
 
 .character-count {
-  float: right;
   font-size: 0.6rem;
   color: $char-count-text;
   position: absolute;

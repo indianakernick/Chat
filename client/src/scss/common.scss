@@ -32,7 +32,7 @@
   color: $column-title-text;
   font-weight: 500;
   font-size: 1.2rem;
-  // channel title doesn't actually need this but there's no harm in putting it here
+  // channel title doesn't need this but there's no harm in putting it here
   display: flex;
   justify-content: space-between;
 }
@@ -40,6 +40,7 @@
 .user-picture {
   border-radius: 16px;
   margin-right: 8px;
+  background-color: $user-picture-back;
 }
 
 .user-name {

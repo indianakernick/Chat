@@ -8,7 +8,7 @@
         @click="$emit('selectGroup', group.group_id)"
         :src="group.picture"
         :title="group.name"
-        :alt="group.name"
+        alt="Group picture"
         width="64"
         height="64"
         referrerpolicy="no-referrer"
@@ -68,7 +68,7 @@ $imageSize: 64px;
   margin: $padding;
   width: $imageSize;
   height: $imageSize;
-  background-color: $group-item-back;
+  background-color: $group-create-back;
   display: flex;
   justify-content: center;
   align-items: center;

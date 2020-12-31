@@ -6,7 +6,7 @@
         class="user-section-title"
       >Online ({{ onlineUserList.length }})</div>
       <div v-for="user in onlineUserList" class="user-list-item">
-        <img class="user-picture" :src="user.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
+        <img class="user-picture" :src="user.picture" alt="User picture" width="32" height="32" referrerpolicy="no-referrer"/>
         <div class="user-name ellipsis-truncate">{{ user.name }}</div>
       </div>
 
@@ -15,7 +15,7 @@
         class="user-section-title"
       >Offline ({{ offlineUserList.length }})</div>
       <div v-for="user in offlineUserList" class="user-list-item offline">
-        <img class="user-picture" :src="user.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
+        <img class="user-picture" :src="user.picture" alt="User picture" width="32" height="32" referrerpolicy="no-referrer"/>
         <div class="user-name ellipsis-truncate">{{ user.name }}</div>
       </div>
     </div>

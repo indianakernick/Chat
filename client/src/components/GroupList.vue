@@ -42,11 +42,11 @@ export default {
 @import "../scss/colors";
 
 $padding: 8px;
-$imageSize: 64px;
+$image-size: 64px;
 
 .group-list-container {
   background-color: $column-group-back;
-  flex: 0 0 $imageSize + 2 * $padding !important;
+  flex: 0 0 $image-size + 2 * $padding !important;
 }
 
 .group-list-block {
@@ -54,26 +54,32 @@ $imageSize: 64px;
   flex-direction: column;
 }
 
-.group-list-create:hover, .group-list-item:hover, .group-list-item.active {
-  border-radius: $imageSize / 4;
+.group-list-item:hover, .group-list-item.active {
+  border-radius: $image-size / 4;
+  background-color: $group-item-back;
+}
+
+.group-list-create:hover {
+  border-radius: $image-size / 4;
 }
 
 .group-list-item, .group-list-create {
-  border-radius: $imageSize / 2;
+  border-radius: $image-size / 2;
   cursor: pointer;
-  transition: border-radius 0.2s ease;
+  transition: border-radius 0.2s ease, background-color 0.2s ease;
 }
 
 .group-list-item {
   margin: $padding $padding 0 $padding;
-  background-image: radial-gradient($group-item-back $imageSize - 1, transparent $imageSize);
+  // TODO: This sort of breaks down when we change the border radius...
+  background-image: radial-gradient($group-item-back $image-size / 2 - 1, transparent $image-size / 2);
   flex: 0 0 64px;
 }
 
 .group-list-create {
   margin: $padding;
-  width: $imageSize;
-  height: $imageSize;
+  width: $image-size;
+  height: $image-size;
   background-color: $group-create-back;
   display: flex;
   justify-content: center;

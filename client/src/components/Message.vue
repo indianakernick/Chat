@@ -162,6 +162,10 @@ $padding: 8px;
   padding-bottom: $padding;
 }
 
+.message .user-picture {
+  flex: 0 0 32px;
+}
+
 .message-time {
   color: $message-time-text;
   font-size: 0.8rem;

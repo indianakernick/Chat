@@ -1,6 +1,6 @@
 <template>
   <div class="group-list-container scrollable-container">
-    <div class="scrollable-block">
+    <div class="group-list-block scrollable-block">
       <img
         v-for="group in groupList"
         class="group-list-item"
@@ -49,6 +49,11 @@ $imageSize: 64px;
   flex: 0 0 $imageSize + 2 * $padding !important;
 }
 
+.group-list-block {
+  display: flex;
+  flex-direction: column;
+}
+
 .group-list-create:hover, .group-list-item:hover, .group-list-item.active {
   border-radius: $imageSize / 4;
 }
@@ -62,6 +67,7 @@ $imageSize: 64px;
 .group-list-item {
   margin: $padding $padding 0 $padding;
   background-color: $group-item-back;
+  flex: 0 0 64px;
 }
 
 .group-list-create {

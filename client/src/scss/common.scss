@@ -32,7 +32,7 @@
   color: $column-title-text;
   font-weight: 500;
   font-size: 1.2rem;
-  // channel title doesn't need this but there's no harm in putting it here
+  // channel title doesn't need flex but it's not doing any harm
   display: flex;
   justify-content: space-between;
 }

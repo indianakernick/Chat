@@ -8,12 +8,10 @@ fn main() {
 
     println!("cargo:rerun-if-changed=client/src/assets/anonymous.png");
 
-    println!("cargo:rerun-if-changed=client/src/components/Channel.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelCreateDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelDeleteDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelList.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelTitle.vue");
-    println!("cargo:rerun-if-changed=client/src/components/Group.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupCreateDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupList.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupTitle.vue");

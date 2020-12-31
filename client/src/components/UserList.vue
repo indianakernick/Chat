@@ -40,9 +40,11 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss">
+@import "../scss/colors";
+
 .user-list-container {
-  background-color: gray;
+  background-color: $user-list-back;
 }
 
 .user-list-item {
@@ -57,7 +59,7 @@ export default {
 
 .user-list-item div {
   font-weight: 500;
-  color: white;
+  color: $user-item-text;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -69,7 +71,7 @@ export default {
 }
 
 .user-section-title {
-  color: lightgray;
+  color: $user-section-text;
   padding: 16px 8px 0 8px;
   font-size: 0.8rem;
 }

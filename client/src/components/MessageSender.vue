@@ -85,16 +85,18 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss">
+@import "../scss/colors";
+
 .message-sender {
-  background-color: dimgray;
-  border-top: 1px solid black;
+  background-color: $sender-back;
+  border-top: 1px solid $sender-border;
 }
 
 .message-box {
   margin: 8px;
-  background-color: gray;
-  color: gainsboro;
+  background-color: $sender-box-back;
+  color: $sender-box-text;
   border-radius: 4px;
   padding: 4px 8px 4px 8px;
   overflow-wrap: anywhere;
@@ -103,7 +105,7 @@ export default {
 .message-box:empty:not(:focus):before {
   content: attr(placeholder);
   pointer-events: none;
-  color: silver;
+  color: $sender-placeholder-text;
 }
 
 .message-box:focus {
@@ -113,13 +115,13 @@ export default {
 .character-count {
   float: right;
   font-size: 0.6rem;
-  color: white;
+  color: $char-count-text;
   position: absolute;
   right: 8px;
   bottom: 8px;
   padding: 1px 2px 1px 2px;
   border-radius: 2px;
-  background-color: #6969697F; /* dimgray */
+  background-color: $char-count-back;
   opacity: 0;
 }
 

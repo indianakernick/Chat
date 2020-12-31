@@ -143,6 +143,8 @@ export default {
 </script>
 
 <style lang="scss">
+@import "../scss/colors";
+
 $padding: 8px;
 
 .message {
@@ -155,26 +157,22 @@ $padding: 8px;
   padding-bottom: $padding;
 }
 
-.message:hover {
-  background-color: gray;
-}
-
 .message-name {
   font-weight: 500;
-  color: white;
+  color: $message-name-text;
 }
 
 .message-time {
-  color: silver;
+  color: $message-time-text;
   font-size: 0.8rem;
 }
 
 .message-content {
-  color: gainsboro;
+  color: $message-content-text;
 }
 
 .sending span {
-  color: darkgray;
+  color: $message-sending-text;
 }
 
 .message span {
@@ -192,7 +190,7 @@ $padding: 8px;
 }
 
 .deleted {
-  color: silver;
+  color: $message-deleted-text;
   font-style: italic;
 }
 </style>

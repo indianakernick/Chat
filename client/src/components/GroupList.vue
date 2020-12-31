@@ -1,18 +1,21 @@
 <template>
   <div class="group-list-container scrollable-container">
     <div class="scrollable-block">
-      <!-- Perhaps remove the Group component and just put everything here -->
-      <Group
+      <img
         v-for="group in groupList"
-        :groupId="group.group_id"
-        :name="group.name"
-        :picture="group.picture"
-        :currentGroupId="currentGroupId"
-        @selectGroup="selectGroup"
+        class="group-list-item"
+        :class="{'active': group.group_id === currentGroupId}"
+        @click="$emit('selectGroup', group.group_id)"
+        :src="group.picture"
+        :title="group.name"
+        :alt="group.name"
+        width="64"
+        height="64"
+        referrerpolicy="no-referrer"
       />
       <div
         class="group-list-create"
-        @click="createGroup"
+        @click="$emit('createGroup')"
         title="Create group"
       ><span>+</span></div>
     </div>
@@ -20,14 +23,8 @@
 </template>
 
 <script>
-import Group from "./Group.vue";
-
 export default {
   name: "GroupList",
-
-  components: {
-    Group
-  },
 
   props: {
     groupList: Array,
@@ -37,26 +34,18 @@ export default {
   emits: [
     "selectGroup",
     "createGroup"
-  ],
-
-  methods: {
-    selectGroup(groupId) {
-      this.$emit("selectGroup", groupId)
-    },
-
-    createGroup() {
-      this.$emit("createGroup");
-    }
-  }
+  ]
 };
 </script>
 
 <style lang="scss">
+@import "../scss/colors";
+
 $padding: 8px;
 $imageSize: 64px;
 
 .group-list-container {
-  background-color: dimgray;
+  background-color: $group-list-back;
   flex: 0 0 $imageSize + 2 * $padding !important;
 }
 
@@ -72,14 +61,14 @@ $imageSize: 64px;
 
 .group-list-item {
   margin: $padding $padding 0 $padding;
-  background-color: lightgray;
+  background-color: $group-item-back;
 }
 
 .group-list-create {
   margin: $padding;
   width: $imageSize;
   height: $imageSize;
-  background-color: lightgray;
+  background-color: $group-item-back;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -89,5 +78,6 @@ $imageSize: 64px;
   font-size: 3.5rem;
   font-family: monospace;
   font-weight: 200;
+  color: $group-create-text;
 }
 </style>

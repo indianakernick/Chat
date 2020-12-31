@@ -1,62 +1,53 @@
 <template>
   <template v-if="groupList.length > 0">
-    <div class="d-flex flex-row h-100">
-      <GroupList
-        :groupList="groupList"
-        :currentGroupId="currentGroupId"
-        @selectGroup="selectGroup"
-        @createGroup="showCreateGroupDialog"
+    <GroupList
+      :groupList="groupList"
+      :currentGroupId="currentGroupId"
+      @selectGroup="selectGroup"
+      @createGroup="showCreateGroupDialog"
+    />
+
+    <div class="channel-column">
+      <GroupTitle :currentGroupName="currentGroupName"/>
+      <ChannelList
+        :channelList="channelList"
+        :currentChannelId="currentChannelId"
+        :connected="connected"
+        @selectChannel="selectChannel"
+        @deleteChannel="showDeleteChannelDialog"
       />
+    </div>
 
-      <div class="channel-column">
-        <GroupTitle :currentGroupName="currentGroupName"/>
-        <ChannelList
-          :channelList="channelList"
-          :currentChannelId="currentChannelId"
-          :connected="connected"
-          @selectChannel="selectChannel"
-          @deleteChannel="showDeleteChannelDialog"
+    <div class="message-column">
+      <ChannelTitle :currentChannelName="currentChannelName"/>
+      <div class="message-list-container scrollable-container">
+        <MessageList
+          class="scrollable-block"
+          v-for="channel in channelList"
+          :key="channel.channel_id"
+          v-show="currentChannelId === channel.channel_id"
+          :ref="list => messageLists[channel.channel_id] = list"
+          :userInfo="userInfo"
+          :userInfoCache="userInfoCache"
         />
       </div>
+      <MessageSender
+        :connected="connected"
+        :currentChannelName="currentChannelName"
+        @sendMessage="sendMessage"
+      />
+    </div>
 
-      <div class="message-column">
-        <ChannelTitle :currentChannelName="currentChannelName"/>
-        <div class="message-list-container scrollable-container">
-          <MessageList
-            class="scrollable-block"
-            v-for="channel in channelList"
-            :key="channel.channel_id"
-            v-show="currentChannelId === channel.channel_id"
-            :ref="list => messageLists[channel.channel_id] = list"
-            :userInfo="userInfo"
-            :userInfoCache="userInfoCache"
-          />
-        </div>
-        <MessageSender
-          :connected="connected"
-          :currentChannelName="currentChannelName"
-          @sendMessage="sendMessage"
-        />
-      </div>
-
-      <div class="channel-column">
-        <UserTitle :userInfo="userInfo"/>
-        <UserList
-          :userList="userList"
-        />
-      </div>
+    <div class="channel-column">
+      <UserTitle :userInfo="userInfo"/>
+      <UserList
+        :userList="userList"
+      />
     </div>
   </template>
 
   <template v-else>
-    <!-- TODO: Need to style this. Also the login page -->
-    You're not a member of any groups. Accept an invitation or create your own
-    group and invite others.
-    <button
-      class="btn btn-primary"
-      @click="showCreateGroupDialog"
-      title="Create group"
-    >Create group</button>
+    <NoGroups @createGroup="showCreateGroupDialog"/>
   </template>
 
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
@@ -78,6 +69,7 @@ import MessageSender from "@/components/MessageSender.vue";
 import GroupCreateDialog from "@/components/GroupCreateDialog.vue";
 import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
+import NoGroups from "@/components/NoGroups.vue";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -128,7 +120,8 @@ export default {
     MessageSender,
     GroupCreateDialog,
     ChannelCreateDialog,
-    ChannelDeleteDialog
+    ChannelDeleteDialog,
+    NoGroups
   },
 
   data() {
@@ -434,6 +427,8 @@ export default {
 </script>
 
 <style lang="scss">
+@import "../../scss/colors";
+
 html, body {
   margin: 0;
   height: 100%;
@@ -443,6 +438,7 @@ html, body {
 #app {
   width: 100vw;
   height: 100vh;
+  display: flex;
 }
 
 .scrollable-container {
@@ -461,7 +457,7 @@ html, body {
   flex-direction: column;
   flex: 0 0 calc(100% / 6);
   max-width: calc(100% / 6);
-  min-width: 120px;
+  min-width: 160px;
 }
 
 .message-column {
@@ -473,6 +469,7 @@ html, body {
 .message-list-container {
   display: flex;
   flex-direction: column-reverse;
-  background-color: dimgray;
+  background-color: $message-list-back;
+  z-index: 1; /* Ensure that the focus outline is above everything else */
 }
 </style>

@@ -17,14 +17,16 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss">
+@import "../scss/colors";
+
 /* This is pretty much ripped straight from group title */
 
 .user-title {
   padding: 8px;
-  background-color: gray;
-  border-bottom: 1px solid black;
-  color: white;
+  background-color: $user-title-back;
+  border-bottom: 1px solid $user-title-border;
+  color: $user-title-text;
   font-weight: 500;
   font-size: 1.2rem;
   display: flex;
@@ -40,11 +42,11 @@ export default {
 }
 
 .user-edit {
-  color: lightgray;
+  color: $user-edit-text;
   cursor: pointer;
 }
 
 .user-edit:hover {
-  color: white;
+  color: $user-edit-hover-text;
 }
 </style>

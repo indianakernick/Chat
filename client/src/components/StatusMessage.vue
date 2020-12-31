@@ -14,7 +14,9 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss">
+@import "../scss/colors";
+
 .status {
   width: 100%;
   height: 100%;
@@ -24,7 +26,7 @@ export default {
 }
 
 .status > span {
-  color: white;
+  color: $status-text;
   font-size: 2rem;
 }
 </style>

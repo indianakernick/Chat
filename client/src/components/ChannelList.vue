@@ -1,29 +1,25 @@
 <template>
   <div class="channel-list-container scrollable-container">
     <div class="scrollable-block">
-      <!-- Perhaps remove the Channel component and just put everything here -->
-      <Channel
+      <div
         v-for="channel in channelList"
-        :channelId="channel.channel_id"
-        :name="channel.name"
-        :currentChannelId="currentChannelId"
-        :connected="connected"
-        @selectChannel="selectChannel"
-        @deleteChannel="deleteChannel"
-      />
+        class="channel-list-item"
+        :class="{'active': channel.channel_id === currentChannelId}"
+        @click="$emit('selectChannel', channel.channel_id)"
+      >
+        <div class="channel-name"><span>#&nbsp;</span>{{ channel.name }}</div>
+        <div
+          class="channel-edit"
+          @click.stop="$emit('deleteChannel', channel.channel_id, channel.name)"
+        >&nbsp;=</div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import Channel from "./Channel.vue";
-
 export default {
   name: "ChannelList",
-
-  components: {
-    Channel
-  },
 
   props: {
     channelList: Array,
@@ -34,44 +30,20 @@ export default {
   emits: [
     "selectChannel",
     "deleteChannel"
-  ],
-
-  methods: {
-    selectChannel(channelId) {
-      this.$emit("selectChannel", channelId);
-    },
-
-    deleteChannel(channelId, name) {
-      this.$emit("deleteChannel", channelId, name);
-    }
-  }
+  ]
 };
 </script>
 
-<style>
-/*
-TODO: Use SCSS to define the color scheme in one place.
-Give them descriptive names like "borderColor" or "timeColor"
-
-black      #000000
-dimgray    #696969
-gray       #808080
-darkgray   #a9a9a9
-silver     #c0c0c0
-lightgray  #d3d3d3
-gainsboro  #dcdcdc
-white      #ffffff
-*/
+<style lang="scss">
+@import "../scss/colors";
 
 .channel-list-container {
-  background-color: gray;
+  background-color: $channel-list-back;
 }
 
 .channel-list-item {
-  color: lightgray;
-  margin: 8px;
+  color: $channel-list-text;
   padding: 4px 8px 4px 8px;
-  border-radius: 4px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -84,12 +56,12 @@ white      #ffffff
 }
 
 .channel-name span {
-  color: lightgray;
+  color: $channel-list-text;
 }
 
 .channel-list-item:hover, .channel-list-item.active {
-  background-color: darkgray;
-  color: white;
+  background-color: $channel-item-hover-back;
+  color: $channel-item-hover-text;
 }
 
 .channel-list-item:hover .channel-edit, .active .channel-edit {
@@ -99,10 +71,10 @@ white      #ffffff
 .channel-edit {
   float: right;
   visibility: hidden;
-  color: lightgray;
+  color: $channel-edit-text;
 }
 
 .channel-edit:hover {
-  color: white;
+  color: $channel-edit-hover-text;
 }
 </style>

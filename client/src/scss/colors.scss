@@ -1,0 +1,59 @@
+/*
+black      #000000
+dimgray    #696969
+gray       #808080
+darkgray   #a9a9a9
+silver     #c0c0c0
+lightgray  #d3d3d3
+gainsboro  #dcdcdc
+white      #ffffff
+*/
+
+$channel-list-back: gray;
+$channel-list-text: lightgray;
+$channel-item-hover-back: darkgray;
+$channel-item-hover-text: white;
+$channel-edit-text: lightgray;
+$channel-edit-hover-text: white;
+
+$channel-title-back: dimgray;
+$channel-title-text: white;
+$channel-title-border: black;
+
+$group-list-back: dimgray;
+$group-item-back: lightgray;
+$group-create-text: #212529; // I think this comes from Bootstrap
+
+$group-title-back: gray;
+$group-title-text: white;
+$group-title-border: black;
+$group-edit-text: lightgray;
+$group-edit-hover: white;
+
+$message-name-text: white;
+$message-time-text: silver;
+$message-content-text: gainsboro;
+$message-sending-text: darkgray;
+$message-deleted-text: silver;
+
+$message-list-back: dimgray;
+
+$sender-back: dimgray;
+$sender-border: black;
+$sender-box-back: gray;
+$sender-box-text: gainsboro;
+$sender-placeholder-text: silver;
+$char-count-text: white;
+$char-count-back: rgba(dimgray, 0.5);
+
+$status-text: white;
+
+$user-list-back: gray;
+$user-item-text: white;
+$user-section-text: lightgray;
+
+$user-title-text: white;
+$user-title-back: gray;
+$user-title-border: black;
+$user-edit-text: lightgray;
+$user-edit-hover-text: white;

@@ -15,12 +15,14 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss">
+@import "../scss/colors";
+
 .group-title {
   padding: 8px;
-  background-color: gray;
-  border-bottom: 1px solid black;
-  color: white;
+  background-color: $group-title-back;
+  border-bottom: 1px solid $group-title-border;
+  color: $group-title-text;
   font-weight: 500;
   font-size: 1.2rem;
   display: flex;
@@ -36,11 +38,11 @@ export default {
 }
 
 .group-edit {
-  color: lightgray;
+  color: $group-edit-text;
   cursor: pointer;
 }
 
 .group-edit:hover {
-  color: white;
+  color: $group-edit-hover;
 }
 </style>

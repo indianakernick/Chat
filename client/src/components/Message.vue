@@ -1,10 +1,16 @@
 <template>
   <div class="message" :class="{'sending': sending}">
-    <!-- https://stackoverflow.com/a/61042200/4093378 -->
-    <img class="message-picture" :src="userInfo.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
+    <img
+      class="user-picture"
+      :src="userInfo.picture"
+      :alt="userInfo.name"
+      width="32"
+      height="32"
+      referrerpolicy="no-referrer"
+    />
     <div class="message-right">
       <div>
-        <span class="message-name" :class="{'deleted': deleted}">{{ userInfo.name }}</span>
+        <span class="user-name" :class="{'deleted': deleted}">{{ userInfo.name }}</span>
         &nbsp;<span class="message-time">{{ formattedTime }}</span>
       </div>
       <span class="message-content">{{ content }}</span>
@@ -149,17 +155,11 @@ $padding: 8px;
 
 .message {
   display: flex;
-  flex-direction: row;
   padding: $padding $padding 0 $padding;
 }
 
 .message:last-child {
   padding-bottom: $padding;
-}
-
-.message-name {
-  font-weight: 500;
-  color: $message-name-text;
 }
 
 .message-time {
@@ -179,18 +179,8 @@ $padding: 8px;
   transition: color 0.1s ease;
 }
 
-.message-picture {
-  border-radius: 16px;
-  margin-right: 8px;
-}
-
 .message-right {
   display: flex;
   flex-direction: column;
-}
-
-.deleted {
-  color: $message-deleted-text;
-  font-style: italic;
 }
 </style>

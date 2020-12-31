@@ -1,5 +1,5 @@
 <template>
-  <div class="channel-title">
+  <div class="column-title">
     #&nbsp;{{ currentChannelName }}
   </div>
 </template>
@@ -14,16 +14,6 @@ export default {
 };
 </script>
 
-<style lang="scss">
-@import "../scss/colors";
+<style>
 
-/* similar to group title */
-.channel-title {
-  padding: 8px;
-  background-color: $channel-title-back;
-  border-bottom: 1px solid $channel-title-border;
-  color: $channel-title-text;
-  font-weight: 500;
-  font-size: 1.2rem;
-}
 </style>

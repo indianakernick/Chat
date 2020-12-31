@@ -89,8 +89,7 @@ export default {
 @import "../scss/colors";
 
 .message-sender {
-  background-color: $sender-back;
-  border-top: 1px solid $sender-border;
+  border-top: 1px solid $column-title-border;
 }
 
 .message-box {

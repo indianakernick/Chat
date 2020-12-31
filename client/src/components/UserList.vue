@@ -1,13 +1,13 @@
 <template>
-  <div class="user-list-container scrollable-container">
+  <div class="scrollable-container">
     <div class="scrollable-block">
       <div
         v-if="onlineUserList.length > 0"
         class="user-section-title"
       >Online ({{ onlineUserList.length }})</div>
       <div v-for="user in onlineUserList" class="user-list-item">
-        <img :src="user.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
-        <div>{{ user.name }}</div>
+        <img class="user-picture" :src="user.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
+        <div class="user-name ellipsis-truncate">{{ user.name }}</div>
       </div>
 
       <div
@@ -15,8 +15,8 @@
         class="user-section-title"
       >Offline ({{ offlineUserList.length }})</div>
       <div v-for="user in offlineUserList" class="user-list-item offline">
-        <img :src="user.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
-        <div>{{ user.name }}</div>
+        <img class="user-picture" :src="user.picture" alt="" width="32" height="32" referrerpolicy="no-referrer"/>
+        <div class="user-name ellipsis-truncate">{{ user.name }}</div>
       </div>
     </div>
   </div>
@@ -43,10 +43,6 @@ export default {
 <style lang="scss">
 @import "../scss/colors";
 
-.user-list-container {
-  background-color: $user-list-back;
-}
-
 .user-list-item {
   padding: 8px 8px 0 8px;
   display: flex;
@@ -55,19 +51,6 @@ export default {
 
 .offline {
   opacity: 0.4;
-}
-
-.user-list-item div {
-  font-weight: 500;
-  color: $user-item-text;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-list-item img {
-  border-radius: 16px;
-  margin-right: 8px;
 }
 
 .user-section-title {

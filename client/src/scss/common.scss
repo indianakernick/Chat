@@ -1,0 +1,53 @@
+@import "colors";
+
+.scrollable-container {
+  position: relative;
+  overflow-y: scroll;
+  flex: 1 1 auto;
+}
+
+.scrollable-block {
+  position: absolute;
+  width: 100%;
+}
+
+.ellipsis-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edit-button {
+  color: $edit-text;
+  cursor: pointer;
+}
+
+.edit-button:hover {
+  color: $edit-hover-text;
+}
+
+.column-title {
+  padding: 8px;
+  border-bottom: 1px solid $column-title-border;
+  color: $column-title-text;
+  font-weight: 500;
+  font-size: 1.2rem;
+  // channel title doesn't actually need this but there's no harm in putting it here
+  display: flex;
+  justify-content: space-between;
+}
+
+.user-picture {
+  border-radius: 16px;
+  margin-right: 8px;
+}
+
+.user-name {
+  font-weight: 500;
+  color: $user-name-text;
+}
+
+.user-name.deleted {
+  font-style: italic;
+  color: $user-name-deleted-text;
+}

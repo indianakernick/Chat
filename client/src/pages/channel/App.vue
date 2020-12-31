@@ -7,7 +7,7 @@
       @createGroup="showCreateGroupDialog"
     />
 
-    <div class="channel-column">
+    <div class="channel-column narrow-column">
       <GroupTitle :currentGroupName="currentGroupName"/>
       <ChannelList
         :channelList="channelList"
@@ -38,7 +38,7 @@
       />
     </div>
 
-    <div class="channel-column">
+    <div class="user-column narrow-column">
       <UserTitle :userInfo="userInfo"/>
       <UserList
         :userList="userList"
@@ -47,7 +47,7 @@
   </template>
 
   <template v-else>
-    <NoGroups @createGroup="showCreateGroupDialog"/>
+    <NoGroupsDialog @createGroup="showCreateGroupDialog"/>
   </template>
 
   <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
@@ -69,7 +69,7 @@ import MessageSender from "@/components/MessageSender.vue";
 import GroupCreateDialog from "@/components/GroupCreateDialog.vue";
 import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
-import NoGroups from "@/components/NoGroups.vue";
+import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -121,7 +121,7 @@ export default {
     GroupCreateDialog,
     ChannelCreateDialog,
     ChannelDeleteDialog,
-    NoGroups
+    NoGroupsDialog
   },
 
   data() {
@@ -428,6 +428,7 @@ export default {
 
 <style lang="scss">
 @import "../../scss/colors";
+@import "../../scss/common";
 
 html, body {
   margin: 0;
@@ -441,18 +442,7 @@ html, body {
   display: flex;
 }
 
-.scrollable-container {
-  position: relative;
-  overflow-y: scroll;
-  flex: 1 1 auto;
-}
-
-.scrollable-block {
-  position: absolute;
-  width: 100%;
-}
-
-.channel-column {
+.narrow-column {
   display: flex;
   flex-direction: column;
   flex: 0 0 calc(100% / 6);
@@ -460,16 +450,24 @@ html, body {
   min-width: 160px;
 }
 
+.channel-column {
+  background-color: $column-channel-back;
+}
+
 .message-column {
+  background-color: $column-message-back;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
 }
 
+.user-column {
+  background-color: $column-user-back;
+}
+
 .message-list-container {
   display: flex;
   flex-direction: column-reverse;
-  background-color: $message-list-back;
   z-index: 1; /* Ensure that the focus outline is above everything else */
 }
 </style>

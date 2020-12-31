@@ -45,7 +45,7 @@ $padding: 8px;
 $imageSize: 64px;
 
 .group-list-container {
-  background-color: $group-list-back;
+  background-color: $column-group-back;
   flex: 0 0 $imageSize + 2 * $padding !important;
 }
 

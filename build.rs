@@ -20,6 +20,7 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/MessageList.vue");
     println!("cargo:rerun-if-changed=client/src/components/MessageSender.vue");
     println!("cargo:rerun-if-changed=client/src/components/ModalDialog.vue");
+    println!("cargo:rerun-if-changed=client/src/components/NoGroupsDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
     println!("cargo:rerun-if-changed=client/src/components/UserList.vue");
     println!("cargo:rerun-if-changed=client/src/components/UserTitle.vue");

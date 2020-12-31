@@ -9,51 +9,47 @@ gainsboro  #dcdcdc
 white      #ffffff
 */
 
-$channel-list-back: gray;
-$channel-list-text: lightgray;
-$channel-item-hover-back: darkgray;
-$channel-item-hover-text: white;
-$channel-edit-text: lightgray;
-$channel-edit-hover-text: white;
+$white: white;
+$gray-1: gainsboro;
+$gray-2: lightgray;
+$gray-3: silver;
+$gray-4: darkgray;
+$gray-5: gray;
+$gray-6: dimgray;
+$gray-7: #212529; // gray-900 from Bootstrap
+$black: black;
 
-$channel-title-back: dimgray;
-$channel-title-text: white;
-$channel-title-border: black;
+$column-group-back: $gray-6;
+$column-channel-back: $gray-5;
+$column-message-back: $gray-6;
+$column-user-back: $gray-5;
 
-$group-list-back: dimgray;
-$group-item-back: lightgray;
-$group-create-text: #212529; // I think this comes from Bootstrap
+$channel-list-text: $gray-2;
+$channel-item-hover-back: $gray-4;
+$channel-item-hover-text: $white;
 
-$group-title-back: gray;
-$group-title-text: white;
-$group-title-border: black;
-$group-edit-text: lightgray;
-$group-edit-hover: white;
+$group-item-back: $gray-2;
+$group-create-text: $gray-7;
 
-$message-name-text: white;
-$message-time-text: silver;
-$message-content-text: gainsboro;
-$message-sending-text: darkgray;
-$message-deleted-text: silver;
+$message-time-text: $gray-3;
+$message-content-text: $gray-1;
+$message-sending-text: $gray-4;
 
-$message-list-back: dimgray;
+$sender-box-back: $gray-5;
+$sender-box-text: $gray-1;
+$sender-placeholder-text: $gray-3;
 
-$sender-back: dimgray;
-$sender-border: black;
-$sender-box-back: gray;
-$sender-box-text: gainsboro;
-$sender-placeholder-text: silver;
-$char-count-text: white;
-$char-count-back: rgba(dimgray, 0.5);
+$char-count-text: $white;
+$char-count-back: rgba($gray-6, 0.5);
 
-$status-text: white;
+$status-text: $white;
 
-$user-list-back: gray;
-$user-item-text: white;
-$user-section-text: lightgray;
+$user-section-text: $gray-2;
+$user-name-text: $white;
+$user-name-deleted-text: $gray-3;
 
-$user-title-text: white;
-$user-title-back: gray;
-$user-title-border: black;
-$user-edit-text: lightgray;
-$user-edit-hover-text: white;
+$edit-text: $gray-2;
+$edit-hover-text: $white;
+
+$column-title-border: $black;
+$column-title-text: $white;

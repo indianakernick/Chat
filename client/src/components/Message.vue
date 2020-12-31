@@ -179,10 +179,6 @@ $padding: 8px;
   color: $message-sending-text;
 }
 
-.message span {
-  transition: color 0.1s ease;
-}
-
 .message-right {
   display: flex;
   flex-direction: column;

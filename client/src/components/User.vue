@@ -1,5 +1,6 @@
 <template>
   <div class="user-list-item" :class="{'offline': offline}">
+    <!-- Maybe the user list pictures should be smaller than the message pictures...? -->
     <img
       class="user-picture"
       :src="userInfo.picture"

@@ -4,8 +4,8 @@
       class="user-picture"
       :src="userInfo.picture"
       alt="User picture"
-      width="32"
-      height="32"
+      width="48"
+      height="48"
       referrerpolicy="no-referrer"
     />
     <div class="message-right">
@@ -163,7 +163,7 @@ $padding: 8px;
 }
 
 .message .user-picture {
-  flex: 0 0 32px;
+  flex: 0 0 48px;
 }
 
 .message-time {

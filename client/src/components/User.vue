@@ -4,8 +4,8 @@
       class="user-picture"
       :src="userInfo.picture"
       alt="User picture"
-      width="32"
-      height="32"
+      width="48"
+      height="48"
       referrerpolicy="no-referrer"
     />
     <div class="user-name ellipsis-truncate">{{ userInfo.name }}</div>

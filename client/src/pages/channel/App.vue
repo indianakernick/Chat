@@ -43,6 +43,7 @@
       <UserList
         :userList="userList"
         :userInfoCache="userInfoCache"
+        :connected="connected"
         ref="userList"
       />
     </div>

@@ -38,7 +38,18 @@ export default {
 
   props: {
     userList: Array,
-    userInfoCache: Object
+    userInfoCache: Object,
+    connected: Boolean
+  },
+
+  watch: {
+    connected(online) {
+      if (online) {
+        this.userOnline(USER_ID);
+      } else {
+        this.userOffline(USER_ID);
+      }
+    }
   },
 
   data() {
@@ -69,10 +80,12 @@ export default {
 
     moveUser(from, to, userId) {
       let index = from.indexOf(userId);
-      if (index !== -1) from.splice(index, 1);
-      // TODO: binary search and insert
-      to.push(userId);
-      to.sort();
+      if (index !== -1) {
+        from.splice(index, 1);
+        // TODO: binary search and insert
+        to.push(userId);
+        to.sort();
+      }
     },
 
     userOnline(userId) {

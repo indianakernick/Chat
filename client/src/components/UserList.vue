@@ -27,8 +27,6 @@
 <script>
 import User from "./User.vue";
 
-// TODO: Show the current user as offline when they're disconnected
-
 export default {
   name: "UserList",
 

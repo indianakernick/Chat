@@ -9,7 +9,7 @@ pub const INVITE_ID_LENGTH: usize = 16;
 pub type InviteID = String;
 
 macro_rules! creation_timeout {
-  () => {"INTERVAL '24 hours'"}
+    () => { "INTERVAL '24 hours'" }
 }
 
 pub async fn create_invitation(pool: Pool, group_id: GroupID)

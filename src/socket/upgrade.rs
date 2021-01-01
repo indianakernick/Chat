@@ -14,7 +14,7 @@ pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 
 pub struct Group {
     pub channels: Vec<db::Channel>,
-    pub users: HashMap<ConnID, Sender>,
+    pub users: HashMap<ConnID, (Sender, db::UserID)>,
 }
 
 pub type GroupMap = HashMap<db::GroupID, Group>;
@@ -102,11 +102,12 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
                     }
                 };
                 let mut users = HashMap::new();
-                users.insert(conn_ctx.conn_id, ch_tx);
+                users.insert(conn_ctx.conn_id, (ch_tx, conn_ctx.user_id));
                 entry.insert(Group { channels, users });
             },
             Entry::Occupied(mut entry) => {
-                entry.get_mut().users.insert(conn_ctx.conn_id, ch_tx);
+                super::handler::send_user_online(entry.get(), conn_ctx.user_id);
+                entry.get_mut().users.insert(conn_ctx.conn_id, (ch_tx, conn_ctx.user_id));
             }
         }
     }
@@ -141,5 +142,7 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
     users.remove(&conn_id);
     if users.is_empty() {
         entry.remove();
+    } else {
+        super::handler::send_user_offline(entry.get(), conn_ctx.user_id);
     }
 }

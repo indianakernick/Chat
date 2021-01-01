@@ -1,5 +1,5 @@
+use log::error;
 use warp::ws::Message;
-use log::{error, debug};
 use std::time::SystemTime;
 use crate::database as db;
 use serde::{Serialize, Deserialize};
@@ -19,6 +19,8 @@ enum ClientMessage {
     RequestChannels,
     #[serde(rename="delete channel")]
     DeleteChannel { channel_id: db::ChannelID },
+    #[serde(rename="request online")]
+    RequestOnline,
 }
 
 #[derive(Serialize)]
@@ -53,6 +55,12 @@ enum ServerMessage<'a> {
     ChannelList { channels: &'a Vec<db::Channel> },
     #[serde(rename="channel deleted")]
     ChannelDeleted { channel_id: db::ChannelID },
+    #[serde(rename="online user list")]
+    OnlineUserList { users: Vec<db::UserID> },
+    #[serde(rename="user online")]
+    UserOnline { user_id: db::UserID },
+    #[serde(rename="user offline")]
+    UserOffline { user_id: db::UserID },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -92,13 +100,31 @@ fn contains_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> b
     find_channel(channels, channel_id) != usize::MAX
 }
 
+fn send_to_all(group: &Group, response: String) {
+    for (_, (ch_tx, _)) in group.users.iter() {
+        send_message(ch_tx, response.clone());
+    }
+}
+
+pub fn send_user_online(group: &Group, user_id: db::UserID) {
+    send_to_all(group, serde_json::to_string(&ServerMessage::UserOnline {
+        user_id
+    }).unwrap())
+}
+
+pub fn send_user_offline(group: &Group, user_id: db::UserID) {
+    send_to_all(group, serde_json::to_string(&ServerMessage::UserOffline {
+        user_id
+    }).unwrap())
+}
+
 impl<'a> MessageContext<'a> {
     fn reply_error(&self, group: &Group, error: &'static str) {
-        send_error(&group.users[&self.ctx.conn_id], error);
+        send_error(&group.users[&self.ctx.conn_id].0, error);
     }
 
     fn reply_message(&self, group: &Group, message: String) {
-        send_message(&group.users[&self.ctx.conn_id], message);
+        send_message(&group.users[&self.ctx.conn_id].0, message);
     }
 
     pub async fn handle(self) {
@@ -139,6 +165,9 @@ impl<'a> MessageContext<'a> {
             ClientMessage::DeleteChannel { channel_id } => {
                 self.delete_channel(channel_id).await
             },
+            ClientMessage::RequestOnline => {
+                self.request_online().await
+            },
         };
 
         if let Err(e) = result {
@@ -174,15 +203,10 @@ impl<'a> MessageContext<'a> {
             channel_id,
         })).unwrap();
 
-        for (&other_conn_id, ch_tx) in group.users.iter() {
+        for (&other_conn_id, (ch_tx, _)) in group.users.iter() {
             if other_conn_id == self.ctx.conn_id {
-                debug!("Echoing back to ({}): {}", self.ctx.conn_id, echo_response);
                 send_message(ch_tx, echo_response.clone());
             } else {
-                debug!(
-                    "Forwarding message from ({}) to ({}): {}",
-                    self.ctx.conn_id, other_conn_id, peer_response
-                );
                 send_message(ch_tx, peer_response.clone());
             }
         }
@@ -248,9 +272,7 @@ impl<'a> MessageContext<'a> {
             name
         });
 
-        for (_, ch_tx) in group.users.iter() {
-            send_message(ch_tx, response.clone());
-        }
+        send_to_all(group, response);
 
         Ok(())
     }
@@ -259,11 +281,9 @@ impl<'a> MessageContext<'a> {
         let groups_guard = self.groups.read().await;
         let group = &groups_guard[&self.ctx.group_id];
 
-        let response = serde_json::to_string(&ServerMessage::ChannelList {
+        self.reply_message(group, serde_json::to_string(&ServerMessage::ChannelList {
             channels: &group.channels
-        }).unwrap();
-
-        self.reply_message(group, response);
+        }).unwrap());
 
         Ok(())
     }
@@ -291,13 +311,21 @@ impl<'a> MessageContext<'a> {
 
         group.channels.remove(channel_index);
 
-        let response = serde_json::to_string(&ServerMessage::ChannelDeleted {
+        send_to_all(group, serde_json::to_string(&ServerMessage::ChannelDeleted {
             channel_id
-        }).unwrap();
+        }).unwrap());
 
-        for (_, ch_tx) in group.users.iter() {
-            send_message(ch_tx, response.clone());
-        }
+        Ok(())
+    }
+
+    async fn request_online(&self) -> Result<(), PoolError> {
+        let groups_guard = self.groups.read().await;
+        let group = &groups_guard[&self.ctx.group_id];
+
+        let users = group.users.iter().map(|(_, (_, user_id))| user_id).cloned().collect();
+        self.reply_message(group, serde_json::to_string(&ServerMessage::OnlineUserList {
+            users
+        }).unwrap());
 
         Ok(())
     }

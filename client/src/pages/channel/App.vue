@@ -42,6 +42,8 @@
       <UserTitle :userInfo="userInfo"/>
       <UserList
         :userList="userList"
+        :userInfoCache="userInfoCache"
+        ref="userList"
       />
     </div>
   </template>
@@ -75,7 +77,7 @@ const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
 const HIDDEN_MAX_RETRY_DELAY = 32000;
 
-import {DELETED_USER_INFO} from "@/components/Message";
+import { DELETED_USER_INFO } from "@/components/Message";
 
 const userInfoCache = {
   cache: {
@@ -301,6 +303,10 @@ export default {
       this.socket.send('{"type":"request channels"}');
     },
 
+    requestOnline() {
+      this.socket.send('{"type":"request online"}');
+    },
+
     checkCurrentChannelValid() {
       const foundChannel = this.channelList.find(channel =>
         channel.channel_id === this.currentChannelId
@@ -322,6 +328,10 @@ export default {
         this.resetRetryDelay();
         this.initListeners();
         this.requestChannels();
+        // TODO: Also need to know who's offline
+        // ..and their name's and picture's
+        // This feature is a lot more complicated than I first thought!
+        this.requestOnline();
       };
     },
 
@@ -332,6 +342,7 @@ export default {
       this.socket.onopen = () => {
         this.connected = true;
         this.requestRecent();
+        this.requestOnline();
       };
     },
 
@@ -419,6 +430,18 @@ export default {
             this.checkCurrentChannelValid();
           }
           this.$refs.deleteChannelDialog.channelDeleted(message.channel_id);
+          break;
+
+        case "online user list":
+          this.$refs.userList.onlineUsers(message.users);
+          break;
+
+        case "user online":
+          this.$refs.userList.userOnline(message.user_id);
+          break;
+
+        case "user offline":
+          this.$refs.userList.userOffline(message.user_id);
           break;
       }
     }

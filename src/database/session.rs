@@ -9,7 +9,7 @@ pub const SESSION_ID_LENGTH: usize = 16;
 pub type SessionID = String;
 
 macro_rules! creation_timeout {
-  () => {"INTERVAL '7 days'"}
+    () => { "INTERVAL '7 days'" }
 }
 
 pub async fn create_session(pool: Pool, user_id: UserID)

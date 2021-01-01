@@ -5,36 +5,82 @@
         v-if="onlineUserList.length > 0"
         class="user-section-title"
       >Online ({{ onlineUserList.length }})</div>
-      <div v-for="user in onlineUserList" class="user-list-item">
-        <img class="user-picture" :src="user.picture" alt="User picture" width="32" height="32" referrerpolicy="no-referrer"/>
-        <div class="user-name ellipsis-truncate">{{ user.name }}</div>
-      </div>
+      <User
+        v-for="userId in onlineUserList"
+        :userInfo="userInfoCache.getUserInfo(userId)"
+        :offline="false"
+      />
 
       <div
         v-if="offlineUserList.length > 0"
         class="user-section-title"
       >Offline ({{ offlineUserList.length }})</div>
-      <div v-for="user in offlineUserList" class="user-list-item offline">
-        <img class="user-picture" :src="user.picture" alt="User picture" width="32" height="32" referrerpolicy="no-referrer"/>
-        <div class="user-name ellipsis-truncate">{{ user.name }}</div>
-      </div>
+      <User
+        v-for="userId in offlineUserList"
+        :userInfo="userInfoCache.getUserInfo(userId)"
+        :offline="true"
+      />
     </div>
   </div>
 </template>
 
 <script>
+import User from "./User.vue";
+
+// TODO: Show the current user as offline when they're disconnected
+
 export default {
   name: "UserList",
 
+  components: {
+    User
+  },
+
   props: {
-    userList: Array
+    userList: Array,
+    userInfoCache: Object
   },
 
   data() {
-    // TODO: Determine online/offline status
+    let offline = [];
+    for (const user of this.userList) {
+      if (user.user_id !== USER_ID) {
+        offline.push(user.user_id);
+      }
+    }
     return {
-      onlineUserList: this.userList.slice(0, 2),
-      offlineUserList: this.userList.slice(2)
+      onlineUserList: [USER_ID],
+      offlineUserList: offline
+    }
+  },
+
+  methods: {
+    onlineUsers(users) {
+      this.onlineUserList = [];
+      this.offlineUserList = [];
+      for (const user of this.userList) {
+        if (users.indexOf(user.user_id) === -1) {
+          this.offlineUserList.push(user.user_id);
+        } else {
+          this.onlineUserList.push(user.user_id);
+        }
+      }
+    },
+
+    moveUser(from, to, userId) {
+      let index = from.indexOf(userId);
+      if (index !== -1) from.splice(index, 1);
+      // TODO: binary search and insert
+      to.push(userId);
+      to.sort();
+    },
+
+    userOnline(userId) {
+      this.moveUser(this.offlineUserList, this.onlineUserList, userId);
+    },
+
+    userOffline(userId) {
+      this.moveUser(this.onlineUserList, this.offlineUserList, userId);
     }
   }
 }

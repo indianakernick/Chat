@@ -80,14 +80,6 @@ const HIDDEN_MAX_RETRY_DELAY = 32000;
 
 import { DELETED_USER_INFO } from "@/components/Message";
 
-// TODO: Store images on the server
-// Doing it on the server means we can also optimize the PNGs and remove the
-// alpha channel.
-// We can also ensure that the images are the proper size of the server to avoid
-// clients downloading big images.
-// The cache headers can be controlled.
-// A real website would use a CDN but those cost money and this is a pet project
-// so who cares.
 class ImageCompositor {
   constructor(size, color) {
     this.canvas = document.createElement("canvas");
@@ -140,7 +132,7 @@ const userInfoCache = {
         });
         comp32.composite(req.response.picture, url => {
           this.cache[userId].picture32 = url;
-        })
+        });
       };
 
       req.responseType = "json";

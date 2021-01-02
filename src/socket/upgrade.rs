@@ -14,7 +14,8 @@ pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
 
 pub struct Group {
     pub channels: Vec<db::Channel>,
-    pub users: HashMap<ConnID, (Sender, db::UserID)>,
+    pub connections: HashMap<ConnID, Sender>,
+    pub online_users: HashMap<db::UserID, u32>,
 }
 
 pub type GroupMap = HashMap<db::GroupID, Group>;
@@ -48,6 +49,8 @@ pub async fn upgrade(group_id: db::GroupID, ws: Ws, session_id: db::SessionID, c
     // expires between loading the page and running the JavaScript. Another
     // possibility is someone directly accessing this endpoint but failing to
     // provide the cookie.
+    // TODO: Maybe need to have a slightly longer expiration to account for the
+    // time it takes to load the page and open the socket connection.
     let user_id = match db::session_user_id(ctx.pool.clone(), &session_id).await? {
         Some(id) => id,
         None => return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR))
@@ -101,13 +104,19 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
                         return;
                     }
                 };
-                let mut users = HashMap::new();
-                users.insert(conn_ctx.conn_id, (ch_tx, conn_ctx.user_id));
-                entry.insert(Group { channels, users });
+                let mut connections = HashMap::new();
+                connections.insert(conn_ctx.conn_id, ch_tx);
+                let mut online_users = HashMap::new();
+                online_users.insert(conn_ctx.user_id, 1);
+                entry.insert(Group { channels, connections, online_users });
             },
             Entry::Occupied(mut entry) => {
-                super::handler::send_user_online(entry.get(), conn_ctx.user_id);
-                entry.get_mut().users.insert(conn_ctx.conn_id, (ch_tx, conn_ctx.user_id));
+                entry.get_mut().connections.insert(conn_ctx.conn_id, ch_tx);
+                let count = entry.get_mut().online_users.entry(conn_ctx.user_id).or_insert(0);
+                *count += 1;
+                if *count == 1 {
+                    super::handler::send_user_online(entry.get(), conn_ctx.user_id);
+                }
             }
         }
     }
@@ -134,15 +143,25 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
 
     debug!("Socket disconnected: {}", conn_ctx.conn_id);
     let mut guard = sock_ctx.groups.write().await;
-    let mut entry = match guard.entry(conn_ctx.group_id) {
+    let mut group_entry = match guard.entry(conn_ctx.group_id) {
         Entry::Occupied(entry) => entry,
-        Entry::Vacant(_) => panic!()
+        Entry::Vacant(_) => panic!(),
     };
-    let users = &mut entry.get_mut().users;
-    users.remove(&conn_id);
-    if users.is_empty() {
-        entry.remove();
+    let connections = &mut group_entry.get_mut().connections;
+    connections.remove(&conn_id);
+    if connections.is_empty() {
+        group_entry.remove();
     } else {
-        super::handler::send_user_offline(entry.get(), conn_ctx.user_id);
+        let mut user_entry = match group_entry.get_mut().online_users.entry(conn_ctx.user_id) {
+            Entry::Occupied(entry) => entry,
+            Entry::Vacant(_) => panic!(),
+        };
+        let count = user_entry.get_mut();
+        if *count == 1 {
+            user_entry.remove();
+            super::handler::send_user_offline(group_entry.get(), conn_ctx.user_id);
+        } else {
+            *count -= 1;
+        }
     }
 }

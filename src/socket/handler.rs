@@ -124,7 +124,7 @@ fn contains_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> b
 }
 
 fn send_to_all(group: &Group, response: String) {
-    for (_, (ch_tx, _)) in group.users.iter() {
+    for (_, ch_tx) in group.connections.iter() {
         send_message(ch_tx, response.clone());
     }
 }
@@ -146,11 +146,11 @@ pub fn send_user_offline(group: &Group, user_id: db::UserID) {
 
 impl<'a> MessageContext<'a> {
     fn reply_error(&self, group: &Group, error: &'static str) {
-        send_error(&group.users[&self.ctx.conn_id].0, error);
+        send_error(&group.connections[&self.ctx.conn_id], error);
     }
 
     fn reply_message(&self, group: &Group, message: String) {
-        send_message(&group.users[&self.ctx.conn_id].0, message);
+        send_message(&group.connections[&self.ctx.conn_id], message);
     }
 
     pub async fn handle(self) {
@@ -232,7 +232,7 @@ impl<'a> MessageContext<'a> {
             channel_id,
         })).unwrap();
 
-        for (&other_conn_id, (ch_tx, _)) in group.users.iter() {
+        for (&other_conn_id, ch_tx) in group.connections.iter() {
             if other_conn_id == self.ctx.conn_id {
                 send_message(ch_tx, echo_response.clone());
             } else {
@@ -351,7 +351,7 @@ impl<'a> MessageContext<'a> {
         let groups_guard = self.groups.read().await;
         let group = &groups_guard[&self.ctx.group_id];
 
-        let users = group.users.iter().map(|(_, (_, user_id))| user_id).cloned().collect();
+        let users = group.online_users.iter().map(|(user_id, _)| user_id).cloned().collect();
         self.reply_message(group, serde_json::to_string(&ServerMessage::OnlineUserList {
             users
         }).unwrap());
@@ -367,17 +367,11 @@ impl<'a> MessageContext<'a> {
         let mut users = Vec::new();
 
         for user in group_users.iter() {
-            // TODO: Need a different data structure for online user IDs
-            // Maybe we could keep their online status in the database...?
-            // How should we handle the same user logging in on multiple clients?
-
-            let mut status = UserStatus::Offline;
-            for (_, (_, user_id)) in group.users.iter() {
-                if user.user_id == *user_id {
-                    status = UserStatus::Online;
-                    break;
-                }
-            }
+            let status = if group.online_users.contains_key(&user.user_id) {
+                UserStatus::Online
+            } else {
+                UserStatus::Offline
+            };
             users.push(User {
                 user_id: user.user_id,
                 name: user.name.clone(),

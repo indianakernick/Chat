@@ -67,7 +67,7 @@ pub async fn channel(mut group_id: db::GroupID, mut channel_id: db::ChannelID, s
 
     // The channel list cannot be empty
     let channel_list = channel_list?;
-    let user_list = user_list?;
+    let user_list = user_list.map_err(|e| crate::error::Error::Database(e))?;
 
     let channel_name = match channel_list.iter().find(|c| c.channel_id == channel_id) {
         Some(channel) => channel.name.as_str(),

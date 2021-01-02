@@ -86,6 +86,8 @@ import { DELETED_USER_INFO } from "@/components/Message";
 // We can also ensure that the images are the proper size of the server to avoid
 // clients downloading big images.
 // The cache headers can be controlled.
+// A real website would use a CDN but those cost money and this is a pet project
+// so who cares.
 class ImageCompositor {
   constructor(size, color) {
     this.canvas = document.createElement("canvas");
@@ -363,6 +365,10 @@ export default {
       this.socket.send('{"type":"request online"}');
     },
 
+    requestUsers() {
+      this.socket.send('{"type":"request users"}');
+    },
+
     checkCurrentChannelValid() {
       const foundChannel = this.channelList.find(channel =>
         channel.channel_id === this.currentChannelId
@@ -384,10 +390,7 @@ export default {
         this.resetRetryDelay();
         this.initListeners();
         this.requestChannels();
-        // TODO: Also need to know who's offline
-        // ..and their name's and picture's
-        // This feature is a lot more complicated than I first thought!
-        this.requestOnline();
+        this.requestUsers();
       };
     },
 
@@ -492,12 +495,12 @@ export default {
           this.$refs.userList.onlineUsers(message.users);
           break;
 
-        case "user online":
-          this.$refs.userList.userOnline(message.user_id);
+        case "user list":
+          this.userList = message.users;
           break;
 
-        case "user offline":
-          this.$refs.userList.userOffline(message.user_id);
+        case "user status changed":
+          this.$refs.userList.userStatusChanged(message.user_id, message.status);
           break;
       }
     }

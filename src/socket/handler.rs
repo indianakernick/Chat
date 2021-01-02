@@ -21,6 +21,8 @@ enum ClientMessage {
     DeleteChannel { channel_id: db::ChannelID },
     #[serde(rename="request online")]
     RequestOnline,
+    #[serde(rename="request users")]
+    RequestUsers,
 }
 
 #[derive(Serialize)]
@@ -36,6 +38,24 @@ struct GenericRecentMessage {
     timestamp: u64,
     author: db::UserID,
     content: String,
+}
+
+#[derive(Serialize)]
+enum UserStatus {
+    #[serde(rename="online")]
+    Online,
+    #[serde(rename="offline")]
+    Offline,
+    // #[serde(rename="left")]
+    // Left,
+}
+
+#[derive(Serialize)]
+struct User {
+    user_id: db::UserID,
+    name: String,
+    picture: String,
+    status: UserStatus,
 }
 
 #[derive(Serialize)]
@@ -55,12 +75,15 @@ enum ServerMessage<'a> {
     ChannelList { channels: &'a Vec<db::Channel> },
     #[serde(rename="channel deleted")]
     ChannelDeleted { channel_id: db::ChannelID },
+    // Might remove OnlineUserList and include this information in the HTML
+    // bundle or fetch the UserList on startup.
     #[serde(rename="online user list")]
     OnlineUserList { users: Vec<db::UserID> },
-    #[serde(rename="user online")]
-    UserOnline { user_id: db::UserID },
-    #[serde(rename="user offline")]
-    UserOffline { user_id: db::UserID },
+    #[serde(rename="user list")]
+    UserList { users: Vec<User> },
+    // Perhaps include the user's name and picture in this too
+    #[serde(rename="user status changed")]
+    UserStatusChanged { user_id: db::UserID, status: UserStatus }
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -106,16 +129,19 @@ fn send_to_all(group: &Group, response: String) {
     }
 }
 
-pub fn send_user_online(group: &Group, user_id: db::UserID) {
-    send_to_all(group, serde_json::to_string(&ServerMessage::UserOnline {
-        user_id
+fn send_user_status(group: &Group, user_id: db::UserID, status: UserStatus) {
+    send_to_all(group, serde_json::to_string(&ServerMessage::UserStatusChanged {
+        user_id,
+        status
     }).unwrap())
 }
 
+pub fn send_user_online(group: &Group, user_id: db::UserID) {
+    send_user_status(group, user_id, UserStatus::Online);
+}
+
 pub fn send_user_offline(group: &Group, user_id: db::UserID) {
-    send_to_all(group, serde_json::to_string(&ServerMessage::UserOffline {
-        user_id
-    }).unwrap())
+    send_user_status(group, user_id, UserStatus::Offline);
 }
 
 impl<'a> MessageContext<'a> {
@@ -167,6 +193,9 @@ impl<'a> MessageContext<'a> {
             },
             ClientMessage::RequestOnline => {
                 self.request_online().await
+            },
+            ClientMessage::RequestUsers => {
+                self.request_users().await
             },
         };
 
@@ -324,6 +353,40 @@ impl<'a> MessageContext<'a> {
 
         let users = group.users.iter().map(|(_, (_, user_id))| user_id).cloned().collect();
         self.reply_message(group, serde_json::to_string(&ServerMessage::OnlineUserList {
+            users
+        }).unwrap());
+
+        Ok(())
+    }
+
+    async fn request_users(&self) -> Result<(), PoolError> {
+        let groups_guard = self.groups.read().await;
+        let group = &groups_guard[&self.ctx.group_id];
+
+        let group_users = db::group_users(self.pool.clone(), self.ctx.group_id).await?;
+        let mut users = Vec::new();
+
+        for user in group_users.iter() {
+            // TODO: Need a different data structure for online user IDs
+            // Maybe we could keep their online status in the database...?
+            // How should we handle the same user logging in on multiple clients?
+
+            let mut status = UserStatus::Offline;
+            for (_, (_, user_id)) in group.users.iter() {
+                if user.user_id == *user_id {
+                    status = UserStatus::Online;
+                    break;
+                }
+            }
+            users.push(User {
+                user_id: user.user_id,
+                name: user.name.clone(),
+                picture: user.picture.clone(),
+                status
+            });
+        }
+
+        self.reply_message(group, serde_json::to_string(&ServerMessage::UserList {
             users
         }).unwrap());
 

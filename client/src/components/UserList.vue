@@ -27,6 +27,23 @@
 <script>
 import User from "./User.vue";
 
+function binarySearchImpl(array, compare, begin, end) {
+  if (begin === end) return begin;
+  const middle = begin + ((end - begin) >>> 1);
+  const order = compare(array[middle]);
+  if (order < 0) {
+    return binarySearchImpl(array, compare, begin, middle);
+  } else if (order > 0) {
+    return binarySearchImpl(array, compare, middle + 1, end);
+  } else {
+    return middle;
+  }
+}
+
+function binarySearch(array, compare) {
+  return binarySearchImpl(array, compare, 0, array.length);
+}
+
 export default {
   name: "UserList",
 
@@ -40,16 +57,6 @@ export default {
     connected: Boolean
   },
 
-  watch: {
-    connected(online) {
-      if (online) {
-        this.userOnline(USER_ID);
-      } else {
-        this.userOffline(USER_ID);
-      }
-    }
-  },
-
   data() {
     let offline = [];
     for (const user of this.userList) {
@@ -60,6 +67,24 @@ export default {
     return {
       onlineUserList: [USER_ID],
       offlineUserList: offline
+    }
+  },
+
+  watch: {
+    connected(online) {
+      this.userStatusChanged(USER_ID, online ? "online" : "offline");
+    },
+
+    userList(users) {
+      this.onlineUserList = [];
+      this.offlineUserList = [];
+      for (const user of users) {
+        if (user.status === "online") {
+          this.onlineUserList.push(user.user_id);
+        } else if (user.status === "offline") {
+          this.offlineUserList.push(user.user_id);
+        }
+      }
     }
   },
 
@@ -80,18 +105,20 @@ export default {
       let index = from.indexOf(userId);
       if (index !== -1) {
         from.splice(index, 1);
-        // TODO: binary search and insert
-        to.push(userId);
-        to.sort();
+        index = binarySearch(to, item => userId - item);
+        to.splice(index, 0, userId);
       }
     },
 
-    userOnline(userId) {
-      this.moveUser(this.offlineUserList, this.onlineUserList, userId);
-    },
-
-    userOffline(userId) {
-      this.moveUser(this.onlineUserList, this.offlineUserList, userId);
+    userStatusChanged(userId, status) {
+      switch (status) {
+        case "online":
+          this.moveUser(this.offlineUserList, this.onlineUserList, userId);
+          break;
+        case "offline":
+          this.moveUser(this.onlineUserList, this.offlineUserList, userId);
+          break;
+      }
     }
   }
 }

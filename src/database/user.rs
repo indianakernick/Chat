@@ -1,7 +1,7 @@
 use super::GroupID;
 use serde::Serialize;
 use crate::error::Error;
-use deadpool_postgres::Pool;
+use deadpool_postgres::{Pool, PoolError};
 
 pub type UserID = i32;
 
@@ -53,7 +53,7 @@ pub async fn user_id_from_google(pool: Pool, claims: &crate::handlers::Claims) -
     Ok(conn.query_one(&stmt, &[&claims.sub, &claims.name, &claims.picture]).await?.get(0))
 }
 
-pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, Error> {
+pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, PoolError> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         SELECT Usr.user_id, name, picture

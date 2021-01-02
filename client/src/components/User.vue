@@ -1,13 +1,11 @@
 <template>
   <div class="user-list-item" :class="{'offline': offline}">
-    <!-- Maybe the user list pictures should be smaller than the message pictures...? -->
     <img
       class="user-picture"
-      :src="userInfo.picture"
+      :src="userInfo.picture32"
       alt="User picture"
-      width="48"
-      height="48"
-      referrerpolicy="no-referrer"
+      width="32"
+      height="32"
     />
     <div class="user-name ellipsis-truncate">{{ userInfo.name }}</div>
   </div>

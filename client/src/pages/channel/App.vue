@@ -80,6 +80,42 @@ const HIDDEN_MAX_RETRY_DELAY = 32000;
 
 import { DELETED_USER_INFO } from "@/components/Message";
 
+// TODO: Store images on the server
+// Doing it on the server means we can also optimize the PNGs and remove the
+// alpha channel.
+// We can also ensure that the images are the proper size of the server to avoid
+// clients downloading big images.
+// The cache headers can be controlled.
+class ImageCompositor {
+  constructor(size, color) {
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = this.canvas.height = size;
+    this.canvas.style.display = "none";
+    document.body.appendChild(this.canvas);
+    this.ctx = this.canvas.getContext("2d");
+    this.ctx.fillStyle = color;
+  }
+
+  composite(imageUrl, callback) {
+    const image = new Image();
+    image.style.display = "none";
+    document.body.appendChild(image);
+    image.referrerPolicy = "no-referrer";
+    image.crossOrigin = "anonymous";
+    image.src = imageUrl;
+    image.onload = () => {
+      const size = this.canvas.width;
+      this.ctx.fillRect(0, 0, size, size);
+      this.ctx.drawImage(image, 0, 0, size, size);
+      callback(this.canvas.toDataURL());
+    };
+  }
+}
+
+const comp64 = new ImageCompositor(64, "#e9ecef"); // $group-item-back
+const comp48 = new ImageCompositor(48, "#e9ecef"); // $user-picture-back
+const comp32 = new ImageCompositor(32, "#e9ecef"); // $user-picture-back
+
 const userInfoCache = {
   cache: {
     0: DELETED_USER_INFO
@@ -89,14 +125,20 @@ const userInfoCache = {
     if (!this.cache.hasOwnProperty(userId)) {
       this.cache[userId] = {
         name: "",
-        picture: ""
+        picture: "",
+        picture32: ""
       };
 
       const req = new XMLHttpRequest();
 
       req.onload = () => {
         this.cache[userId].name = req.response.name;
-        this.cache[userId].picture = req.response.picture;
+        comp48.composite(req.response.picture, url => {
+          this.cache[userId].picture = url;
+        });
+        comp32.composite(req.response.picture, url => {
+          this.cache[userId].picture32 = url;
+        })
       };
 
       req.responseType = "json";
@@ -129,13 +171,26 @@ export default {
 
   data() {
     for (const user of USER_LIST) {
-      userInfoCache.cache[user.user_id] = {
-        name: user.name,
-        picture: user.picture
-      };
+      userInfoCache.cache[user.user_id] = { name: user.name, picture: "", picture32: "" };
+      comp48.composite(user.picture, url => {
+        this.userInfoCache.cache[user.user_id].picture = url;
+      });
+      comp32.composite(user.picture, url => {
+        this.userInfoCache.cache[user.user_id].picture32 = url;
+      });
     }
+
+    const groupList = [];
+    for (const group of GROUP_LIST) {
+      const length = groupList.length;
+      groupList.push({ group_id: group.group_id, name: group.name, picture: "" });
+      comp64.composite(group.picture, url => {
+        this.groupList[length].picture = url;
+      });
+    }
+
     return {
-      groupList: GROUP_LIST,
+      groupList: groupList,
       currentGroupId: GROUP_ID,
       userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,

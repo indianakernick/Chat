@@ -45,6 +45,8 @@ export default {
   cursor: pointer;
   display: flex;
   justify-content: space-between;
+  margin: 8px 8px 0 8px;
+  border-radius: 4px;
 }
 
 .channel-list-item span {

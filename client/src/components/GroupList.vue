@@ -1,20 +1,17 @@
 <template>
   <div class="group-list-container scrollable-container">
     <div class="group-list-block scrollable-block">
-      <div class="group-list-item-wrapper" v-for="group in groupList">
-        <img
-          class="group-list-item"
-          :class="{'active': group.group_id === currentGroupId}"
-          @click="$emit('selectGroup', group.group_id)"
-          :src="group.picture"
-          :title="group.name"
-          alt="Group picture"
-          width="64"
-          height="64"
-          referrerpolicy="no-referrer"
-        />
-        <div class="group-list-item-back"></div>
-      </div>
+      <img
+        v-for="group in groupList"
+        class="group-list-item"
+        :class="{'active': group.group_id === currentGroupId}"
+        @click="$emit('selectGroup', group.group_id)"
+        :src="group.picture"
+        :title="group.name"
+        alt="Group picture"
+        width="64"
+        height="64"
+      />
       <div
         class="group-list-create"
         @click="$emit('createGroup')"
@@ -56,41 +53,18 @@ $image-size: 64px;
   flex-direction: column;
 }
 
-.group-list-item:hover, .group-list-item.active {
-  border-radius: $image-size / 4;
-  + .group-list-item-back {
-    border-radius: $image-size / 4 - 1;
-  }
+.group-list-create:hover, .group-list-item:hover, .group-list-item.active {
+  border-radius: 25%;
 }
 
-.group-list-create:hover {
-  border-radius: $image-size / 4;
-}
-
-.group-list-item, .group-list-create, .group-list-item-back {
-  border-radius: $image-size / 2;
+.group-list-create, .group-list-item {
+  border-radius: 50%;
   cursor: pointer;
   transition: border-radius 0.2s ease;
 }
 
 .group-list-item {
-  position: relative;
-  z-index: 1;
-}
-
-.group-list-item-back {
-  background-color: $group-item-back;
-  position: absolute;
-  width: $image-size - 2;
-  height: $image-size - 2;
-  left: 1px;
-  top: 1px;
-  border-radius: $image-size / 2 - 1;
-}
-
-.group-list-item-wrapper {
   flex: 0 0 $image-size;
-  position: relative;
   margin: $padding $padding 0 $padding;
 }
 

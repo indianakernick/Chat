@@ -6,7 +6,6 @@
       alt="User picture"
       width="48"
       height="48"
-      referrerpolicy="no-referrer"
     />
     <div class="message-right">
       <div>

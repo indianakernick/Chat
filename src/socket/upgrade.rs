@@ -1,4 +1,5 @@
 use log::{debug, error};
+use crate::error::Error;
 use crate::database as db;
 use deadpool_postgres::Pool;
 use tokio::sync::{RwLock, mpsc};
@@ -8,9 +9,16 @@ use std::collections::hash_map::{HashMap, Entry};
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
 
 pub type ConnID = usize;
-static NEXT_CONNECTION_ID: AtomicUsize = AtomicUsize::new(1);
+pub type AtomicConnID = AtomicUsize;
+static NEXT_CONNECTION_ID: AtomicConnID = AtomicConnID::new(1);
 
 pub type Sender = mpsc::UnboundedSender<Result<Message, warp::Error>>;
+
+struct ConnectionContext {
+    user_id: db::UserID,
+    group_id: db::GroupID,
+    conn_id: ConnID,
+}
 
 pub struct Group {
     pub channels: Vec<db::Channel>,
@@ -21,6 +29,53 @@ pub struct Group {
 pub type GroupMap = HashMap<db::GroupID, Group>;
 pub type Groups = Arc<RwLock<GroupMap>>;
 
+impl Group {
+    /// Create a new group and insert a connection
+    async fn new(conn_ctx: &ConnectionContext, pool: Pool, ch_tx: Sender)
+        -> Result<Self, Error>
+    {
+        let channels = db::group_channels(pool, conn_ctx.group_id).await?;
+        let mut connections = HashMap::new();
+        connections.insert(conn_ctx.conn_id, ch_tx);
+        let mut online_users = HashMap::new();
+        online_users.insert(conn_ctx.user_id, 1);
+        Ok(Self { channels, connections, online_users })
+    }
+
+    /// Insert a new connection into the group
+    fn insert_connection(&mut self, conn_ctx: &ConnectionContext, ch_tx: Sender) {
+        let count = self.online_users.entry(conn_ctx.user_id).or_insert(0);
+        *count += 1;
+        if *count == 1 {
+            super::handler::send_user_online(self, conn_ctx.user_id);
+        }
+        self.connections.insert(conn_ctx.conn_id, ch_tx);
+    }
+
+    /// Remove the current connection from the group.
+    /// Returns true if the group becomes empty after the connection was
+    /// removed.
+    fn remove_connection(&mut self, conn_ctx: &ConnectionContext) -> bool {
+        self.connections.remove(&conn_ctx.conn_id);
+        if self.connections.is_empty() {
+            true
+        } else {
+            let mut user_entry = match self.online_users.entry(conn_ctx.user_id) {
+                Entry::Occupied(entry) => entry,
+                Entry::Vacant(_) => panic!(),
+            };
+            let count = user_entry.get_mut();
+            if *count == 1 {
+                user_entry.remove();
+                super::handler::send_user_offline(self, conn_ctx.user_id);
+            } else {
+                *count -= 1;
+            }
+            false
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct SocketContext {
     pool: Pool,
@@ -28,18 +83,41 @@ pub struct SocketContext {
 }
 
 impl SocketContext {
-    pub fn new(pool: Pool) -> SocketContext {
-        SocketContext {
+    pub fn new(pool: Pool) -> Self {
+        Self {
             pool,
             groups: Groups::default()
         }
     }
-}
 
-pub struct ConnectionContext {
-    pub user_id: db::UserID,
-    pub group_id: db::GroupID,
-    pub conn_id: ConnID,
+    /// Insert a connection into the group map. Creates a new group if
+    /// necessary, otherwise inserts into an existing group.
+    async fn insert_connection(&self, conn_ctx: &ConnectionContext, ch_tx: Sender)
+        -> Result<(), Error>
+    {
+        match self.groups.write().await.entry(conn_ctx.group_id) {
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().insert_connection(&conn_ctx, ch_tx);
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(Group::new(&conn_ctx, self.pool.clone(), ch_tx).await?);
+            }
+        }
+        Ok(())
+    }
+
+    /// Remove a connection from the group map. Also removes the group if the
+    /// group becomes empty.
+    async fn remove_connection(&self, conn_ctx: &ConnectionContext) {
+        match self.groups.write().await.entry(conn_ctx.group_id) {
+            Entry::Occupied(mut entry) => {
+                if entry.get_mut().remove_connection(&conn_ctx) {
+                    entry.remove();
+                }
+            },
+            Entry::Vacant(_) => panic!()
+        }
+    }
 }
 
 pub async fn upgrade(group_id: db::GroupID, ws: Ws, session_id: db::SessionID, ctx: SocketContext)
@@ -63,12 +141,11 @@ pub async fn upgrade(group_id: db::GroupID, ws: Ws, session_id: db::SessionID, c
 
     // Upgrade the HTTP connection to a WebSocket connection
     Ok(Box::new(ws.on_upgrade(move |socket: WebSocket| {
-        let conn_ctx = ConnectionContext {
+        connected(socket, ctx, ConnectionContext {
             user_id,
             group_id,
             conn_id: NEXT_CONNECTION_ID.fetch_add(1, Ordering::Relaxed)
-        };
-        connected(socket, ctx, conn_ctx)
+        })
     })))
 }
 
@@ -93,75 +170,31 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
     // Add the connection to the hashmap, saving the sending end of the queue.
     // Putting messages onto the queue will cause them to eventually be
     // processed above and sent over the socket.
-    {
-        let mut guard = sock_ctx.groups.write().await;
-        match guard.entry(conn_ctx.group_id) {
-            Entry::Vacant(entry) => {
-                let channels = match db::group_channels(sock_ctx.pool.clone(), conn_ctx.group_id).await {
-                    Ok(c) => c,
-                    Err(e) => {
-                        error!("{}", e);
-                        return;
-                    }
-                };
-                let mut connections = HashMap::new();
-                connections.insert(conn_ctx.conn_id, ch_tx);
-                let mut online_users = HashMap::new();
-                online_users.insert(conn_ctx.user_id, 1);
-                entry.insert(Group { channels, connections, online_users });
-            },
-            Entry::Occupied(mut entry) => {
-                entry.get_mut().connections.insert(conn_ctx.conn_id, ch_tx);
-                let count = entry.get_mut().online_users.entry(conn_ctx.user_id).or_insert(0);
-                *count += 1;
-                if *count == 1 {
-                    super::handler::send_user_online(entry.get(), conn_ctx.user_id);
-                }
-            }
-        }
+    if let Err(e) = sock_ctx.insert_connection(&conn_ctx, ch_tx).await {
+        error!("{}", e);
+        return;
     }
+
+    let message_ctx = super::handler::MessageContext {
+        user_id: conn_ctx.user_id,
+        group_id: conn_ctx.group_id,
+        conn_id: conn_ctx.conn_id,
+        groups: &sock_ctx.groups,
+        pool: &sock_ctx.pool,
+    };
 
     // Handle each message received from the socket.
     while let Some(result) = ws_rx.next().await {
         // result: Result<Message, warp::Error>
-        let message = match result {
-            Ok(msg) => msg,
+        match result {
+            Ok(message) => message_ctx.handle(message).await,
             Err(e) => {
                 error!("Error receiving from socket ({}): {}", conn_ctx.conn_id, e);
                 break;
             }
-        };
-
-        let msg_ctx = super::handler::MessageContext {
-            ctx: &conn_ctx,
-            groups: &sock_ctx.groups,
-            pool: &sock_ctx.pool,
-            message,
-        };
-        msg_ctx.handle().await;
-    }
-
-    debug!("Socket disconnected: {}", conn_ctx.conn_id);
-    let mut guard = sock_ctx.groups.write().await;
-    let mut group_entry = match guard.entry(conn_ctx.group_id) {
-        Entry::Occupied(entry) => entry,
-        Entry::Vacant(_) => panic!(),
-    };
-    let connections = &mut group_entry.get_mut().connections;
-    connections.remove(&conn_id);
-    if connections.is_empty() {
-        group_entry.remove();
-    } else {
-        let mut user_entry = match group_entry.get_mut().online_users.entry(conn_ctx.user_id) {
-            Entry::Occupied(entry) => entry,
-            Entry::Vacant(_) => panic!(),
-        };
-        let count = user_entry.get_mut();
-        if *count == 1 {
-            user_entry.remove();
-            super::handler::send_user_offline(group_entry.get(), conn_ctx.user_id);
-        } else {
-            *count -= 1;
         }
     }
+
+    sock_ctx.remove_connection(&conn_ctx).await;
+    debug!("Socket disconnected: {}", conn_ctx.conn_id);
 }

@@ -4,7 +4,7 @@ use std::time::SystemTime;
 use crate::database as db;
 use serde::{Serialize, Deserialize};
 use deadpool_postgres::{Pool, PoolError};
-use super::upgrade::{Sender, Group, Groups, ConnectionContext};
+use super::upgrade::{ConnID, Sender, Group, Groups};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
@@ -90,24 +90,10 @@ fn as_timestamp(time: SystemTime) -> u64 {
     time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
 }
 
-pub struct MessageContext<'a> {
-    pub ctx: &'a ConnectionContext,
-    pub groups: &'a Groups,
-    pub pool: &'a Pool,
-    pub message: Message,
-}
-
 fn send_message(ch_tx: &Sender, message: String) {
     if ch_tx.send(Ok(Message::text(message))).is_err() {
         // the connection handler will handle the possible error
     }
-}
-
-fn send_error(ch_tx: &Sender, error: &'static str) {
-    let response = serde_json::to_string(&ServerMessage::Error {
-        message: error
-    }).unwrap();
-    send_message(ch_tx, response);
 }
 
 fn find_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> usize {
@@ -123,17 +109,46 @@ fn contains_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> b
     find_channel(channels, channel_id) != usize::MAX
 }
 
-fn send_to_all(group: &Group, response: String) {
+/// Send a message to all connections.
+fn send_all(group: &Group, message: ServerMessage) {
+    let response = serde_json::to_string(&message).unwrap();
     for (_, ch_tx) in group.connections.iter() {
         send_message(ch_tx, response.clone());
     }
 }
 
+/// Send a peer message to all connections but the current connection.
+/// Send a reply message to the current connection.
+fn send_peer_reply(group: &Group, conn_id: ConnID, peer: ServerMessage, reply: ServerMessage) {
+    let peer_response = serde_json::to_string(&peer).unwrap();
+    let reply_response = serde_json::to_string(&reply).unwrap();
+    for (&other_conn_id, ch_tx) in group.connections.iter() {
+        if other_conn_id == conn_id {
+            send_message(ch_tx, reply_response.clone());
+        } else {
+            send_message(ch_tx, peer_response.clone());
+        }
+    }
+}
+
+/// Send a reply message to the current connection.
+fn send_reply(group: &Group, conn_id: ConnID, message: ServerMessage) {
+    let sender = &group.connections[&conn_id];
+    send_message(sender, serde_json::to_string(&message).unwrap());
+}
+
+/// Send a reply error to the current connection
+fn send_reply_error(group: &Group, conn_id: ConnID, error: &'static str) {
+    send_reply(group, conn_id, ServerMessage::Error {
+        message: error
+    });
+}
+
 fn send_user_status(group: &Group, user_id: db::UserID, status: UserStatus) {
-    send_to_all(group, serde_json::to_string(&ServerMessage::UserStatusChanged {
+    send_all(group, ServerMessage::UserStatusChanged {
         user_id,
         status
-    }).unwrap())
+    });
 }
 
 pub fn send_user_online(group: &Group, user_id: db::UserID) {
@@ -144,24 +159,24 @@ pub fn send_user_offline(group: &Group, user_id: db::UserID) {
     send_user_status(group, user_id, UserStatus::Offline);
 }
 
+pub struct MessageContext<'a> {
+    pub user_id: db::UserID,
+    pub group_id: db::GroupID,
+    pub conn_id: ConnID,
+    pub groups: &'a Groups,
+    pub pool: &'a Pool,
+}
+
 impl<'a> MessageContext<'a> {
-    fn reply_error(&self, group: &Group, error: &'static str) {
-        send_error(&group.connections[&self.ctx.conn_id], error);
-    }
-
-    fn reply_message(&self, group: &Group, message: String) {
-        send_message(&group.connections[&self.ctx.conn_id], message);
-    }
-
-    pub async fn handle(self) {
-        let message = match self.message.to_str() {
+    pub async fn handle(&self, message: Message) {
+        let message = match message.to_str() {
             Ok(m) => m,
             Err(_) => return,
         };
 
         if message == "a" {
-            let group = &self.groups.read().await[&self.ctx.group_id];
-            self.reply_message(group, String::from("b"));
+            let group = &self.groups.read().await[&self.group_id];
+            send_message(&group.connections[&self.conn_id], String::from("b"));
             return;
         }
 
@@ -169,8 +184,8 @@ impl<'a> MessageContext<'a> {
             Ok(m) => m,
             Err(e) => {
                 error!("{}", e);
-                let group = &self.groups.read().await[&self.ctx.group_id];
-                self.reply_error(group, "JSON");
+                let group = &self.groups.read().await[&self.group_id];
+                send_reply_error(group, self.conn_id, "JSON");
                 return;
             }
         };
@@ -201,8 +216,8 @@ impl<'a> MessageContext<'a> {
 
         if let Err(e) = result {
             error!("{}", e);
-            let group = &self.groups.read().await[&self.ctx.group_id];
-            self.reply_error(group, "Database");
+            let group = &self.groups.read().await[&self.group_id];
+            send_reply_error(group, self.conn_id, "Database");
         }
     }
 
@@ -213,50 +228,44 @@ impl<'a> MessageContext<'a> {
         let timestamp = as_timestamp(time);
 
         let groups_guard = self.groups.read().await;
-        let group = &groups_guard[&self.ctx.group_id];
+        let group = &groups_guard[&self.group_id];
 
         if !contains_channel(&group.channels, channel_id) {
-            self.reply_error(group, "Invalid channel_id");
+            send_reply_error(group, self.conn_id, "Invalid channel_id");
             return Ok(());
         }
 
-        let echo_response = serde_json::to_string(&ServerMessage::MessageReceipt {
+        let peer = ServerMessage::RecentMessage(RecentMessage {
             timestamp,
-            channel_id,
-        }).unwrap();
-
-        let peer_response = serde_json::to_string(&ServerMessage::RecentMessage(RecentMessage {
-            timestamp,
-            author: self.ctx.user_id,
+            author: self.user_id,
             content: content.clone(),
             channel_id,
-        })).unwrap();
+        });
 
-        for (&other_conn_id, ch_tx) in group.connections.iter() {
-            if other_conn_id == self.ctx.conn_id {
-                send_message(ch_tx, echo_response.clone());
-            } else {
-                send_message(ch_tx, peer_response.clone());
-            }
-        }
+        let echo = ServerMessage::MessageReceipt {
+            timestamp,
+            channel_id,
+        };
 
-        db::create_message(self.pool.clone(), time, self.ctx.user_id, content, channel_id).await
+        send_peer_reply(group, self.conn_id, peer, echo);
+
+        db::create_message(self.pool.clone(), time, self.user_id, content, channel_id).await
     }
 
     async fn request_recent_messages(&self, channel_id: db::ChannelID)
         -> Result<(), PoolError>
     {
         let groups_guard = self.groups.read().await;
-        let group = &groups_guard[&self.ctx.group_id];
+        let group = &groups_guard[&self.group_id];
 
         if !contains_channel(&group.channels, channel_id) {
-            self.reply_error(group, "Invalid channel_id");
+            send_reply_error(group, self.conn_id, "Invalid channel_id");
             return Ok(());
         }
 
         let rows = db::recent_messages(self.pool.clone(), channel_id).await?;
 
-        let response = serde_json::to_string(&ServerMessage::RecentMessageList {
+        send_reply(group, self.conn_id, ServerMessage::RecentMessageList {
             channel_id,
             messages: rows.iter()
                 .map(|row| GenericRecentMessage {
@@ -265,105 +274,104 @@ impl<'a> MessageContext<'a> {
                     content: row.get(2)
                 })
                 .collect()
-        }).unwrap();
-
-        self.reply_message(group, response);
+        });
 
         Ok(())
     }
 
     async fn create_channel(&self, name: String) -> Result<(), PoolError> {
         let mut groups_guard = self.groups.write().await;
-        let group = &mut groups_guard.get_mut(&self.ctx.group_id).unwrap();
+        let group = &mut groups_guard.get_mut(&self.group_id).unwrap();
 
         if !db::valid_channel_name(&name) {
             // This shouldn't happen unless someone is bypassing the JavaScript
             // validation.
-            self.reply_error(group, "Channel name invalid");
+            send_reply_error(group, self.conn_id, "Channel name invalid");
             return Ok(());
         }
 
-        let channel_id = match db::create_channel(self.pool.clone(), self.ctx.group_id, &name).await? {
+        let channel_id = match db::create_channel(self.pool.clone(), self.group_id, &name).await? {
             Some(id) => id,
             None => {
-                self.reply_error(group, "Channel name exists");
+                send_reply_error(group, self.conn_id, "Channel name exists");
                 return Ok(());
             }
         };
 
-        let response = serde_json::to_string(&ServerMessage::ChannelCreated {
+        send_all(group, ServerMessage::ChannelCreated {
             channel_id,
             name: &name,
-        }).unwrap();
+        });
 
         group.channels.push(db::Channel {
             channel_id,
             name
         });
 
-        send_to_all(group, response);
-
         Ok(())
     }
 
     async fn request_channels(&self) -> Result<(), PoolError> {
         let groups_guard = self.groups.read().await;
-        let group = &groups_guard[&self.ctx.group_id];
+        let group = &groups_guard[&self.group_id];
 
-        self.reply_message(group, serde_json::to_string(&ServerMessage::ChannelList {
+        send_reply(group, self.conn_id, ServerMessage::ChannelList {
             channels: &group.channels
-        }).unwrap());
+        });
 
         Ok(())
     }
 
     async fn delete_channel(&self, channel_id: db::ChannelID) -> Result<(), PoolError> {
         let mut groups_guard = self.groups.write().await;
-        let group = &mut groups_guard.get_mut(&self.ctx.group_id).unwrap();
+        let group = &mut groups_guard.get_mut(&self.group_id).unwrap();
 
         if group.channels.len() == 1 {
-            self.reply_error(group, "Cannot delete lone channel");
+            send_reply_error(group, self.conn_id, "Cannot delete lone channel");
             return Ok(());
         }
 
         let channel_index = find_channel(&group.channels, channel_id);
         if channel_index == usize::MAX {
-            self.reply_error(group, "Channel not in group");
+            send_reply_error(group, self.conn_id, "Channel not in group");
             return Ok(());
         }
 
         if !db::delete_channel(self.pool.clone(), channel_id).await? {
             // If the above checks pass then this cannot happen
-            self.reply_error(group, "Channel already deleted");
+            send_reply_error(group, self.conn_id, "Channel already deleted");
             return Ok(());
         }
 
         group.channels.remove(channel_index);
 
-        send_to_all(group, serde_json::to_string(&ServerMessage::ChannelDeleted {
+        send_all(group, ServerMessage::ChannelDeleted {
             channel_id
-        }).unwrap());
+        });
 
         Ok(())
     }
 
     async fn request_online(&self) -> Result<(), PoolError> {
         let groups_guard = self.groups.read().await;
-        let group = &groups_guard[&self.ctx.group_id];
+        let group = &groups_guard[&self.group_id];
 
-        let users = group.online_users.iter().map(|(user_id, _)| user_id).cloned().collect();
-        self.reply_message(group, serde_json::to_string(&ServerMessage::OnlineUserList {
+        let users = group.online_users.iter()
+            .map(|(user_id, _)| user_id)
+            .cloned()
+            .collect();
+        send_reply(group, self.conn_id, ServerMessage::OnlineUserList {
             users
-        }).unwrap());
+        });
 
         Ok(())
     }
 
     async fn request_users(&self) -> Result<(), PoolError> {
         let groups_guard = self.groups.read().await;
-        let group = &groups_guard[&self.ctx.group_id];
+        let group = &groups_guard[&self.group_id];
 
-        let group_users = db::group_users(self.pool.clone(), self.ctx.group_id).await?;
+        let group_users = db::group_users(self.pool.clone(), self.group_id).await?;
         let mut users = Vec::new();
 
         for user in group_users.iter() {
@@ -380,9 +388,9 @@ impl<'a> MessageContext<'a> {
             });
         }
 
-        self.reply_message(group, serde_json::to_string(&ServerMessage::UserList {
+        send_reply(group, self.conn_id, ServerMessage::UserList {
             users
-        }).unwrap());
+        });
 
         Ok(())
     }

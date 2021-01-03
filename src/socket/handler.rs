@@ -98,12 +98,10 @@ fn send_message(ch_tx: &Sender, message: String) {
 
 impl Group {
     fn find_channel(&self, channel_id: db::ChannelID) -> usize {
-        for i in 0..self.channels.len() {
-            if self.channels[i].channel_id == channel_id {
-                return i;
-            }
+        match self.channels.binary_search_by(|ch| ch.channel_id.cmp(&channel_id)) {
+            Ok(i) => i,
+            Err(_) => usize::MAX
         }
-        return usize::MAX;
     }
 
     fn contains_channel(&self, channel_id: db::ChannelID) -> bool {

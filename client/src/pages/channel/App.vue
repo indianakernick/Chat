@@ -184,19 +184,16 @@ export default {
     }
 
     return {
-      groupList: groupList,
       currentGroupId: GROUP_ID,
+      currentChannelId: CHANNEL_ID,
       userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,
       userList: USER_LIST,
-      currentChannelId: CHANNEL_ID,
+      groupList: groupList,
       channelList: CHANNEL_LIST,
       messageLists: {},
       retryDelay: INITIAL_RETRY_DELAY,
-      connected: false,
-      startTime: 0,
-      currPingCount: 0,
-      pingCount: 0
+      connected: false
     }
   },
 
@@ -381,6 +378,7 @@ export default {
         this.connected = true;
         this.resetRetryDelay();
         this.initListeners();
+        // TODO: I think we also need to request the group list
         this.requestChannels();
         this.requestUsers();
       };
@@ -395,12 +393,6 @@ export default {
         this.requestRecent();
         this.requestOnline();
       };
-    },
-
-    startPingPong(count) {
-      this.pingCount = this.currPingCount = count;
-      this.startTime = performance.now();
-      this.socket.send("a");
     },
 
     handleError(message) {
@@ -424,19 +416,6 @@ export default {
     },
 
     receiveMessage(event) {
-      if (event.data === "b") {
-        const endTime = performance.now();
-        this.currPingCount -= 1;
-        if (this.currPingCount > 0) {
-          this.socket.send("a");
-        } else if (this.currPingCount === 0) {
-          const total = endTime - this.startTime;
-          console.log("Total duration:", total);
-          console.log("Average duration:", total / this.pingCount);
-        }
-        return;
-      }
-
       const message = JSON.parse(event.data);
       console.log(message);
       switch (message.type) {

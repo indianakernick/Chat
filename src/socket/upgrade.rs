@@ -47,7 +47,7 @@ impl Group {
         let count = self.online_users.entry(conn_ctx.user_id).or_insert(0);
         *count += 1;
         if *count == 1 {
-            super::handler::send_user_online(self, conn_ctx.user_id);
+            self.send_user_online(conn_ctx.user_id);
         }
         self.connections.insert(conn_ctx.conn_id, ch_tx);
     }
@@ -67,7 +67,7 @@ impl Group {
             let count = user_entry.get_mut();
             if *count == 1 {
                 user_entry.remove();
-                super::handler::send_user_offline(self, conn_ctx.user_id);
+                self.send_user_offline(conn_ctx.user_id);
             } else {
                 *count -= 1;
             }

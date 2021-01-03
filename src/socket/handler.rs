@@ -96,67 +96,69 @@ fn send_message(ch_tx: &Sender, message: String) {
     }
 }
 
-fn find_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> usize {
-    for i in 0..channels.len() {
-        if channels[i].channel_id == channel_id {
-            return i;
+impl Group {
+    fn find_channel(&self, channel_id: db::ChannelID) -> usize {
+        for i in 0..self.channels.len() {
+            if self.channels[i].channel_id == channel_id {
+                return i;
+            }
+        }
+        return usize::MAX;
+    }
+
+    fn contains_channel(&self, channel_id: db::ChannelID) -> bool {
+        self.find_channel(channel_id) != usize::MAX
+    }
+
+    /// Send a message to all connections.
+    fn send_all(&self, message: ServerMessage) {
+        let response = serde_json::to_string(&message).unwrap();
+        for (_, ch_tx) in self.connections.iter() {
+            send_message(ch_tx, response.clone());
         }
     }
-    return usize::MAX;
-}
 
-fn contains_channel(channels: &Vec<db::Channel>, channel_id: db::ChannelID) -> bool {
-    find_channel(channels, channel_id) != usize::MAX
-}
-
-/// Send a message to all connections.
-fn send_all(group: &Group, message: ServerMessage) {
-    let response = serde_json::to_string(&message).unwrap();
-    for (_, ch_tx) in group.connections.iter() {
-        send_message(ch_tx, response.clone());
-    }
-}
-
-/// Send a peer message to all connections but the current connection.
-/// Send a reply message to the current connection.
-fn send_peer_reply(group: &Group, conn_id: ConnID, peer: ServerMessage, reply: ServerMessage) {
-    let peer_response = serde_json::to_string(&peer).unwrap();
-    let reply_response = serde_json::to_string(&reply).unwrap();
-    for (&other_conn_id, ch_tx) in group.connections.iter() {
-        if other_conn_id == conn_id {
-            send_message(ch_tx, reply_response.clone());
-        } else {
-            send_message(ch_tx, peer_response.clone());
+    /// Send a peer message to all connections but the current connection.
+    /// Send a reply message to the current connection.
+    fn send_peer_reply(&self, conn_id: ConnID, peer: ServerMessage, reply: ServerMessage) {
+        let peer_response = serde_json::to_string(&peer).unwrap();
+        let reply_response = serde_json::to_string(&reply).unwrap();
+        for (&other_conn_id, ch_tx) in self.connections.iter() {
+            if other_conn_id == conn_id {
+                send_message(ch_tx, reply_response.clone());
+            } else {
+                send_message(ch_tx, peer_response.clone());
+            }
         }
     }
-}
 
-/// Send a reply message to the current connection.
-fn send_reply(group: &Group, conn_id: ConnID, message: ServerMessage) {
-    let sender = &group.connections[&conn_id];
-    send_message(sender, serde_json::to_string(&message).unwrap());
-}
+    /// Send a reply message to the current connection.
+    fn send_reply(&self, conn_id: ConnID, message: ServerMessage) {
+        let sender = &self.connections[&conn_id];
+        send_message(sender, serde_json::to_string(&message).unwrap());
+    }
 
-/// Send a reply error to the current connection
-fn send_reply_error(group: &Group, conn_id: ConnID, error: &'static str) {
-    send_reply(group, conn_id, ServerMessage::Error {
-        message: error
-    });
-}
+    /// Send a reply error to the current connection
+    fn send_reply_error(&self, conn_id: ConnID, error: &'static str) {
+        self.send_reply(conn_id, ServerMessage::Error {
+            message: error
+        });
+    }
 
-fn send_user_status(group: &Group, user_id: db::UserID, status: UserStatus) {
-    send_all(group, ServerMessage::UserStatusChanged {
-        user_id,
-        status
-    });
-}
+    fn send_user_status(&self, user_id: db::UserID, status: UserStatus) {
+        self.send_all(ServerMessage::UserStatusChanged {
+            user_id,
+            status
+        });
+    }
 
-pub fn send_user_online(group: &Group, user_id: db::UserID) {
-    send_user_status(group, user_id, UserStatus::Online);
-}
+    pub fn send_user_online(&self, user_id: db::UserID) {
+        self.send_user_status(user_id, UserStatus::Online);
+    }
 
-pub fn send_user_offline(group: &Group, user_id: db::UserID) {
-    send_user_status(group, user_id, UserStatus::Offline);
+    pub fn send_user_offline(&self, user_id: db::UserID) {
+        self.send_user_status(user_id, UserStatus::Offline);
+    }
 }
 
 pub struct MessageContext<'a> {
@@ -174,18 +176,12 @@ impl<'a> MessageContext<'a> {
             Err(_) => return,
         };
 
-        if message == "a" {
-            let group = &self.groups.read().await[&self.group_id];
-            send_message(&group.connections[&self.conn_id], String::from("b"));
-            return;
-        }
-
         let client_message = match serde_json::from_str::<ClientMessage>(message) {
             Ok(m) => m,
             Err(e) => {
                 error!("{}", e);
                 let group = &self.groups.read().await[&self.group_id];
-                send_reply_error(group, self.conn_id, "JSON");
+                group.send_reply_error(self.conn_id, "JSON");
                 return;
             }
         };
@@ -217,7 +213,7 @@ impl<'a> MessageContext<'a> {
         if let Err(e) = result {
             error!("{}", e);
             let group = &self.groups.read().await[&self.group_id];
-            send_reply_error(group, self.conn_id, "Database");
+            group.send_reply_error(self.conn_id, "Database");
         }
     }
 
@@ -230,8 +226,8 @@ impl<'a> MessageContext<'a> {
         let groups_guard = self.groups.read().await;
         let group = &groups_guard[&self.group_id];
 
-        if !contains_channel(&group.channels, channel_id) {
-            send_reply_error(group, self.conn_id, "Invalid channel_id");
+        if !group.contains_channel(channel_id) {
+            group.send_reply_error(self.conn_id, "Invalid channel_id");
             return Ok(());
         }
 
@@ -247,7 +243,7 @@ impl<'a> MessageContext<'a> {
             channel_id,
         };
 
-        send_peer_reply(group, self.conn_id, peer, echo);
+        group.send_peer_reply(self.conn_id, peer, echo);
 
         db::create_message(self.pool.clone(), time, self.user_id, content, channel_id).await
     }
@@ -258,14 +254,14 @@ impl<'a> MessageContext<'a> {
         let groups_guard = self.groups.read().await;
         let group = &groups_guard[&self.group_id];
 
-        if !contains_channel(&group.channels, channel_id) {
-            send_reply_error(group, self.conn_id, "Invalid channel_id");
+        if !group.contains_channel(channel_id) {
+            group.send_reply_error(self.conn_id, "Invalid channel_id");
             return Ok(());
         }
 
         let rows = db::recent_messages(self.pool.clone(), channel_id).await?;
 
-        send_reply(group, self.conn_id, ServerMessage::RecentMessageList {
+        group.send_reply(self.conn_id, ServerMessage::RecentMessageList {
             channel_id,
             messages: rows.iter()
                 .map(|row| GenericRecentMessage {
@@ -286,19 +282,19 @@ impl<'a> MessageContext<'a> {
         if !db::valid_channel_name(&name) {
             // This shouldn't happen unless someone is bypassing the JavaScript
             // validation.
-            send_reply_error(group, self.conn_id, "Channel name invalid");
+            group.send_reply_error(self.conn_id, "Channel name invalid");
             return Ok(());
         }
 
         let channel_id = match db::create_channel(self.pool.clone(), self.group_id, &name).await? {
             Some(id) => id,
             None => {
-                send_reply_error(group, self.conn_id, "Channel name exists");
+                group.send_reply_error(self.conn_id, "Channel name exists");
                 return Ok(());
             }
         };
 
-        send_all(group, ServerMessage::ChannelCreated {
+        group.send_all(ServerMessage::ChannelCreated {
             channel_id,
             name: &name,
         });
@@ -315,7 +311,7 @@ impl<'a> MessageContext<'a> {
         let groups_guard = self.groups.read().await;
         let group = &groups_guard[&self.group_id];
 
-        send_reply(group, self.conn_id, ServerMessage::ChannelList {
+        group.send_reply(self.conn_id, ServerMessage::ChannelList {
             channels: &group.channels
         });
 
@@ -327,25 +323,25 @@ impl<'a> MessageContext<'a> {
         let group = &mut groups_guard.get_mut(&self.group_id).unwrap();
 
         if group.channels.len() == 1 {
-            send_reply_error(group, self.conn_id, "Cannot delete lone channel");
+            group.send_reply_error(self.conn_id, "Cannot delete lone channel");
             return Ok(());
         }
 
-        let channel_index = find_channel(&group.channels, channel_id);
+        let channel_index = group.find_channel(channel_id);
         if channel_index == usize::MAX {
-            send_reply_error(group, self.conn_id, "Channel not in group");
+            group.send_reply_error(self.conn_id, "Channel not in group");
             return Ok(());
         }
 
         if !db::delete_channel(self.pool.clone(), channel_id).await? {
             // If the above checks pass then this cannot happen
-            send_reply_error(group, self.conn_id, "Channel already deleted");
+            group.send_reply_error(self.conn_id, "Channel already deleted");
             return Ok(());
         }
 
         group.channels.remove(channel_index);
 
-        send_all(group, ServerMessage::ChannelDeleted {
+        group.send_all(ServerMessage::ChannelDeleted {
             channel_id
         });
 
@@ -360,7 +356,7 @@ impl<'a> MessageContext<'a> {
             .map(|(user_id, _)| user_id)
             .cloned()
             .collect();
-        send_reply(group, self.conn_id, ServerMessage::OnlineUserList {
+        group.send_reply(self.conn_id, ServerMessage::OnlineUserList {
             users
         });
 
@@ -388,7 +384,7 @@ impl<'a> MessageContext<'a> {
             });
         }
 
-        send_reply(group, self.conn_id, ServerMessage::UserList {
+        group.send_reply(self.conn_id, ServerMessage::UserList {
             users
         });
 

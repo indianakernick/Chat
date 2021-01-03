@@ -41,7 +41,7 @@ export default {
 
 .channel-list-item {
   color: $channel-list-text;
-  padding: 4px 8px 4px 8px;
+  padding: 4px 8px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;

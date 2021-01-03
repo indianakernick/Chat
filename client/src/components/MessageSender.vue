@@ -98,7 +98,7 @@ export default {
   background-color: $sender-box-back;
   color: $sender-box-text;
   border-radius: 4px;
-  padding: 4px 8px 4px 8px;
+  padding: 4px 8px;
   overflow-wrap: anywhere;
 }
 
@@ -118,7 +118,7 @@ export default {
   position: absolute;
   right: 8px;
   bottom: 8px;
-  padding: 1px 2px 1px 2px;
+  padding: 1px 2px;
   border-radius: 2px;
   background-color: $char-count-back;
   opacity: 0;

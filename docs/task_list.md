@@ -79,6 +79,8 @@
 - [ ] **[5]** Simple notifications
     - If the page is loaded but not visible, show a notification when a message
       arrives.
+    - [`Notification on mdn`](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API).
+    - [`Notification standard`](https://notifications.spec.whatwg.org/)
 - [ ] **[6]** Background notifications
     - Users should get desktop notifications for messages sent in all groups
       that they’re a member of.

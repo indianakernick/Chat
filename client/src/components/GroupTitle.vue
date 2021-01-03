@@ -46,7 +46,11 @@ export default {
   methods: {
     initPopper(button, dropdown) {
       button.onclick = () => {
-        dropdown.toggle(button);
+        if (dropdown.toggle(button)) {
+          button.setAttribute("data-active", "");
+        } else {
+          button.removeAttribute("data-active");
+        }
       };
     }
   }

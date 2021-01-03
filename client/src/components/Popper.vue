@@ -57,8 +57,10 @@ export default {
     toggle(reference) {
       if (this.popper) {
         this.hide();
+        return false;
       } else {
         this.show(reference);
+        return true;
       }
     }
   }
@@ -83,7 +85,7 @@ export default {
 
 .popper.dropdown {
   background-color: $gray-900;
-  color: $gray-100;
+  color: $gray-300;
   z-index: 100;
 }
 

@@ -22,8 +22,9 @@
   cursor: pointer;
 }
 
-.edit-button:hover {
+.edit-button:hover, .edit-button[data-active] {
   color: $edit-hover-text;
+  font-weight: bold;
 }
 
 .column-title {

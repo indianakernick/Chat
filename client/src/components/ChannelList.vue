@@ -49,6 +49,10 @@ export default {
   border-radius: 4px;
 }
 
+.channel-list-item:last-child {
+  margin-bottom: 8px;
+}
+
 .channel-list-item span {
   color: $channel-list-text;
 }

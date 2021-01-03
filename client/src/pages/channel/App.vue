@@ -8,7 +8,11 @@
     />
 
     <div class="channel-column narrow-column">
-      <GroupTitle :currentGroupName="currentGroupName"/>
+      <GroupTitle
+        :currentGroupName="currentGroupName"
+        @createChannel="showCreateChannelDialog"
+        @invitePeople="showInviteDialog"
+      />
       <ChannelList
         :channelList="channelList"
         :currentChannelId="currentChannelId"
@@ -501,6 +505,7 @@ html, body {
   flex: 0 0 calc(100% / 6);
   max-width: calc(100% / 6);
   min-width: 160px;
+  position: relative;
 }
 
 .channel-column {

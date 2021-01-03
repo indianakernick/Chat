@@ -10,41 +10,39 @@
         alt="Group picture"
         width="64"
         height="64"
-        :aria-describedby="'group-tooltip-' + group.group_id"
         :ref="img => groupImages[group.group_id] = img"
       />
       <div
         class="group-list-create"
         @click="$emit('createGroup')"
-        aria-describedby="group-tooltip-create"
         ref="createButton"
       ><span>+</span></div>
     </div>
   </div>
-  <div
+  <Popper
     v-for="group in groupList"
-    class="group-tooltip"
-    :id="'group-tooltip-' + group.group_id"
-    role="tooltip"
+    class="tooltip"
+    placement="right"
+    offset=8
     :ref="tooltip => groupTooltips[group.group_id] = tooltip"
-  >{{ group.name }}<div class="tooltip-arrow" data-popper-arrow/>
-  </div>
-  <div
-    class="group-tooltip"
-    id="group-tooltip-create"
-    role="tooltip"
+  >{{ group.name }}</Popper>
+  <Popper
+    class="tooltip"
+    placement="right"
+    offset=8
     ref="createTooltip"
-  >Create group<div class="tooltip-arrow" data-popper-arrow/>
-  </div>
+  >Create group</Popper>
 </template>
 
 <script>
-import { createPopper } from "@popperjs/core/lib/popper-lite";
-import arrow from "@popperjs/core/lib/modifiers/arrow";
-import offset from "@popperjs/core/lib/modifiers/offset";
+import Popper from "./Popper.vue";
 
 export default {
   name: "GroupList",
+
+  components: {
+    Popper
+  },
 
   props: {
     groupList: Array,
@@ -58,7 +56,6 @@ export default {
 
   data() {
     return {
-      poppers: [],
       groupImages: {},
       groupTooltips: {}
     }
@@ -77,24 +74,11 @@ export default {
 
   methods: {
     initPopper(button, tooltip) {
-      button.onmouseenter = button.onfocus = () => {
-        tooltip.setAttribute("data-show", "");
-        this.poppers.push(createPopper(button, tooltip, {
-          placement: "right",
-          modifiers: [
-            arrow, offset,
-            {
-              name: "offset",
-              options: {
-                offset: [0, 8],
-              }
-            }
-          ]
-        }))
+      button.onmouseenter = () => {
+        tooltip.show(button);
       };
-      button.onmouseleave = button.onblur = () => {
-        tooltip.removeAttribute("data-show");
-        this.poppers.shift().destroy();
+      button.onmouseleave = () => {
+        tooltip.hide();
       };
     }
   }
@@ -147,47 +131,5 @@ $image-size: 64px;
   font-family: monospace;
   font-weight: 200;
   color: $group-create-text;
-}
-
-.group-tooltip {
-  background-color: $gray-900;
-  color: $gray-100;
-  padding: 2px 4px;
-  border-radius: 4px;
-  z-index: 1000;
-  display: none;
-}
-
-.group-tooltip[data-show] {
-  display: block;
-}
-
-.tooltip-arrow, .tooltip-arrow::before {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  z-index: -1;
-}
-
-.tooltip-arrow::before {
-  content: "";
-  transform: rotate(45deg);
-  background: $gray-900;
-}
-
-.group-tooltip[data-popper-placement^='top'] > .tooltip-arrow {
-  bottom: -4px;
-}
-
-.group-tooltip[data-popper-placement^='bottom'] > .tooltip-arrow {
-  top: -4px;
-}
-
-.group-tooltip[data-popper-placement^='left'] > .tooltip-arrow {
-  right: -4px;
-}
-
-.group-tooltip[data-popper-placement^='right'] > .tooltip-arrow {
-  left: -4px;
 }
 </style>

@@ -7,8 +7,7 @@
     class="dropdown"
     ref="dropdown"
     placement="bottom-end"
-    offset=16
-    style="width: calc(100% - 16px)"
+    distance="16"
   >
     <div class="dropdown-button" @click="$emit('createChannel')">Create channel</div>
     <div class="dropdown-button" @click="$emit('invitePeople')">Invite people</div>
@@ -39,39 +38,12 @@ export default {
 
   created() {
     this.$nextTick(() => {
-      this.initPopper(this.$refs.button, this.$refs.dropdown);
+      this.$refs.dropdown.initDropdownButton(this.$refs.button);
     });
-  },
-
-  methods: {
-    initPopper(button, dropdown) {
-      button.onclick = () => {
-        if (dropdown.toggle(button)) {
-          button.setAttribute("data-active", "");
-        } else {
-          button.removeAttribute("data-active");
-        }
-      };
-    }
   }
 };
 </script>
 
-<style lang="scss">
-@import "../scss/colors";
+<style>
 
-.dropdown-button {
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin: 8px 8px 0 8px;
-  cursor: pointer;
-}
-
-.dropdown-button:last-child {
-  margin-bottom: 8px;
-}
-
-.dropdown-button:hover {
-  background-color: $gray-800;
-}
 </style>

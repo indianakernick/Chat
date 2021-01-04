@@ -5,6 +5,9 @@
 @import "~bootstrap/scss/variables";
 @import "~bootstrap/scss/mixins";
 
+// This is also defined directly on the html element inside the HTML template
+$body-bg: $gray-800;
+
 // Optional
 // @import "~bootstrap/scss/root";
 @import "~bootstrap/scss/reboot";

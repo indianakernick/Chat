@@ -12,16 +12,37 @@
         </div>
         <div
           class="edit-button"
-          @click.stop="$emit('deleteChannel', channel.channel_id, channel.name)"
+          :ref="button => button ? buttons[channel.channel_id] = button : delete buttons[channel.channel_id]"
         >&nbsp;=</div>
       </div>
     </div>
   </div>
+  <Popper
+    v-for="channel in channelList"
+    class="dropdown"
+    :ref="dropdown => dropdown ? dropdowns[channel.channel_id] = dropdown : delete dropdowns[channel.channel_id]"
+    placement="bottom-end"
+    distance="8"
+    skid="8"
+    arrowPadding="8"
+  >
+    <div class="dropdown-button">Rename channel</div>
+    <div
+      class="dropdown-button"
+      @click="$emit('deleteChannel', channel.channel_id, channel.name)"
+    >Delete channel</div>
+  </Popper>
 </template>
 
 <script>
+import Popper from "./Popper.vue";
+
 export default {
   name: "ChannelList",
+
+  components: {
+    Popper
+  },
 
   props: {
     channelList: Array,
@@ -32,7 +53,34 @@ export default {
   emits: [
     "selectChannel",
     "deleteChannel"
-  ]
+  ],
+
+  data() {
+    return {
+      dropdowns: {},
+      buttons: {}
+    };
+  },
+
+  created() {
+    this.initDropdowns();
+  },
+
+  watch: {
+    channelList() {
+      this.initDropdowns();
+    }
+  },
+
+  methods: {
+    initDropdowns() {
+      this.$nextTick(() => {
+        for (const channel of this.channelList) {
+          this.dropdowns[channel.channel_id].initDropdownButton(this.buttons[channel.channel_id]);
+        }
+      });
+    }
+  }
 };
 </script>
 
@@ -68,5 +116,9 @@ export default {
 
 .channel-list-item .edit-button {
   visibility: hidden;
+}
+
+.channel-list-item .edit-button[data-active] {
+  visibility: visible;
 }
 </style>

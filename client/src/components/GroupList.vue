@@ -10,7 +10,7 @@
         alt="Group picture"
         width="64"
         height="64"
-        :ref="img => groupImages[group.group_id] = img"
+        :ref="img => img ? groupImages[group.group_id] = img : delete groupImages[group.group_id]"
       />
       <div
         class="group-list-create"
@@ -23,13 +23,13 @@
     v-for="group in groupList"
     class="tooltip"
     placement="right"
-    offset=8
-    :ref="tooltip => groupTooltips[group.group_id] = tooltip"
+    distance="8"
+    :ref="tooltip => tooltip ? groupTooltips[group.group_id] = tooltip : delete groupTooltips[group.group_id]"
   >{{ group.name }}</Popper>
   <Popper
     class="tooltip"
     placement="right"
-    offset=8
+    distance="8"
     ref="createTooltip"
   >Create group</Popper>
 </template>
@@ -62,24 +62,23 @@ export default {
   },
 
   created() {
-    this.$nextTick(() => {
-      for (const group of this.groupList) {
-        const image = this.groupImages[group.group_id];
-        const tooltip = this.groupTooltips[group.group_id];
-        this.initPopper(image, tooltip);
-      }
-      this.initPopper(this.$refs.createButton, this.$refs.createTooltip);
-    });
+    this.initTooltips();
+  },
+
+  watch: {
+    groupList() {
+      this.initTooltips();
+    }
   },
 
   methods: {
-    initPopper(button, tooltip) {
-      button.onmouseenter = () => {
-        tooltip.show(button);
-      };
-      button.onmouseleave = () => {
-        tooltip.hide();
-      };
+    initTooltips() {
+      this.$nextTick(() => {
+        for (const group of this.groupList) {
+          this.groupTooltips[group.group_id].initTooltipButton(this.groupImages[group.group_id]);
+        }
+        this.$refs.createTooltip.initTooltipButton(this.$refs.createButton);
+      });
     }
   }
 };

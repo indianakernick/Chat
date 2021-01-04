@@ -1,8 +1,8 @@
 - [ ] **[1]** Report
     - Describe this whole project. The challenges and problems faced, how I
-      overcame those challenges, the skills I learnt, how I applied those skills,
-      some things I might do better next time (better planning from the start and
-      also keeping notes of my progress).
+      overcame those challenges, the skills I learnt, how I applied those 
+      skills, some things I might do better next time (better planning from the
+      start and also keeping notes of my progress).
     - This has a high priority but it must be completed last.
 - [ ] **[1]** Documentation
     - Describe how the app works. The technical details that make it function.
@@ -46,7 +46,7 @@
     - Maybe hide everything while disconnected.
     - Switching between groups involves disconnecting briefly so that will
       need to be considered.
-- [ ] **[4]** Rename channels
+- [x] **[4]** Rename channels
     - Any member of a group can rename channels within the group.
     - The new channel name must be unique within the group.
 - [ ] **[4]** Rename groups (including changing the picture)

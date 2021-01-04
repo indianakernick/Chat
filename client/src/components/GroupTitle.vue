@@ -10,7 +10,7 @@
     distance="16"
   >
     <div class="dropdown-button" @click="$emit('createChannel')">Create channel</div>
-    <div class="dropdown-button" @click="$emit('invitePeople')">Invite people</div>
+    <div class="dropdown-button" @click="$emit('invite')">Invite to group</div>
     <div class="dropdown-button">Rename group</div>
     <div class="dropdown-button">Leave group</div>
     <div class="dropdown-button">Delete group</div>
@@ -33,7 +33,7 @@ export default {
 
   emits: [
     "createChannel",
-    "invitePeople"
+    "invite"
   ],
 
   created() {

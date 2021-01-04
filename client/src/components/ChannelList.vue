@@ -22,11 +22,14 @@
     class="dropdown"
     :ref="dropdown => dropdown ? dropdowns[channel.channel_id] = dropdown : delete dropdowns[channel.channel_id]"
     placement="bottom-end"
-    distance="8"
+    distance="12"
     skid="8"
     arrowPadding="8"
   >
-    <div class="dropdown-button">Rename channel</div>
+    <div
+      class="dropdown-button"
+      @click="$emit('renameChannel', channel.channel_id, channel.name)"
+    >Rename channel</div>
     <div
       class="dropdown-button"
       @click="$emit('deleteChannel', channel.channel_id, channel.name)"
@@ -52,6 +55,7 @@ export default {
 
   emits: [
     "selectChannel",
+    "renameChannel",
     "deleteChannel"
   ],
 

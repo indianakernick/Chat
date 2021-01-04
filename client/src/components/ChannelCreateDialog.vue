@@ -1,17 +1,22 @@
 <template>
   <ModalDialog :shown="shown" @submitForm="submitForm">
     <template v-slot:header>
-      Create a new channel
+      <template v-if="rename">
+        Rename <em>#{{ originalName }}</em>
+      </template>
+      <template v-else>
+        Create a new channel
+      </template>
     </template>
 
     <template v-slot:body>
-      <label for="channel-name-input">Channel name</label>
+      <label :for="id">Channel name</label>
       <div class="input-group">
         <div class="input-group-prepend">
           <div class="input-group-text">#</div>
         </div>
         <input
-          id="channel-name-input"
+          :id="id"
           class="form-control"
           :class="invalid ? 'is-invalid' : ''"
           type="text"
@@ -30,7 +35,7 @@
 
     <template v-slot:footer>
       <input type="button" class="btn btn-secondary" @click="hide" value="Cancel" :disabled="waiting"/>
-      <input type="submit" class="btn btn-primary" value="Create" :disabled="waiting"/>
+      <input type="submit" class="btn btn-primary" :value="submitTitle" :disabled="waiting"/>
     </template>
   </ModalDialog>
 </template>
@@ -48,25 +53,53 @@ export default {
     ModalDialog
   },
 
+  props: {
+    rename: Boolean
+  },
+
   emits: [
-    "createChannel"
+    "createChannel",
+    "renameChannel"
   ],
 
   data() {
     return {
       name: "",
+      originalName: "",
       shown: false,
       waiting: false,
-      invalid: false
+      invalid: false,
+      channelId: 0
+    }
+  },
+
+  computed: {
+    id() {
+      return this.rename ? "channel-rename-input" : "channel-create-input";
+    },
+
+    submitTitle() {
+      return this.rename ? "Rename" : "Create";
     }
   },
 
   methods: {
-    show() {
+    show(channelId, name) {
+      if (this.rename) {
+        this.channelId = channelId;
+        this.name = this.originalName = name;
+      }
       this.waiting = false;
       this.invalid = false;
       this.shown = true;
-      this.$nextTick(() => document.getElementById("channel-name-input").focus());
+      this.$nextTick(() => {
+        const input = document.getElementById(this.id);
+        input.focus();
+        if (this.rename) {
+          input.value = name;
+          input.select();
+        }
+      });
     },
 
     hide() {
@@ -82,11 +115,24 @@ export default {
 
     submitForm() {
       this.waiting = true;
-      this.$emit("createChannel", this.name);
+      if (this.rename) {
+        this.$emit("renameChannel", this.channelId, this.name);
+      } else {
+        this.$emit("createChannel", this.name);
+      }
     },
 
     channelCreated(name) {
       if (this.waiting && name === this.name) {
+        this.shown = false;
+        return true;
+      } else {
+        return false;
+      }
+    },
+
+    channelRenamed(channelId) {
+      if (this.waiting && channelId === this.channelId) {
         this.shown = false;
         return true;
       } else {

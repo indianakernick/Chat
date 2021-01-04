@@ -11,13 +11,14 @@
       <GroupTitle
         :currentGroupName="currentGroupName"
         @createChannel="showCreateChannelDialog"
-        @invitePeople="showInviteDialog"
+        @invite="showInviteDialog"
       />
       <ChannelList
         :channelList="channelList"
         :currentChannelId="currentChannelId"
         :connected="connected"
         @selectChannel="selectChannel"
+        @renameChannel="showRenameChannelDialog"
         @deleteChannel="showDeleteChannelDialog"
       />
     </div>
@@ -57,7 +58,8 @@
     <NoGroupsDialog @createGroup="showCreateGroupDialog"/>
   </template>
 
-  <ChannelCreateDialog @createChannel="createChannel" ref="createChannelDialog"/>
+  <ChannelCreateDialog rename="false" @createChannel="createChannel" ref="createChannelDialog"/>
+  <ChannelCreateDialog rename="true" @renameChannel="renameChannel" ref="renameChannelDialog"/>
   <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
   <GroupCreateDialog @createGroup="createGroup" ref="createGroupDialog"/>
   <InviteDialog :groupId="currentGroupId" :groupName="currentGroupName" ref="inviteDialog"/>
@@ -237,6 +239,11 @@ export default {
       this.$refs.createChannelDialog.show();
     },
 
+    showRenameChannelDialog(channelId, name) {
+      if (!this.connected) return;
+      this.$refs.renameChannelDialog.show(channelId, name);
+    },
+
     showDeleteChannelDialog(channelId, name) {
       if (!this.connected) return;
       this.$refs.deleteChannelDialog.show(channelId, name);
@@ -291,6 +298,15 @@ export default {
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
         type: "create channel",
+        name: name
+      }));
+    },
+
+    renameChannel(channelId, name) {
+      if (!this.connected) return;
+      this.socket.send(JSON.stringify({
+        type: "rename channel",
+        channel_id: channelId,
         name: name
       }));
     },
@@ -412,6 +428,10 @@ export default {
           this.$refs.deleteChannelDialog.channelError(message);
           break;
 
+        case "rename channel":
+          this.$refs.renameChannelDialog.channelError();
+          break;
+
         default:
           console.error("Server error:", message);
           this.status = "An error has occurred";
@@ -455,7 +475,8 @@ export default {
           this.requestRecent();
           break;
 
-        case "channel deleted":
+        case "channel deleted": {
+          // TODO: Binary search
           const index = this.channelList.findIndex(channel =>
             channel.channel_id === message.channel_id
           );
@@ -465,6 +486,7 @@ export default {
           }
           this.$refs.deleteChannelDialog.channelDeleted(message.channel_id);
           break;
+        }
 
         case "online user list":
           this.$refs.userList.onlineUsers(message.users);
@@ -477,6 +499,18 @@ export default {
         case "user status changed":
           this.$refs.userList.userStatusChanged(message.user_id, message.status);
           break;
+
+        case "channel renamed": {
+          // TODO: Binary search
+          const index = this.channelList.findIndex(channel =>
+            channel.channel_id === message.channel_id
+          );
+          if (index !== -1) {
+            this.channelList[index].name = message.name;
+          }
+          this.$refs.renameChannelDialog.channelRenamed(message.channel_id);
+          break;
+        }
       }
     }
   }

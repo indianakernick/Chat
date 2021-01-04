@@ -47,3 +47,24 @@ pub async fn delete_channel(pool: Pool, channel_id: ChannelID)
     ").await?;
     Ok(conn.execute(&stmt, &[&channel_id]).await? > 0)
 }
+
+/// Rename a channel.
+///
+/// Returns true if the channel was actually renamed.
+pub async fn rename_channel(pool: Pool, group_id: GroupID, channel_id: ChannelID, name: &String)
+    -> Result<bool, PoolError>
+{
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        UPDATE Channel
+        SET name = $3
+        WHERE channel_id = $2
+        AND NOT EXISTS (
+            SELECT *
+            FROM Channel
+            WHERE name = $3
+            AND group_id = $1
+        )
+    ").await?;
+    Ok(conn.execute(&stmt, &[&group_id, &channel_id, name]).await? > 0)
+}

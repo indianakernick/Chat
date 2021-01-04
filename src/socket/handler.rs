@@ -23,6 +23,8 @@ enum ClientMessage {
     RequestOnline,
     #[serde(rename="request users")]
     RequestUsers,
+    #[serde(rename="rename channel")]
+    RenameChannel { channel_id: db::ChannelID, name: String }
 }
 
 #[derive(Serialize)]
@@ -83,7 +85,9 @@ enum ServerMessage<'a> {
     UserList { users: Vec<User> },
     // Perhaps include the user's name and picture in this too
     #[serde(rename="user status changed")]
-    UserStatusChanged { user_id: db::UserID, status: UserStatus }
+    UserStatusChanged { user_id: db::UserID, status: UserStatus },
+    #[serde(rename="channel renamed")]
+    ChannelRenamed { channel_id: db::ChannelID, name: &'a String },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -205,6 +209,9 @@ impl<'a> MessageContext<'a> {
             },
             ClientMessage::RequestUsers => {
                 self.request_users().await
+            },
+            ClientMessage::RenameChannel { channel_id, name } => {
+                self.rename_channel(channel_id, name).await
             },
         };
 
@@ -385,6 +392,45 @@ impl<'a> MessageContext<'a> {
         group.send_reply(self.conn_id, ServerMessage::UserList {
             users
         });
+
+        Ok(())
+    }
+
+    // Perhaps a dedicated message for the status of operations.
+    // Sort of like message receipt.
+    // A message that indicates whether renaming a channel succeeded
+    // or failed and why it failed.
+    // If someone else deletes a channel, we need to close the window.
+    // So it might be better to have an error message type for each operation.
+    //
+    async fn rename_channel(&self, channel_id: db::ChannelID, name: String) -> Result<(), PoolError> {
+        let mut groups_guard = self.groups.write().await;
+        let group = &mut groups_guard.get_mut(&self.group_id).unwrap();
+
+        if !db::valid_channel_name(&name) {
+            // This shouldn't happen unless someone is bypassing the JavaScript
+            // validation.
+            group.send_reply_error(self.conn_id, "rename channel");
+            return Ok(());
+        }
+
+        let channel_index = group.find_channel(channel_id);
+        if channel_index == usize::MAX {
+            group.send_reply_error(self.conn_id, "rename channel");
+            return Ok(());
+        }
+
+        if !db::rename_channel(self.pool.clone(), self.group_id, channel_id, &name).await? {
+            group.send_reply_error(self.conn_id, "rename channel");
+            return Ok(());
+        }
+
+        group.send_all(ServerMessage::ChannelRenamed {
+            channel_id,
+            name: &name,
+        });
+
+        group.channels[channel_index].name = name;
 
         Ok(())
     }

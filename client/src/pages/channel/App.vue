@@ -206,6 +206,10 @@ export default {
   },
 
   created() {
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     if (this.groupList.length > 0) {
       this.openConnection();
     }

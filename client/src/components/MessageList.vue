@@ -43,12 +43,27 @@ export default {
 
   methods: {
     recentMessage(message) {
+      const userInfo = this.userInfoCache.getUserInfo(message.author);
       this.messages.push({
         timestamp: message.timestamp,
-        userInfo: this.userInfoCache.getUserInfo(message.author),
+        userInfo: userInfo,
         content: message.content,
         sending: false
       });
+      if (document.visibilityState === "hidden" && Notification.permission === "granted") {
+        let notif;
+        if (userInfo.name.length > 0) {
+          notif = new Notification(userInfo.name, {
+            body: message.content,
+            icon: userInfo.picture
+          });
+        } else {
+          notif = new Notification("", {
+            body: message.content
+          });
+        }
+        notif.onclick = () => window.focus();
+      }
     },
 
     messageReceipt(message) {

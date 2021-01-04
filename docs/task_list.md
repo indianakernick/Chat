@@ -34,7 +34,10 @@
       to upload their own images (instead of using a URL).
     - The client would be simplified because it wouldn't need to worry about
       what the image URLs actually are. The image URL could be derived directly
-      from the user ID or group ID. 
+      from the user ID or group ID.
+    - So that the server doesn't need to worry about resizing and compositing
+      images, we would probably want to do that on the client. That's pretty
+      easy to do in JavaScript. Image optimization should be left to the server.
     - A real website would use a CDN but those cost money and this is a pet
       project so who cares.
 - [ ] **[3]** Handle *lots* of messages
@@ -46,6 +49,9 @@
     - Maybe hide everything while disconnected.
     - Switching between groups involves disconnecting briefly so that will
       need to be considered.
+    - A related issue is handling errors. If something unexpected happens like a
+      a database error then we should show a generic "something went wrong"
+      message.
 - [x] **[4]** Rename channels
     - Any member of a group can rename channels within the group.
     - The new channel name must be unique within the group.
@@ -76,7 +82,7 @@
       the login page.
     - The server only needs to set the expiration date of the cookie to some
       date in the past.
-- [ ] **[5]** Simple notifications
+- [x] **[5]** Simple notifications
     - If the page is loaded but not visible, show a notification when a message
       arrives.
     - [`Notification on mdn`](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API).

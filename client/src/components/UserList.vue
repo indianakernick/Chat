@@ -26,23 +26,7 @@
 
 <script>
 import User from "./User.vue";
-
-function binarySearchImpl(array, compare, begin, end) {
-  if (begin === end) return begin;
-  const middle = begin + ((end - begin) >>> 1);
-  const order = compare(array[middle]);
-  if (order < 0) {
-    return binarySearchImpl(array, compare, begin, middle);
-  } else if (order > 0) {
-    return binarySearchImpl(array, compare, middle + 1, end);
-  } else {
-    return middle;
-  }
-}
-
-function binarySearch(array, compare) {
-  return binarySearchImpl(array, compare, 0, array.length);
-}
+import binarySearch from "@/assets/js/binarySearch.js";
 
 export default {
   name: "UserList",

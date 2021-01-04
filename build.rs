@@ -8,7 +8,7 @@ fn main() {
 
     println!("cargo:rerun-if-changed=client/src/assets/anonymous.png");
 
-    println!("cargo:rerun-if-changed=client/src/components/ChannelCreateDialog.vue");
+    println!("cargo:rerun-if-changed=client/src/components/ChannelCreateOrRenameDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelDeleteDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelList.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelTitle.vue");
@@ -21,6 +21,7 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/MessageSender.vue");
     println!("cargo:rerun-if-changed=client/src/components/ModalDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/NoGroupsDialog.vue");
+    println!("cargo:rerun-if-changed=client/src/components/Popper.vue");
     println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
     println!("cargo:rerun-if-changed=client/src/components/UserList.vue");
     println!("cargo:rerun-if-changed=client/src/components/UserTitle.vue");

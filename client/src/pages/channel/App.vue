@@ -58,8 +58,11 @@
     <NoGroupsDialog @createGroup="showCreateGroupDialog"/>
   </template>
 
-  <ChannelCreateDialog rename="false" @createChannel="createChannel" ref="createChannelDialog"/>
-  <ChannelCreateDialog rename="true" @renameChannel="renameChannel" ref="renameChannelDialog"/>
+  <ChannelCreateOrRenameDialog
+    @createChannel="createChannel"
+    @renameChannel="renameChannel"
+    ref="createOrRenameChannelDialog"
+  />
   <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
   <GroupCreateDialog @createGroup="createGroup" ref="createGroupDialog"/>
   <InviteDialog :groupId="currentGroupId" :groupName="currentGroupName" ref="inviteDialog"/>
@@ -76,15 +79,14 @@ import MessageList from "@/components/MessageList.vue";
 import InviteDialog from "@/components/InviteDialog.vue";
 import MessageSender from "@/components/MessageSender.vue";
 import GroupCreateDialog from "@/components/GroupCreateDialog.vue";
-import ChannelCreateDialog from "@/components/ChannelCreateDialog.vue";
+import ChannelCreateOrRenameDialog from "@/components/ChannelCreateOrRenameDialog.vue";
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
+import { DELETED_USER_INFO } from "@/components/Message";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
 const HIDDEN_MAX_RETRY_DELAY = 32000;
-
-import { DELETED_USER_INFO } from "@/components/Message";
 
 class ImageCompositor {
   constructor(size, color) {
@@ -164,7 +166,7 @@ export default {
     InviteDialog,
     MessageSender,
     GroupCreateDialog,
-    ChannelCreateDialog,
+    ChannelCreateOrRenameDialog,
     ChannelDeleteDialog,
     NoGroupsDialog
   },
@@ -236,12 +238,12 @@ export default {
   methods: {
     showCreateChannelDialog() {
       if (!this.connected) return;
-      this.$refs.createChannelDialog.show();
+      this.$refs.createOrRenameChannelDialog.showCreate();
     },
 
     showRenameChannelDialog(channelId, name) {
       if (!this.connected) return;
-      this.$refs.renameChannelDialog.show(channelId, name);
+      this.$refs.createOrRenameChannelDialog.showRename(channelId, name);
     },
 
     showDeleteChannelDialog(channelId, name) {
@@ -379,10 +381,10 @@ export default {
     },
 
     checkCurrentChannelValid() {
-      const foundChannel = this.channelList.find(channel =>
+      const has = this.channelList.some(channel =>
         channel.channel_id === this.currentChannelId
       );
-      if (foundChannel === undefined) {
+      if (has) {
         this.selectChannel(this.channelList[0].channel_id);
       }
     },
@@ -419,7 +421,7 @@ export default {
       switch (message) {
         case "Channel name invalid":
         case "Channel name exists":
-          this.$refs.createChannelDialog.channelError();
+          this.$refs.createOrRenameChannelDialog.channelError();
           break;
 
         case "Cannot delete lone channel":
@@ -434,6 +436,7 @@ export default {
 
         default:
           console.error("Server error:", message);
+          // TODO: This status message isn't shown
           this.status = "An error has occurred";
           this.socket.close(1000);
       }
@@ -464,7 +467,7 @@ export default {
             channel_id: message.channel_id, name: message.name
           });
           this.$nextTick(() => this.messageLists[message.channel_id].createEmpty());
-          if (this.$refs.createChannelDialog.channelCreated(message.name)) {
+          if (this.$refs.createOrRenameChannelDialog.channelCreated(message.name)) {
             this.selectChannel(message.channel_id);
           }
           break;
@@ -476,7 +479,6 @@ export default {
           break;
 
         case "channel deleted": {
-          // TODO: Binary search
           const index = this.channelList.findIndex(channel =>
             channel.channel_id === message.channel_id
           );
@@ -485,6 +487,19 @@ export default {
             this.checkCurrentChannelValid();
           }
           this.$refs.deleteChannelDialog.channelDeleted(message.channel_id);
+          this.$refs.createOrRenameChannelDialog.channelDeleted(message.channel_id);
+          break;
+        }
+
+        case "channel renamed": {
+          const index = this.channelList.findIndex(channel =>
+            channel.channel_id === message.channel_id
+          );
+          if (index !== -1) {
+            this.channelList[index].name = message.name;
+          }
+          this.$refs.createOrRenameChannelDialog.channelRenamed(message.channel_id, message.name);
+          this.$refs.deleteChannelDialog.channelRenamed(message.channel_id, message.name);
           break;
         }
 
@@ -499,18 +514,6 @@ export default {
         case "user status changed":
           this.$refs.userList.userStatusChanged(message.user_id, message.status);
           break;
-
-        case "channel renamed": {
-          // TODO: Binary search
-          const index = this.channelList.findIndex(channel =>
-            channel.channel_id === message.channel_id
-          );
-          if (index !== -1) {
-            this.channelList[index].name = message.name;
-          }
-          this.$refs.renameChannelDialog.channelRenamed(message.channel_id);
-          break;
-        }
       }
     }
   }

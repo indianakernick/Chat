@@ -10,13 +10,13 @@
     </template>
 
     <template v-slot:body>
-      <label :for="id">Channel name</label>
+      <label for="channel-name-input">Channel name</label>
       <div class="input-group">
         <div class="input-group-prepend">
           <div class="input-group-text">#</div>
         </div>
         <input
-          :id="id"
+          id="channel-name-input"
           class="form-control"
           :class="invalid ? 'is-invalid' : ''"
           type="text"
@@ -47,14 +47,10 @@ const REGEX_SPACE = /\p{White_Space}+/gu;
 const REGEX_BAD_CHARS = /[#@]+/g;
 
 export default {
-  name: "ChannelCreateDialog",
+  name: "ChannelCreateOrRenameDialog",
 
   components: {
     ModalDialog
-  },
-
-  props: {
-    rename: Boolean
   },
 
   emits: [
@@ -69,36 +65,44 @@ export default {
       shown: false,
       waiting: false,
       invalid: false,
+      rename: false,
       channelId: 0
     }
   },
 
   computed: {
-    id() {
-      return this.rename ? "channel-rename-input" : "channel-create-input";
-    },
-
     submitTitle() {
       return this.rename ? "Rename" : "Create";
     }
   },
 
   methods: {
-    show(channelId, name) {
-      if (this.rename) {
-        this.channelId = channelId;
-        this.name = this.originalName = name;
-      }
+    show(rename) {
+      this.rename = rename;
       this.waiting = false;
       this.invalid = false;
       this.shown = true;
+    },
+
+    showCreate() {
+      this.show(false);
+      this.name = "";
       this.$nextTick(() => {
-        const input = document.getElementById(this.id);
+        const input = document.getElementById("channel-name-input");
         input.focus();
-        if (this.rename) {
-          input.value = name;
-          input.select();
-        }
+        input.value = "";
+      });
+    },
+
+    showRename(channelId, name) {
+      this.show(true);
+      this.channelId = channelId;
+      this.name = this.originalName = name;
+      this.$nextTick(() => {
+        const input = document.getElementById("channel-name-input");
+        input.focus();
+        input.value = name;
+        input.select();
       });
     },
 
@@ -131,12 +135,19 @@ export default {
       }
     },
 
-    channelRenamed(channelId) {
-      if (this.waiting && channelId === this.channelId) {
+    channelRenamed(channelId, name) {
+      if (channelId === this.channelId) {
+        if (this.waiting && this.name === name) {
+          this.shown = false;
+        } else {
+          this.originalName = name;
+        }
+      }
+    },
+
+    channelDeleted(channelId) {
+      if (channelId === this.channelId) {
         this.shown = false;
-        return true;
-      } else {
-        return false;
       }
     },
 

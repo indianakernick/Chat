@@ -1,12 +1,12 @@
 <template>
   <ModalDialog :shown="shown" @submitForm="submitForm">
     <template v-slot:header>
-      Delete <em>#{{ channelName }}</em>
+      Delete <em>#{{ name }}</em>
     </template>
 
     <template v-slot:body>
       <span :class="errorMessage.length > 0 ? 'is-invalid' : ''">
-        Are you sure you want to delete <em>#{{ channelName }}</em>?
+        Are you sure you want to delete <em>#{{ name }}</em>?
         Doing so will delete all messages within the channel.
         This operation cannot be undone.
       </span>
@@ -39,7 +39,7 @@ export default {
   data() {
     return {
       channelId: -1,
-      channelName: 0,
+      name: "",
       shown: false,
       waiting: false,
       errorMessage: ""
@@ -47,9 +47,9 @@ export default {
   },
 
   methods: {
-    show(channelId, channelName) {
+    show(channelId, name) {
       this.channelId = channelId;
-      this.channelName = channelName;
+      this.name = name;
       this.waiting = false;
       this.errorMessage = "";
       this.shown = true;
@@ -67,6 +67,12 @@ export default {
     channelDeleted(channelId) {
       if (this.waiting && channelId === this.channelId) {
         this.shown = false;
+      }
+    },
+
+    channelRenamed(channelId, name) {
+      if (channelId === this.channelId) {
+        this.name = name;
       }
     },
 

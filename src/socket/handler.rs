@@ -19,12 +19,12 @@ enum ClientMessage {
     RequestChannels,
     #[serde(rename="delete channel")]
     DeleteChannel { channel_id: db::ChannelID },
+    #[serde(rename="rename channel")]
+    RenameChannel { channel_id: db::ChannelID, name: String },
     #[serde(rename="request online")]
     RequestOnline,
     #[serde(rename="request users")]
     RequestUsers,
-    #[serde(rename="rename channel")]
-    RenameChannel { channel_id: db::ChannelID, name: String }
 }
 
 #[derive(Serialize)]
@@ -41,6 +41,10 @@ struct GenericRecentMessage {
     author: db::UserID,
     content: String,
 }
+
+// TODO: For naming enums, it might be better to set the naming convention
+// using #[serde(rename_all="snake_case")] or to just use the Rust names in
+// JavaScript.
 
 #[derive(Serialize)]
 enum UserStatus {
@@ -77,6 +81,8 @@ enum ServerMessage<'a> {
     ChannelList { channels: &'a Vec<db::Channel> },
     #[serde(rename="channel deleted")]
     ChannelDeleted { channel_id: db::ChannelID },
+    #[serde(rename="channel renamed")]
+    ChannelRenamed { channel_id: db::ChannelID, name: &'a String },
     // Might remove OnlineUserList and include this information in the HTML
     // bundle or fetch the UserList on startup.
     #[serde(rename="online user list")]
@@ -86,8 +92,6 @@ enum ServerMessage<'a> {
     // Perhaps include the user's name and picture in this too
     #[serde(rename="user status changed")]
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
-    #[serde(rename="channel renamed")]
-    ChannelRenamed { channel_id: db::ChannelID, name: &'a String },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {

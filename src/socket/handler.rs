@@ -8,22 +8,15 @@ use super::upgrade::{ConnID, Sender, Group, Groups};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
+#[serde(rename_all="snake_case")]
 enum ClientMessage {
-    #[serde(rename="post message")]
     PostMessage { content: String, channel_id: db::ChannelID },
-    #[serde(rename="request recent messages")]
     RequestRecentMessages { channel_id: db::ChannelID },
-    #[serde(rename="create channel")]
     CreateChannel { name: String },
-    #[serde(rename="request channels")]
     RequestChannels,
-    #[serde(rename="delete channel")]
     DeleteChannel { channel_id: db::ChannelID },
-    #[serde(rename="rename channel")]
     RenameChannel { channel_id: db::ChannelID, name: String },
-    #[serde(rename="request online")]
     RequestOnline,
-    #[serde(rename="request users")]
     RequestUsers,
 }
 
@@ -42,17 +35,11 @@ struct GenericRecentMessage {
     content: String,
 }
 
-// TODO: For naming enums, it might be better to set the naming convention
-// using #[serde(rename_all="snake_case")] or to just use the Rust names in
-// JavaScript.
-
 #[derive(Serialize)]
+#[serde(rename_all="snake_case")]
 enum UserStatus {
-    #[serde(rename="online")]
     Online,
-    #[serde(rename="offline")]
     Offline,
-    // #[serde(rename="left")]
     // Left,
 }
 
@@ -65,32 +52,47 @@ struct User {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all="snake_case")]
+enum ErrorCategory {
+    Application,
+    Request,
+    ChannelCreate,
+    ChannelRename,
+    ChannelDelete,
+}
+
+use ErrorCategory::*;
+
+#[derive(Serialize)]
+#[serde(rename_all="snake_case")]
+enum ErrorCode {
+    Json,
+    Database,
+    ChannelIdInvalid,
+    ChannelNameInvalid,
+    ChannelNameExists,
+    LoneChannel,
+}
+
+use ErrorCode::*;
+
+#[derive(Serialize)]
 #[serde(tag="type")]
+#[serde(rename_all="snake_case")]
 enum ServerMessage<'a> {
-    #[serde(rename="error")]
-    Error { message: &'static str },
-    #[serde(rename="message receipt")]
+    Error { category: ErrorCategory, code: ErrorCode },
     MessageReceipt { timestamp: u64, channel_id: db::ChannelID },
-    #[serde(rename="recent message")]
     RecentMessage(RecentMessage),
-    #[serde(rename="recent message list")]
     RecentMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> },
-    #[serde(rename="channel created")]
     ChannelCreated { channel_id: db::ChannelID, name: &'a String },
-    #[serde(rename="channel list")]
     ChannelList { channels: &'a Vec<db::Channel> },
-    #[serde(rename="channel deleted")]
     ChannelDeleted { channel_id: db::ChannelID },
-    #[serde(rename="channel renamed")]
     ChannelRenamed { channel_id: db::ChannelID, name: &'a String },
     // Might remove OnlineUserList and include this information in the HTML
     // bundle or fetch the UserList on startup.
-    #[serde(rename="online user list")]
     OnlineUserList { users: Vec<db::UserID> },
-    #[serde(rename="user list")]
     UserList { users: Vec<User> },
     // Perhaps include the user's name and picture in this too
-    #[serde(rename="user status changed")]
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
 }
 
@@ -145,9 +147,9 @@ impl Group {
     }
 
     /// Send a reply error to the current connection
-    fn send_reply_error(&self, conn_id: ConnID, error: &'static str) {
+    fn send_reply_error(&self, conn_id: ConnID, category: ErrorCategory, code: ErrorCode) {
         self.send_reply(conn_id, ServerMessage::Error {
-            message: error
+            category, code
         });
     }
 
@@ -187,42 +189,34 @@ impl<'a> MessageContext<'a> {
             Err(e) => {
                 error!("{}", e);
                 let group = &self.groups.read().await[&self.group_id];
-                group.send_reply_error(self.conn_id, "JSON");
+                group.send_reply_error(self.conn_id, Request, Json);
                 return;
             }
         };
 
         let result = match client_message {
-            ClientMessage::PostMessage { content, channel_id } => {
-                self.post_message(content, channel_id).await
-            },
-            ClientMessage::RequestRecentMessages { channel_id } => {
-                self.request_recent_messages(channel_id).await
-            },
-            ClientMessage::CreateChannel { name } => {
-                self.create_channel(name).await
-            },
-            ClientMessage::RequestChannels => {
-                self.request_channels().await
-            },
-            ClientMessage::DeleteChannel { channel_id } => {
-                self.delete_channel(channel_id).await
-            },
-            ClientMessage::RequestOnline => {
-                self.request_online().await
-            },
-            ClientMessage::RequestUsers => {
-                self.request_users().await
-            },
-            ClientMessage::RenameChannel { channel_id, name } => {
-                self.rename_channel(channel_id, name).await
-            },
+            ClientMessage::PostMessage { content, channel_id } =>
+                self.post_message(content, channel_id).await,
+            ClientMessage::RequestRecentMessages { channel_id } =>
+                self.request_recent_messages(channel_id).await,
+            ClientMessage::CreateChannel { name } =>
+                self.create_channel(name).await,
+            ClientMessage::RequestChannels =>
+                self.request_channels().await,
+            ClientMessage::DeleteChannel { channel_id } =>
+                self.delete_channel(channel_id).await,
+            ClientMessage::RequestOnline =>
+                self.request_online().await,
+            ClientMessage::RequestUsers =>
+                self.request_users().await,
+            ClientMessage::RenameChannel { channel_id, name } =>
+                self.rename_channel(channel_id, name).await,
         };
 
         if let Err(e) = result {
             error!("{}", e);
             let group = &self.groups.read().await[&self.group_id];
-            group.send_reply_error(self.conn_id, "Database");
+            group.send_reply_error(self.conn_id, Application, Database);
         }
     }
 
@@ -236,7 +230,7 @@ impl<'a> MessageContext<'a> {
         let group = &groups_guard[&self.group_id];
 
         if !group.contains_channel(channel_id) {
-            group.send_reply_error(self.conn_id, "Invalid channel_id");
+            group.send_reply_error(self.conn_id, Request, ChannelIdInvalid);
             return Ok(());
         }
 
@@ -264,7 +258,7 @@ impl<'a> MessageContext<'a> {
         let group = &groups_guard[&self.group_id];
 
         if !group.contains_channel(channel_id) {
-            group.send_reply_error(self.conn_id, "Invalid channel_id");
+            group.send_reply_error(self.conn_id, Request, ChannelIdInvalid);
             return Ok(());
         }
 
@@ -291,14 +285,14 @@ impl<'a> MessageContext<'a> {
         if !db::valid_channel_name(&name) {
             // This shouldn't happen unless someone is bypassing the JavaScript
             // validation.
-            group.send_reply_error(self.conn_id, "Channel name invalid");
+            group.send_reply_error(self.conn_id, ChannelCreate, ChannelNameInvalid);
             return Ok(());
         }
 
         let channel_id = match db::create_channel(self.pool.clone(), self.group_id, &name).await? {
             Some(id) => id,
             None => {
-                group.send_reply_error(self.conn_id, "Channel name exists");
+                group.send_reply_error(self.conn_id, ChannelCreate, ChannelNameExists);
                 return Ok(());
             }
         };
@@ -332,19 +326,19 @@ impl<'a> MessageContext<'a> {
         let group = &mut groups_guard.get_mut(&self.group_id).unwrap();
 
         if group.channels.len() == 1 {
-            group.send_reply_error(self.conn_id, "Cannot delete lone channel");
+            group.send_reply_error(self.conn_id, ChannelDelete, LoneChannel);
             return Ok(());
         }
 
         let channel_index = group.find_channel(channel_id);
         if channel_index == usize::MAX {
-            group.send_reply_error(self.conn_id, "Channel not in group");
+            group.send_reply_error(self.conn_id, Request, ChannelIdInvalid);
             return Ok(());
         }
 
         if !db::delete_channel(self.pool.clone(), channel_id).await? {
             // If the above checks pass then this cannot happen
-            group.send_reply_error(self.conn_id, "Channel already deleted");
+            group.send_reply_error(self.conn_id, Request, ChannelIdInvalid);
             return Ok(());
         }
 
@@ -400,13 +394,6 @@ impl<'a> MessageContext<'a> {
         Ok(())
     }
 
-    // Perhaps a dedicated message for the status of operations.
-    // Sort of like message receipt.
-    // A message that indicates whether renaming a channel succeeded
-    // or failed and why it failed.
-    // If someone else deletes a channel, we need to close the window.
-    // So it might be better to have an error message type for each operation.
-    //
     async fn rename_channel(&self, channel_id: db::ChannelID, name: String) -> Result<(), PoolError> {
         let mut groups_guard = self.groups.write().await;
         let group = &mut groups_guard.get_mut(&self.group_id).unwrap();
@@ -414,18 +401,18 @@ impl<'a> MessageContext<'a> {
         if !db::valid_channel_name(&name) {
             // This shouldn't happen unless someone is bypassing the JavaScript
             // validation.
-            group.send_reply_error(self.conn_id, "rename channel");
+            group.send_reply_error(self.conn_id, ChannelRename, ChannelNameInvalid);
             return Ok(());
         }
 
         let channel_index = group.find_channel(channel_id);
         if channel_index == usize::MAX {
-            group.send_reply_error(self.conn_id, "rename channel");
+            group.send_reply_error(self.conn_id, Request, ChannelIdInvalid);
             return Ok(());
         }
 
         if !db::rename_channel(self.pool.clone(), self.group_id, channel_id, &name).await? {
-            group.send_reply_error(self.conn_id, "rename channel");
+            group.send_reply_error(self.conn_id, ChannelRename, ChannelNameExists);
             return Ok(());
         }
 

@@ -290,7 +290,7 @@ export default {
       if (!this.connected) return;
       this.messageLists[this.currentChannelId].sendMessage(content);
       this.socket.send(JSON.stringify({
-        type: "post message",
+        type: "post_message",
         content: content,
         channel_id: this.currentChannelId
       }));
@@ -299,7 +299,7 @@ export default {
     createChannel(name) {
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
-        type: "create channel",
+        type: "create_channel",
         name: name
       }));
     },
@@ -307,7 +307,7 @@ export default {
     renameChannel(channelId, name) {
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
-        type: "rename channel",
+        type: "rename_channel",
         channel_id: channelId,
         name: name
       }));
@@ -316,7 +316,7 @@ export default {
     deleteChannel(channelId) {
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
-        type: "delete channel",
+        type: "delete_channel",
         channel_id: channelId
       }));
     },
@@ -356,7 +356,7 @@ export default {
     },
 
     requestRecentFromChannel(channelId) {
-      this.socket.send(`{"type":"request recent messages","channel_id":${channelId}}`);
+      this.socket.send(`{"type":"request_recent_messages","channel_id":${channelId}}`);
     },
 
     requestRecent() {
@@ -369,22 +369,22 @@ export default {
     },
 
     requestChannels() {
-      this.socket.send('{"type":"request channels"}');
+      this.socket.send('{"type":"request_channels"}');
     },
 
     requestOnline() {
-      this.socket.send('{"type":"request online"}');
+      this.socket.send('{"type":"request_online"}');
     },
 
     requestUsers() {
-      this.socket.send('{"type":"request users"}');
+      this.socket.send('{"type":"request_users"}');
     },
 
     checkCurrentChannelValid() {
       const has = this.channelList.some(channel =>
         channel.channel_id === this.currentChannelId
       );
-      if (has) {
+      if (!has) {
         this.selectChannel(this.channelList[0].channel_id);
       }
     },
@@ -417,28 +417,27 @@ export default {
       };
     },
 
-    handleError(message) {
-      switch (message) {
-        case "Channel name invalid":
-        case "Channel name exists":
-          this.$refs.createOrRenameChannelDialog.channelError();
-          break;
-
-        case "Cannot delete lone channel":
-        case "Channel not in group":
-        case "Channel already deleted":
-          this.$refs.deleteChannelDialog.channelError(message);
-          break;
-
-        case "rename channel":
-          this.$refs.renameChannelDialog.channelError();
-          break;
-
-        default:
-          console.error("Server error:", message);
+    handleError(category, code) {
+      switch (category) {
+        case "application":
+        case "request":
+          console.error("Server error:", code);
           // TODO: This status message isn't shown
           this.status = "An error has occurred";
           this.socket.close(1000);
+          break;
+
+        case "channel_create":
+          this.$refs.createOrRenameChannelDialog.error();
+          break;
+
+        case "channel_rename":
+          this.$refs.createOrRenameChannelDialog.error();
+          break;
+
+        case "channel_delete":
+          this.$refs.deleteChannelDialog.error();
+          break;
       }
     },
 
@@ -447,22 +446,22 @@ export default {
       console.log(message);
       switch (message.type) {
         case "error":
-          this.handleError(message.message);
+          this.handleError(message.category, message.code);
           break;
 
-        case "recent message":
+        case "recent_message":
           this.messageLists[message.channel_id].recentMessage(message);
           break;
 
-        case "message receipt":
+        case "message_receipt":
           this.messageLists[message.channel_id].messageReceipt(message);
           break;
 
-        case "recent message list":
+        case "recent_message_list":
           this.messageLists[message.channel_id].recentMessageList(message);
           break;
 
-        case "channel created":
+        case "channel_created":
           this.channelList.push({
             channel_id: message.channel_id, name: message.name
           });
@@ -472,13 +471,13 @@ export default {
           }
           break;
 
-        case "channel list":
+        case "channel_list":
           this.channelList = message.channels;
           this.checkCurrentChannelValid();
           this.requestRecent();
           break;
 
-        case "channel deleted": {
+        case "channel_deleted": {
           const index = this.channelList.findIndex(channel =>
             channel.channel_id === message.channel_id
           );
@@ -491,7 +490,7 @@ export default {
           break;
         }
 
-        case "channel renamed": {
+        case "channel_renamed": {
           const index = this.channelList.findIndex(channel =>
             channel.channel_id === message.channel_id
           );
@@ -503,15 +502,15 @@ export default {
           break;
         }
 
-        case "online user list":
+        case "online_user_list":
           this.$refs.userList.onlineUsers(message.users);
           break;
 
-        case "user list":
+        case "user_list":
           this.userList = message.users;
           break;
 
-        case "user status changed":
+        case "user_status_changed":
           this.$refs.userList.userStatusChanged(message.user_id, message.status);
           break;
       }

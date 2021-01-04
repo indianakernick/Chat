@@ -151,7 +151,7 @@ export default {
       }
     },
 
-    channelError() {
+    error() {
       if (this.waiting) {
         this.waiting = false;
         this.invalid = true;

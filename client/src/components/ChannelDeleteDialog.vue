@@ -76,13 +76,9 @@ export default {
       }
     },
 
-    channelError(error) {
+    error() {
       this.waiting = false;
-      if (error === "Cannot delete lone channel") {
-        this.errorMessage = "You cannot delete a channel if it is the only channel in a group.";
-      } else {
-        this.errorMessage = "Error occurred while trying to delete channel.";
-      }
+      this.errorMessage = "You cannot delete a channel if it is the only channel in the group";
     }
   }
 };

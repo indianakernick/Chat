@@ -21,3 +21,11 @@ pub async fn login(query: LoginQuery) -> Result<impl warp::Reply, warp::Rejectio
     google_auth_url.extend(form_urlencoded::byte_serialize(query.redirect.as_bytes()));
     Ok(cache_long(LoginTemplate { google_auth_url }))
 }
+
+pub async fn logout() -> Result<impl warp::Reply, warp::Rejection> {
+    Ok(warp::reply::with_header(
+        warp::redirect(warp::http::Uri::from_static("/login?redirect=/")),
+        "Set-Cookie",
+        "session_id=;Path=/;HttpOnly;Secure;Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    ))
+}

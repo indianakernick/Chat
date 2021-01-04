@@ -45,6 +45,7 @@ async fn main() {
 
     let routes = filters::root(pool.clone())
         .or(filters::login())
+        .or(filters::logout())
         .or(filters::channel(pool.clone()))
         .or(filters::invite(pool.clone()))
         .or(filters::create_group(pool.clone()))

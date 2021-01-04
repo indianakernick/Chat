@@ -30,6 +30,13 @@ pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
+pub fn logout() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("logout")
+        .and(warp::get())
+        .and_then(handlers::logout)
+        .recover(rejection)
+}
+
 fn session_id() -> impl Filter<Extract = (SessionID,), Error = Infallible> + Clone {
     warp::any()
         .and(warp::cookie::optional("session_id"))

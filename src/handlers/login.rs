@@ -7,6 +7,7 @@ use crate::{utils::cache_long, socket};
 #[derive(Template)]
 #[template(path = "login.html")]
 struct LoginTemplate {
+    redirect_url: String,
     google_auth_url: String,
 }
 
@@ -21,7 +22,10 @@ pub async fn login(query: LoginQuery) -> Result<impl warp::Reply, warp::Rejectio
         include_str!("../../api/client_id.txt")
     );
     google_auth_url.extend(form_urlencoded::byte_serialize(query.redirect.as_bytes()));
-    Ok(cache_long(LoginTemplate { google_auth_url }))
+    Ok(cache_long(LoginTemplate {
+        redirect_url: query.redirect,
+        google_auth_url,
+    }))
 }
 
 pub async fn logout(pool: Pool, socket_ctx: socket::SocketContext, session_id: db::SessionID)

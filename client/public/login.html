@@ -8,6 +8,9 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
   <body>
+    <script>
+      window.history.replaceState(null,"","{{redirect_url|safe}}")
+    </script>
     You must login before you can use this app.
     <a href="{{google_auth_url}}">Login with Google</a>
   </body>

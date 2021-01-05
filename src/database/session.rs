@@ -79,17 +79,11 @@ pub async fn session_user(pool: Pool, session_id: &SessionID)
 /// Delete a session
 ///
 /// Returns true if the session was actually deleted
-pub async fn delete_session(pool: Pool, session_id: &SessionID)
-    -> Result<bool, Error> {
-    if session_id.len() != SESSION_ID_LENGTH {
-        return Ok(false);
-    }
-
+pub async fn delete_user_sessions(pool: Pool, user_id: UserID) -> Result<bool, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         DELETE FROM Session
-        WHERE session_id = $1
+        WHERE user_id = $1
     ").await?;
-
-    Ok(conn.execute(&stmt, &[session_id]).await? > 0)
+    Ok(conn.execute(&stmt, &[&user_id]).await? > 0)
 }

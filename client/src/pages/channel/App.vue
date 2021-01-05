@@ -354,7 +354,10 @@ export default {
         // 1000 means "normal closure"
         // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
         if (event.code === 1000) return;
-        if (event.code === 4000) { window.location.reload(true); return; }
+        if (event.code === 4000) {
+          if (!window.navigating) window.location.reload(true);
+          return;
+        }
         setTimeout(this.retryConnection, this.getRetryDelay());
       };
     },

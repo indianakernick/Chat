@@ -40,19 +40,22 @@ async fn print_message_count(pool: &Pool) {
 async fn main() {
     let pool = create_pool();
     print_message_count(&pool).await;
+    let socket_ctx = crate::socket::SocketContext::new(pool.clone());
+    let client = reqwest::Client::new();
+    let cert_cache = handlers::CertificateCache::default();
 
     pretty_env_logger::init();
 
     let routes = filters::root(pool.clone())
         .or(filters::login())
-        .or(filters::logout())
+        .or(filters::logout(pool.clone(), socket_ctx.clone()))
         .or(filters::channel(pool.clone()))
         .or(filters::invite(pool.clone()))
         .or(filters::create_group(pool.clone()))
         .or(filters::create_invite(pool.clone()))
         .or(filters::user(pool.clone()))
-        .or(filters::socket(pool.clone()))
-        .or(filters::auth_success(pool.clone()))
+        .or(filters::socket(socket_ctx))
+        .or(filters::auth_success(pool.clone(), client, cert_cache))
         .or(filters::auth_fail())
         .or(filters::favicon())
         .or(filters::js())

@@ -23,7 +23,7 @@ struct ConnectionContext {
 pub struct Group {
     pub channels: Vec<db::Channel>,
     pub connections: HashMap<ConnID, Sender>,
-    pub online_users: HashMap<db::UserID, u32>,
+    pub online_users: HashMap<db::UserID, Vec<ConnID>>,
 }
 
 pub type GroupMap = HashMap<db::GroupID, Group>;
@@ -38,15 +38,15 @@ impl Group {
         let mut connections = HashMap::new();
         connections.insert(conn_ctx.conn_id, ch_tx);
         let mut online_users = HashMap::new();
-        online_users.insert(conn_ctx.user_id, 1);
+        online_users.insert(conn_ctx.user_id, vec![conn_ctx.conn_id]);
         Ok(Self { channels, connections, online_users })
     }
 
     /// Insert a new connection into the group
     fn insert_connection(&mut self, conn_ctx: &ConnectionContext, ch_tx: Sender) {
-        let count = self.online_users.entry(conn_ctx.user_id).or_insert(0);
-        *count += 1;
-        if *count == 1 {
+        let conn_ids = self.online_users.entry(conn_ctx.user_id).or_default();
+        conn_ids.push(conn_ctx.conn_id);
+        if conn_ids.len() == 1 {
             self.send_user_online(conn_ctx.user_id);
         }
         self.connections.insert(conn_ctx.conn_id, ch_tx);
@@ -64,12 +64,13 @@ impl Group {
                 Entry::Occupied(entry) => entry,
                 Entry::Vacant(_) => panic!(),
             };
-            let count = user_entry.get_mut();
-            if *count == 1 {
+            let conn_ids = user_entry.get_mut();
+            if conn_ids.len() == 1 {
                 user_entry.remove();
                 self.send_user_offline(conn_ctx.user_id);
             } else {
-                *count -= 1;
+                let index = conn_ids.iter().position(|id| *id == conn_ctx.conn_id).unwrap();
+                conn_ids.swap_remove(index);
             }
             false
         }
@@ -197,4 +198,18 @@ async fn connected(ws: WebSocket, sock_ctx: SocketContext, conn_ctx: ConnectionC
 
     sock_ctx.remove_connection(&conn_ctx).await;
     debug!("Socket disconnected: {}", conn_ctx.conn_id);
+}
+
+pub async fn kick(ctx: SocketContext, user_id: db::UserID) {
+    let guard = ctx.groups.read().await;
+    // TODO: Need to rethink the data structures
+    for (_, group) in guard.iter() {
+        if let Some(conn_ids) = group.online_users.get(&user_id) {
+            for conn_id in conn_ids.iter() {
+                if let Err(_) = group.connections[conn_id].send(Ok(Message::close_with(4000u16, "kick"))) {
+
+                }
+            }
+        }
+    }
 }

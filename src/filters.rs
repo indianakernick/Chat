@@ -1,21 +1,27 @@
 use warp::Filter;
-use super::handlers;
 use log::{debug, error};
 use crate::error::Error;
 use deadpool_postgres::Pool;
 use std::convert::Infallible;
 use crate::utils::cache_long;
+use super::{handlers, socket};
 use crate::database::{ChannelID, UserID, GroupID, InviteID, SessionID};
 
-fn with_pool(pool: Pool) -> impl Filter<Extract = (Pool,), Error = Infallible> + Clone {
-    warp::any().map(move || pool.clone())
+fn with_state<S: Clone + Send>(state: S) -> impl Filter<Extract = (S,), Error = Infallible> + Clone {
+    warp::any().map(move || state.clone())
+}
+
+fn with_session_id() -> impl Filter<Extract = (SessionID,), Error = Infallible> + Clone {
+    warp::any()
+        .and(warp::cookie::optional("session_id"))
+        .map(|session_id: Option<String>| session_id.unwrap_or(String::new()))
 }
 
 pub fn root(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path::end()
         .and(warp::get())
-        .and(session_id())
-        .and(with_pool(pool))
+        .and(with_session_id())
+        .and(with_state(pool))
         .map(|session_id, pool| (0, 0, session_id, pool))
         .untuple_one()
         .and_then(handlers::channel)
@@ -30,24 +36,23 @@ pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
-pub fn logout() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn logout(pool: Pool, socket_ctx: socket::SocketContext)
+    -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+{
     warp::path!("logout")
         .and(warp::get())
+        .and(with_state(pool))
+        .and(with_state(socket_ctx))
+        .and(with_session_id())
         .and_then(handlers::logout)
         .recover(rejection)
-}
-
-fn session_id() -> impl Filter<Extract = (SessionID,), Error = Infallible> + Clone {
-    warp::any()
-        .and(warp::cookie::optional("session_id"))
-        .map(|session_id: Option<String>| session_id.unwrap_or(String::new()))
 }
 
 pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("channel" / GroupID / ChannelID)
         .and(warp::get())
-        .and(session_id())
-        .and(with_pool(pool))
+        .and(with_session_id())
+        .and(with_state(pool))
         .and_then(handlers::channel)
         .recover(rejection)
 }
@@ -55,8 +60,8 @@ pub fn channel(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = wa
 pub fn invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("invite" / InviteID)
         .and(warp::get())
-        .and(session_id())
-        .and(with_pool(pool))
+        .and(with_session_id())
+        .and(with_state(pool))
         .and_then(handlers::accept_invite)
         .recover(rejection)
 }
@@ -64,7 +69,7 @@ pub fn invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "group" / "create")
         .and(warp::post())
-        .and(with_pool(pool))
+        .and(with_state(pool))
         .and(warp::cookie("session_id"))
         .and(warp::body::content_length_limit(handlers::CREATE_GROUP_LIMIT))
         .and(warp::body::json())
@@ -75,7 +80,7 @@ pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error
 pub fn create_invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "invite" / "create")
         .and(warp::post())
-        .and(with_pool(pool))
+        .and(with_state(pool))
         .and(warp::cookie("session_id"))
         .and(warp::body::content_length_limit(handlers::CREATE_INVITE_LIMIT))
         .and(warp::body::json())
@@ -86,33 +91,30 @@ pub fn create_invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Erro
 pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "user" / UserID)
         .and(warp::get())
-        .and(with_pool(pool))
+        .and(with_state(pool))
         .and_then(handlers::user)
         .recover(rejection)
 }
 
-pub fn socket(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let ctx = crate::socket::SocketContext::new(pool);
-
+pub fn socket(socket_ctx: socket::SocketContext) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "socket" / GroupID)
         .and(warp::ws())
         .and(warp::cookie("session_id"))
-        .and(warp::any().map(move || ctx.clone()))
-        .and_then(crate::socket::upgrade)
+        .and(with_state(socket_ctx))
+        .and_then(socket::upgrade)
         .recover(rejection)
 }
 
-pub fn auth_success(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let client = reqwest::Client::new();
-    let cert_cache = handlers::CertificateCache::default();
-
+pub fn auth_success(pool: Pool, client: reqwest::Client, cert_cache: handlers::CertificateCache)
+    -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+{
     warp::path!("api" / "auth")
         .and(warp::get())
-        .and(warp::any().map(move || client.clone()))
-        .and(warp::any().map(move || cert_cache.clone()))
+        .and(with_state(client))
+        .and(with_state(cert_cache))
         .and(warp::query::<handlers::AuthSuccess>())
         .and_then(handlers::auth_success)
-        .and(with_pool(pool))
+        .and(with_state(pool))
         .and_then(handlers::initialize_session)
         .recover(rejection)
 }

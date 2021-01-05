@@ -66,6 +66,7 @@
 - [ ] **[5]** Delete messages
     - A user can select a message that they wrote and delete it
     - Messages from deleted users cannot be deleted because no-one owns them.
+      Although you could say that anyone can delete them...
 - [ ] **[5]** Edit messages
     - A user can select a message that they wrote and edit it.
     - Messages from deleted users cannot be edited because no-one owns them.

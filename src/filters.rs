@@ -36,7 +36,7 @@ pub fn login() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejectio
         .recover(rejection)
 }
 
-pub fn logout(pool: Pool, socket_ctx: socket::SocketContext)
+pub fn logout(pool: Pool, socket_ctx: socket::Context)
     -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 {
     warp::path!("logout")
@@ -96,12 +96,12 @@ pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp:
         .recover(rejection)
 }
 
-pub fn socket(socket_ctx: socket::SocketContext) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn socket(socket_ctx: socket::Context) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "socket" / GroupID)
         .and(warp::ws())
         .and(warp::cookie("session_id"))
         .and(with_state(socket_ctx))
-        .and_then(socket::upgrade)
+        .and_then(socket::Context::upgrade)
         .recover(rejection)
 }
 

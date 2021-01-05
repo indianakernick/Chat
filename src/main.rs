@@ -40,7 +40,7 @@ async fn print_message_count(pool: &Pool) {
 async fn main() {
     let pool = create_pool();
     print_message_count(&pool).await;
-    let socket_ctx = crate::socket::SocketContext::new(pool.clone());
+    let socket_ctx = crate::socket::Context::new(pool.clone());
     let client = reqwest::Client::new();
     let cert_cache = handlers::CertificateCache::default();
 

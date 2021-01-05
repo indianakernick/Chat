@@ -27,19 +27,19 @@ pub async fn login(query: LoginQuery) -> Result<impl warp::Reply, warp::Rejectio
 pub async fn logout(pool: Pool, socket_ctx: socket::SocketContext, session_id: db::SessionID)
     -> Result<Box<dyn warp::Reply>, warp::Rejection>
 {
-    match db::session_user_id(pool, &session_id).await? {
+    let redirect = warp::redirect(warp::http::Uri::from_static("/login?redirect=/"));
+    match db::session_user_id(pool.clone(), &session_id).await? {
         Some(user_id) => {
             socket::kick(socket_ctx, user_id).await;
+            db::delete_session(pool, &session_id).await?;
             Ok(Box::new(warp::reply::with_header(
-                warp::redirect(warp::http::Uri::from_static("/login?redirect=/")),
+                redirect,
                 "Set-Cookie",
                 "session_id=;Path=/;HttpOnly;Secure;Expires=Thu, 01 Jan 1970 00:00:00 GMT"
             )))
         },
         None => {
-            Ok(Box::new(warp::redirect(
-                warp::http::Uri::from_static("/login?redirect=/")
-            )))
+            Ok(Box::new(redirect))
         }
     }
 }

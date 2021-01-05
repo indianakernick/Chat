@@ -10,7 +10,7 @@
     distance="16"
   >
     <div class="dropdown-button">Change name</div>
-    <div class="dropdown-button">Logout</div>
+    <div class="dropdown-button" @click="logout">Logout</div>
     <div class="dropdown-button">Delete account</div>
   </Popper>
 </template>
@@ -33,6 +33,12 @@ export default {
     this.$nextTick(() => {
       this.$refs.dropdown.initDropdownButton(this.$refs.button);
     });
+  },
+
+  methods: {
+    logout() {
+      window.location.href = "/logout";
+    }
   }
 };
 </script>

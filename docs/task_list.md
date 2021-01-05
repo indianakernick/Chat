@@ -77,7 +77,7 @@
     - There could be multiple clients logged into the same user so all clients
       would need to be forcefully kicked.
     - The user's messages in the group will remain intact.
-- [ ] **[5]** Logout
+- [x] **[5]** Logout
     - This would essentially involve deleting the session cookie and then load
       the login page.
     - The server only needs to set the expiration date of the cookie to some

@@ -1,7 +1,12 @@
 <template>
   <ModalDialog :shown="shown" @submitForm="submitForm">
     <template v-slot:header>
-      Create a new group
+      <template v-if="rename">
+        Rename <em>{{ originalName }}</em>
+      </template>
+      <template v-else>
+        Create a new group
+      </template>
     </template>
 
     <template v-slot:body>
@@ -39,7 +44,7 @@
 
     <template v-slot:footer>
       <input type="button" class="btn btn-secondary" @click="hide" value="Cancel" :disabled="waiting"/>
-      <input type="submit" class="btn btn-primary" value="Create" :disabled="waiting"/>
+      <input type="submit" class="btn btn-primary" :value="submitTitle" :disabled="waiting"/>
     </template>
   </ModalDialog>
 </template>
@@ -57,25 +62,59 @@ export default {
   data() {
     return {
       name: "",
+      originalName: "",
       picture: "",
       shown: false,
       waiting: false,
       invalidName: false,
-      invalidPicture: false
+      invalidPicture: false,
+      rename: false
     }
   },
 
   emits: [
-    "createGroup"
+    "createGroup",
+    "renameGroup"
   ],
 
+  computed: {
+    submitTitle() {
+      return this.rename ? "Rename" : "Create";
+    }
+  },
+
   methods: {
-    show() {
+    show(rename) {
+      this.rename = rename;
       this.waiting = false;
-      this.invalidName = false;
-      this.invalidPicture = false;
+      this.invalid = false;
       this.shown = true;
-      this.$nextTick(() => document.getElementById("group-name-input").focus());
+    },
+
+    showCreate() {
+      this.show(false);
+      this.name = "";
+      this.$nextTick(() => {
+        const input = document.getElementById("group-name-input");
+        input.focus();
+        input.value = "";
+        document.getElementById("group-picture-input").value = "";
+      });
+    },
+
+    // TODO: Do we really need to pass in the name and picture?
+    // Why doesn't this have props for them?
+    showRename(name, picture) {
+      this.show(true);
+      this.name = this.originalName = name;
+      this.picture = picture;
+      this.$nextTick(() => {
+        const input = document.getElementById("group-name-input");
+        input.focus();
+        input.value = name;
+        input.select();
+        document.getElementById("group-picture-input").value = picture;
+      });
     },
 
     hide() {
@@ -84,7 +123,14 @@ export default {
 
     submitForm() {
       this.waiting = true;
+      if (this.rename) {
+        this.$emit("renameGroup", this.name, this.picture);
+      } else {
+        this.createGroup();
+      }
+    },
 
+    createGroup() {
       const req = new XMLHttpRequest();
 
       req.onload = () => {
@@ -128,6 +174,31 @@ export default {
       this.$emit("createGroup", {
         group_id: groupId, name: this.name, picture: this.picture
       });
+    },
+
+    groupRenamed(name, picture) {
+      if (this.waiting && this.name === name && this.picture === picture) {
+        this.shown = false;
+      } else {
+        this.originalName = name;
+      }
+    },
+
+    error(code) {
+      if (this.waiting) {
+        this.waiting = false;
+        switch (code) {
+          case "name_invalid":
+          case "name_exists":
+            this.invalidName = true;
+            this.invalidPicture = false;
+            break;
+          case "picture_invalid":
+            this.invalidName = false;
+            this.invalidPicture = true;
+            break;
+        }
+      }
     }
   }
 };

@@ -9,13 +9,12 @@
 import { createPopper } from "@popperjs/core/lib/popper-lite";
 import arrow from "@popperjs/core/lib/modifiers/arrow";
 import offset from "@popperjs/core/lib/modifiers/offset";
-import { Placement } from "@popperjs/core/lib/enums";
 
 export default {
   name: "Popper",
 
   props: {
-    placement: Placement,
+    placement: String,
     // HTML attribute values are strings
     distance: String,
     skid: {

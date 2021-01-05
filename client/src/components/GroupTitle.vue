@@ -11,7 +11,10 @@
   >
     <div class="dropdown-button" @click="$emit('createChannel')">Create channel</div>
     <div class="dropdown-button" @click="$emit('invite')">Invite to group</div>
-    <div class="dropdown-button">Rename group</div>
+    <div
+      class="dropdown-button"
+      @click="$emit('renameGroup', currentGroupName, 'https://soon.to/be/obsolete')"
+    >Rename group</div>
     <div class="dropdown-button">Leave group</div>
     <div class="dropdown-button">Delete group</div>
   </Popper>
@@ -33,7 +36,8 @@ export default {
 
   emits: [
     "createChannel",
-    "invite"
+    "invite",
+    "renameGroup"
   ],
 
   created() {

@@ -1,7 +1,7 @@
 use serde::Serialize;
 use crate::error::Error;
-use deadpool_postgres::Pool;
 use super::{Channel, UserID};
+use deadpool_postgres::{Pool, PoolError};
 
 pub type GroupID = i32;
 
@@ -85,4 +85,21 @@ pub async fn group_member(pool: Pool, user_id: UserID, group_id: GroupID)
         AND group_id = $2
     ").await?;
     Ok(conn.query_opt(&stmt, &[&user_id, &group_id]).await?.is_some())
+}
+
+pub async fn rename_group(pool: Pool, group_id: GroupID, name: &String, picture: &String)
+    -> Result<bool, PoolError>
+{
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        UPDATE Groop
+        SET name = $2
+        WHERE group_id = $1
+        AND NOT EXISTS (
+            SELECT 1
+            FROM Groop
+            WHERE name = $2
+        )
+    ").await?;
+    Ok(conn.execute(&stmt, &[&group_id, name]).await? > 0)
 }

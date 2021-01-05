@@ -203,6 +203,9 @@ impl Context {
     pub async fn kick(self, user_id: db::UserID) {
         let guard = self.groups.read().await;
         // TODO: Need to rethink the data structures
+        // Maybe put this in the socket context
+        // HashMap<db::UserID, Vec<(db::GroupID, ConnID)>>
+        // but then how to we get the users within a group
         for (_, group) in guard.iter() {
             if let Some(conn_ids) = group.online_users.get(&user_id) {
                 for conn_id in conn_ids.iter() {

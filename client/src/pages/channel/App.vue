@@ -12,6 +12,7 @@
         :currentGroupName="currentGroupName"
         @createChannel="showCreateChannelDialog"
         @invite="showInviteDialog"
+        @renameGroup="showRenameGroupDialog"
       />
       <ChannelList
         :channelList="channelList"
@@ -64,7 +65,11 @@
     ref="createOrRenameChannelDialog"
   />
   <ChannelDeleteDialog @deleteChannel="deleteChannel" ref="deleteChannelDialog"/>
-  <GroupCreateDialog @createGroup="createGroup" ref="createGroupDialog"/>
+  <GroupCreateOrRenameDialog
+    @createGroup="createGroup"
+    @renameGroup="renameGroup"
+    ref="createOrRenameGroupDialog"
+  />
   <InviteDialog :groupId="currentGroupId" :groupName="currentGroupName" ref="inviteDialog"/>
 </template>
 
@@ -78,7 +83,7 @@ import UserList from "@/components/UserList.vue";
 import MessageList from "@/components/MessageList.vue";
 import InviteDialog from "@/components/InviteDialog.vue";
 import MessageSender from "@/components/MessageSender.vue";
-import GroupCreateDialog from "@/components/GroupCreateDialog.vue";
+import GroupCreateOrRenameDialog from "@/components/GroupCreateOrRenameDialog.vue";
 import ChannelCreateOrRenameDialog from "@/components/ChannelCreateOrRenameDialog.vue";
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
@@ -165,7 +170,7 @@ export default {
     MessageList,
     InviteDialog,
     MessageSender,
-    GroupCreateDialog,
+    GroupCreateOrRenameDialog,
     ChannelCreateOrRenameDialog,
     ChannelDeleteDialog,
     NoGroupsDialog
@@ -257,7 +262,12 @@ export default {
 
     showCreateGroupDialog() {
       if (!this.connected) return;
-      this.$refs.createGroupDialog.show();
+      this.$refs.createOrRenameGroupDialog.showCreate();
+    },
+
+    showRenameGroupDialog(name, picture) {
+      if (!this.connected) return;
+      this.$refs.createOrRenameGroupDialog.showRename(name, picture);
     },
 
     showInviteDialog() {
@@ -322,6 +332,15 @@ export default {
       this.socket.send(JSON.stringify({
         type: "delete_channel",
         channel_id: channelId
+      }));
+    },
+
+    renameGroup(name, picture) {
+      if (!this.connected) return;
+      this.socket.send(JSON.stringify({
+        type: "rename_group",
+        name: name,
+        picture: picture
       }));
     },
 
@@ -445,6 +464,10 @@ export default {
         case "channel_delete":
           this.$refs.deleteChannelDialog.error();
           break;
+
+        case "group_rename":
+          this.$refs.createOrRenameGroupDialog.error(code);
+          break;
       }
     },
 
@@ -519,6 +542,17 @@ export default {
 
         case "user_status_changed":
           this.$refs.userList.userStatusChanged(message.user_id, message.status);
+          break;
+
+        case "group_renamed":
+          const index = this.groupList.findIndex(group =>
+            group.group_id === this.currentGroupId
+          );
+          if (index !== -1) {
+            this.groupList[index].name = message.name;
+            this.groupList[index].picture = message.picture;
+          }
+          this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
           break;
       }
     }

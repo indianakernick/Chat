@@ -21,10 +21,12 @@
     - There are a handful of TODOs relating to code quality and cleanliness.
     - The socket code on both the client and server is getting worse with every
       new feature.
-- [x] **[3]** User interface polish
+- [ ] **[3]** User interface polish
     - As of writing, the UI is kind of ugly and boring.
     - Remember that Bootstrap isn't meant to solve everything. You'll still need
       to write a lot of CSS yourself.
+    - Progress has been made but the login page and also the dialog boxes need
+      some work.
 - [ ] **[3]** Host images
     - Host group and user images on the server instead of just storing URLs.
     - The server would take images from a source, resize them to the appropriate

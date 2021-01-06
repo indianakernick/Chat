@@ -2,7 +2,7 @@
   <div class="message" :class="{'sending': sending}">
     <img
       class="user-picture"
-      :src="userInfo.picture"
+      :src="'/img/user/' + userId + '_48.png'"
       alt="User picture"
       width="48"
       height="48"
@@ -18,11 +18,8 @@
 </template>
 
 <script>
-import Anonymous from "@/assets/anonymous.png";
-
 export const DELETED_USER_INFO = {
   name: "<deleted user>",
-  picture: Anonymous,
   deleted: true
 };
 
@@ -124,7 +121,8 @@ export default {
     timestamp: Number,
     content: String,
     sending: Boolean,
-    userInfo: Object
+    userInfo: Object,
+    userId: Number
   },
 
   data() {

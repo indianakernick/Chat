@@ -5,6 +5,7 @@
         v-for="message in messages"
         :timestamp="message.timestamp"
         :userInfo="message.userInfo"
+        :userId="message.userId"
         :content="message.content"
         :sending="message.sending"
       />
@@ -16,9 +17,6 @@
 <script>
 import Message from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
-
-// For plain javascript files, the convention seems to be putting them in
-// assets/js/
 
 export default {
   name: "MessageList",
@@ -47,6 +45,7 @@ export default {
       this.messages.push({
         timestamp: message.timestamp,
         userInfo: userInfo,
+        userId: message.author,
         content: message.content,
         sending: false
       });
@@ -55,7 +54,7 @@ export default {
         if (userInfo.name.length > 0) {
           notif = new Notification(userInfo.name, {
             body: message.content,
-            icon: userInfo.picture
+            icon: "/img/user/" + message.author + "_48.png"
           });
         } else {
           notif = new Notification("", {
@@ -83,6 +82,7 @@ export default {
         return {
           timestamp: msg.timestamp,
           userInfo: this.userInfoCache.getUserInfo(msg.author),
+          userId: msg.author,
           content: msg.content,
           sending: false
         };
@@ -99,6 +99,7 @@ export default {
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,
         userInfo: this.userInfo,
+        userId: USER_ID,
         content: content,
         sending: true
       });

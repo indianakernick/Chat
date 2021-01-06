@@ -6,7 +6,7 @@
         class="group-list-item"
         :class="{'active': group.group_id === currentGroupId}"
         @click="$emit('selectGroup', group.group_id)"
-        :src="group.picture"
+        :src="'/img/group/' + group.group_id + '_64.png'"
         alt="Group picture"
         width="64"
         height="64"

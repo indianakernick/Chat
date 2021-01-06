@@ -2,7 +2,7 @@
   <div class="user-list-item" :class="{'offline': offline}">
     <img
       class="user-picture"
-      :src="userInfo.picture32"
+      :src="'/img/user/' + userId + '_32.png'"
       alt="User picture"
       width="32"
       height="32"
@@ -17,7 +17,8 @@ export default {
 
   props: {
     offline: Boolean,
-    userInfo: Object
+    userInfo: Object,
+    userId: Number
   }
 };
 </script>

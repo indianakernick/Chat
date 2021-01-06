@@ -35,7 +35,10 @@ pub async fn channel(mut group_id: db::GroupID, mut channel_id: db::ChannelID, s
     let group_list = db::user_groups(pool.clone(), user.user_id).await?;
 
     if group_list.is_empty() {
-        let preload_images = vec![user.picture.clone()];
+        let preload_images = vec![
+            format!("/img/user/{}_32.png", user.user_id),
+            format!("/img/user/{}_48.png", user.user_id)
+        ];
         let user_id = user.user_id;
         let user_list = vec![user];
         return Ok(Box::new(ChannelTemplate {
@@ -79,10 +82,11 @@ pub async fn channel(mut group_id: db::GroupID, mut channel_id: db::ChannelID, s
 
     let mut preload_images = Vec::new();
     for group in group_list.iter() {
-        preload_images.push(group.picture.clone());
+        preload_images.push(format!("/img/group/{}_64.png", group.group_id));
     }
     for other_user in user_list.iter() {
-        preload_images.push(other_user.picture.clone());
+        preload_images.push(format!("/img/user/{}_32.png", other_user.user_id));
+        preload_images.push(format!("/img/user/{}_48.png", other_user.user_id));
     }
 
     Ok(Box::new(ChannelTemplate {

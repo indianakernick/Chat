@@ -93,6 +93,9 @@ const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
 const HIDDEN_MAX_RETRY_DELAY = 32000;
 
+/*
+Might still need this (or something similar) for uploading
+
 class ImageCompositor {
   constructor(size, color) {
     this.canvas = document.createElement("canvas");
@@ -123,6 +126,8 @@ const comp64 = new ImageCompositor(64, "#e9ecef"); // $group-item-back
 const comp48 = new ImageCompositor(48, "#e9ecef"); // $user-picture-back
 const comp32 = new ImageCompositor(32, "#e9ecef"); // $user-picture-back
 
+ */
+
 const userInfoCache = {
   cache: {
     0: DELETED_USER_INFO
@@ -131,21 +136,13 @@ const userInfoCache = {
   getUserInfo(userId) {
     if (!this.cache.hasOwnProperty(userId)) {
       this.cache[userId] = {
-        name: "",
-        picture: "",
-        picture32: ""
+        name: ""
       };
 
       const req = new XMLHttpRequest();
 
       req.onload = () => {
         this.cache[userId].name = req.response.name;
-        comp48.composite(req.response.picture, url => {
-          this.cache[userId].picture = url;
-        });
-        comp32.composite(req.response.picture, url => {
-          this.cache[userId].picture32 = url;
-        });
       };
 
       req.responseType = "json";
@@ -178,22 +175,12 @@ export default {
 
   data() {
     for (const user of USER_LIST) {
-      userInfoCache.cache[user.user_id] = { name: user.name, picture: "", picture32: "" };
-      comp48.composite(user.picture, url => {
-        this.userInfoCache.cache[user.user_id].picture = url;
-      });
-      comp32.composite(user.picture, url => {
-        this.userInfoCache.cache[user.user_id].picture32 = url;
-      });
+      userInfoCache.cache[user.user_id] = { name: user.name };
     }
 
     const groupList = [];
     for (const group of GROUP_LIST) {
-      const length = groupList.length;
-      groupList.push({ group_id: group.group_id, name: group.name, picture: "" });
-      comp64.composite(group.picture, url => {
-        this.groupList[length].picture = url;
-      });
+      groupList.push({ group_id: group.group_id, name: group.name });
     }
 
     return {

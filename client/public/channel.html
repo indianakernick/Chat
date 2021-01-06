@@ -7,7 +7,7 @@
     <link rel="icon" href="/favicon.ico">
     <title>{{title}}</title>
     {% for url in preload_images %}
-    <link rel="preload" as="image" crossorigin="anonymous" href="{{url|safe}}"/>
+    <link rel="preload" as="image" href="{{url|safe}}"/>
     {% endfor %}
   </head>
   <body>

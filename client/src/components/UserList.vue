@@ -8,6 +8,7 @@
       <User
         v-for="userId in onlineUserList"
         :userInfo="userInfoCache.getUserInfo(userId)"
+        :userId="userId"
         :offline="false"
       />
 
@@ -18,6 +19,7 @@
       <User
         v-for="userId in offlineUserList"
         :userInfo="userInfoCache.getUserInfo(userId)"
+        :userId="userId"
         :offline="true"
       />
     </div>

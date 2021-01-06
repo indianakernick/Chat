@@ -151,6 +151,18 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
         .recover(rejection)
 }
 
+pub fn img() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        warp::path!("img" / "group" / ".gitignore").map(|| warp::http::StatusCode::NOT_FOUND)
+    .or(
+        warp::path!("img" / "user" / ".gitignore").map(|| warp::http::StatusCode::NOT_FOUND)
+    ).or(
+        warp::path("img")
+            .and(warp::get())
+            .and(warp::fs::dir("img"))
+            .map(cache_long)
+    ).recover(rejection)
+}
+
 // This is technically a handler so maybe it doesn't belong in this file.
 async fn rejection(rejection: warp::Rejection) -> Result<impl warp::Reply, warp::Rejection> {
     if let Some(error) = rejection.find::<Error>() {

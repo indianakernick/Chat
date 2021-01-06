@@ -2,7 +2,7 @@
   <div class="message" :class="{'sending': sending}">
     <img
       class="user-picture"
-      :src="'/img/user/' + userId + '_48.png'"
+      :src="'/img/user/' + userInfo.user_id + '_48.png'"
       alt="User picture"
       width="48"
       height="48"
@@ -19,8 +19,8 @@
 
 <script>
 export const DELETED_USER_INFO = {
-  name: "<deleted user>",
-  deleted: true
+  user_id: 0,
+  name: "<deleted user>"
 };
 
 const timeFormatManager = {
@@ -121,15 +121,14 @@ export default {
     timestamp: Number,
     content: String,
     sending: Boolean,
-    userInfo: Object,
-    userId: Number
+    userInfo: Object
   },
 
   data() {
     timeFormatManager.initialize();
     return {
       formattedTime: timeFormatManager.formatTime(this),
-      deleted: this.userInfo.hasOwnProperty("deleted")
+      deleted: this.userInfo.user_id === 0
     }
   },
 

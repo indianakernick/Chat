@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS Usr (
     user_id SERIAL NOT NULL,
     name TEXT NOT NULL,
-    picture TEXT NOT NULL,
     google_id TEXT,
 
     PRIMARY KEY (user_id),
@@ -78,6 +77,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS channel_message_idx
 CREATE TABLE IF NOT EXISTS Membership (
     user_id INTEGER NOT NULL,
     group_id INTEGER NOT NULL,
+    -- TODO: Probably need to have an "active" or "left" state here
+    -- See 2020-01-06.md
 
     FOREIGN KEY (user_id)
         REFERENCES Usr (user_id)

@@ -60,7 +60,7 @@ pub async fn session_user(pool: Pool, session_id: &SessionID)
 
     let conn = pool.get().await?;
     let stmt = conn.prepare(concat!("
-        SELECT Usr.user_id, name, picture
+        SELECT Usr.user_id, name
         FROM Usr
         JOIN Session ON Session.user_id = Usr.user_id
         WHERE session_id = $1
@@ -71,7 +71,6 @@ pub async fn session_user(pool: Pool, session_id: &SessionID)
         User {
             user_id: row.get(0),
             name: row.get(1),
-            picture: row.get(2)
         }
     }))
 }

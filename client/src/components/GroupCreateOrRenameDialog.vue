@@ -122,7 +122,7 @@ export default {
     submitForm() {
       this.waiting = true;
       if (this.rename) {
-        this.$emit("renameGroup", this.name, this.picture);
+        this.$emit("renameGroup", this.name);
       } else {
         this.createGroup();
       }

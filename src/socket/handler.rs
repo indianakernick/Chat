@@ -48,7 +48,6 @@ enum UserStatus {
 struct User {
     user_id: db::UserID,
     name: String,
-    picture: String,
     status: UserStatus,
 }
 
@@ -387,7 +386,6 @@ impl<'a> MessageContext<'a> {
             users.push(User {
                 user_id: user.user_id,
                 name: user.name.clone(),
-                picture: user.picture.clone(),
                 status
             });
         }

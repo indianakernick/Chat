@@ -87,7 +87,7 @@ import GroupCreateOrRenameDialog from "@/components/GroupCreateOrRenameDialog.vu
 import ChannelCreateOrRenameDialog from "@/components/ChannelCreateOrRenameDialog.vue";
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
-import { DELETED_USER_INFO } from "@/components/Message";
+import userInfoCache from "@/assets/js/userInfoCache.js";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -125,34 +125,7 @@ class ImageCompositor {
 const comp64 = new ImageCompositor(64, "#e9ecef"); // $group-item-back
 const comp48 = new ImageCompositor(48, "#e9ecef"); // $user-picture-back
 const comp32 = new ImageCompositor(32, "#e9ecef"); // $user-picture-back
-
- */
-
-const userInfoCache = {
-  cache: {
-    0: DELETED_USER_INFO
-  },
-
-  getUserInfo(userId) {
-    if (!this.cache.hasOwnProperty(userId)) {
-      this.cache[userId] = {
-        name: ""
-      };
-
-      const req = new XMLHttpRequest();
-
-      req.onload = () => {
-        this.cache[userId].name = req.response.name;
-      };
-
-      req.responseType = "json";
-      req.open("GET", `/api/user/${userId}`);
-      req.send();
-    }
-
-    return this.cache[userId];
-  },
-};
+*/
 
 export default {
   name: "App",
@@ -175,7 +148,9 @@ export default {
 
   data() {
     for (const user of USER_LIST) {
-      userInfoCache.cache[user.user_id] = { name: user.name };
+      userInfoCache.cache[user.user_id] = {
+        user_id: user.user_id, name: user.name
+      };
     }
 
     return {
@@ -247,9 +222,9 @@ export default {
       this.$refs.createOrRenameGroupDialog.showCreate();
     },
 
-    showRenameGroupDialog(name, picture) {
+    showRenameGroupDialog(name) {
       if (!this.connected) return;
-      this.$refs.createOrRenameGroupDialog.showRename(name, picture);
+      this.$refs.createOrRenameGroupDialog.showRename(name);
     },
 
     showInviteDialog() {

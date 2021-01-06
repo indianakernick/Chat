@@ -6,8 +6,6 @@ fn main() {
     println!("cargo:rerun-if-changed=client/public/favicon.ico");
     println!("cargo:rerun-if-changed=client/public/login.html");
 
-    println!("cargo:rerun-if-changed=client/src/assets/anonymous.png");
-
     println!("cargo:rerun-if-changed=client/src/components/ChannelCreateOrRenameDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelDeleteDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/ChannelList.vue");

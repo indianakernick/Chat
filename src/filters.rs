@@ -69,10 +69,9 @@ pub fn invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "group" / "create")
         .and(warp::post())
+        .and(warp::filters::multipart::form())
         .and(with_state(pool))
         .and(warp::cookie("session_id"))
-        .and(warp::body::content_length_limit(handlers::CREATE_GROUP_LIMIT))
-        .and(warp::body::json())
         .and_then(handlers::create_group)
         .recover(rejection)
 }

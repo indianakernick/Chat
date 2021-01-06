@@ -102,18 +102,16 @@ export default {
       });
     },
 
-    // TODO: Do we really need to pass in the name and picture?
-    // Why doesn't this have props for them?
-    showRename(name, picture) {
+    // TODO: Do we really need to pass in the name?
+    // Why not use a prop?
+    showRename(name) {
       this.show(true);
       this.name = this.originalName = name;
-      this.picture = picture;
       this.$nextTick(() => {
         const input = document.getElementById("group-name-input");
         input.focus();
         input.value = name;
         input.select();
-        document.getElementById("group-picture-input").value = picture;
       });
     },
 
@@ -148,8 +146,7 @@ export default {
       req.open("POST", "/api/group/create");
       req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
       req.send(JSON.stringify({
-        name: this.name,
-        picture: this.picture
+        name: this.name
       }));
     },
 
@@ -176,8 +173,8 @@ export default {
       });
     },
 
-    groupRenamed(name, picture) {
-      if (this.waiting && this.name === name && this.picture === picture) {
+    groupRenamed(name) {
+      if (this.waiting && this.name === name) {
         this.shown = false;
       } else {
         this.originalName = name;
@@ -192,10 +189,6 @@ export default {
           case "name_exists":
             this.invalidName = true;
             this.invalidPicture = false;
-            break;
-          case "picture_invalid":
-            this.invalidName = false;
-            this.invalidPicture = true;
             break;
         }
       }

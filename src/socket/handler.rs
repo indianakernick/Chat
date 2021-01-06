@@ -18,7 +18,7 @@ enum ClientMessage {
     RenameChannel { channel_id: db::ChannelID, name: String },
     RequestOnline,
     RequestUsers,
-    RenameGroup { name: String, picture: String },
+    RenameGroup { name: String },
 }
 
 #[derive(Serialize)]
@@ -74,7 +74,6 @@ enum ErrorCode {
     NameInvalid,
     NameExists,
     LoneChannel,
-    PictureInvalid,
 }
 
 use ErrorCode::*;
@@ -97,7 +96,7 @@ enum ServerMessage<'a> {
     UserList { users: Vec<User> },
     // Perhaps include the user's name and picture in this too
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
-    GroupRenamed { name: String, picture: String },
+    GroupRenamed { name: String },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -215,8 +214,8 @@ impl<'a> MessageContext<'a> {
                 self.request_users().await,
             ClientMessage::RenameChannel { channel_id, name } =>
                 self.rename_channel(channel_id, name).await,
-            ClientMessage::RenameGroup { name, picture } =>
-                self.rename_group(name, picture).await,
+            ClientMessage::RenameGroup { name } =>
+                self.rename_group(name).await,
         };
 
         if let Err(e) = result {
@@ -432,7 +431,7 @@ impl<'a> MessageContext<'a> {
         Ok(())
     }
 
-    async fn rename_group(&self, name: String, picture: String) -> Result<(), PoolError> {
+    async fn rename_group(&self, name: String) -> Result<(), PoolError> {
         let groups_guard = self.groups.read().await;
         let group = &groups_guard[&self.group_id];
 
@@ -441,19 +440,13 @@ impl<'a> MessageContext<'a> {
             return Ok(());
         }
 
-        if !db::valid_url(&picture) {
-            group.send_reply_error(self.conn_id, GroupRename, PictureInvalid);
-            return Ok(());
-        }
-
-        if !db::rename_group(self.pool.clone(), self.group_id, &name, &picture).await? {
+        if !db::rename_group(self.pool.clone(), self.group_id, &name).await? {
             group.send_reply_error(self.conn_id, GroupRename, NameExists);
             return Ok(());
         }
 
         group.send_all(ServerMessage::GroupRenamed {
             name,
-            picture
         });
 
         Ok(())

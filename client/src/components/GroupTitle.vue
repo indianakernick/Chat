@@ -13,7 +13,7 @@
     <div class="dropdown-button" @click="$emit('invite')">Invite to group</div>
     <div
       class="dropdown-button"
-      @click="$emit('renameGroup', currentGroupName, 'https://soon.to/be/obsolete')"
+      @click="$emit('renameGroup', currentGroupName)"
     >Rename group</div>
     <div class="dropdown-button">Leave group</div>
     <div class="dropdown-button">Delete group</div>

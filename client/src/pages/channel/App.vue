@@ -178,18 +178,13 @@ export default {
       userInfoCache.cache[user.user_id] = { name: user.name };
     }
 
-    const groupList = [];
-    for (const group of GROUP_LIST) {
-      groupList.push({ group_id: group.group_id, name: group.name });
-    }
-
     return {
       currentGroupId: GROUP_ID,
       currentChannelId: CHANNEL_ID,
       userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,
       userList: USER_LIST,
-      groupList: groupList,
+      groupList: GROUP_LIST,
       channelList: CHANNEL_LIST,
       messageLists: {},
       retryDelay: INITIAL_RETRY_DELAY,
@@ -322,12 +317,11 @@ export default {
       }));
     },
 
-    renameGroup(name, picture) {
+    renameGroup(name) {
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
         type: "rename_group",
-        name: name,
-        picture: picture
+        name: name
       }));
     },
 
@@ -537,9 +531,8 @@ export default {
           );
           if (index !== -1) {
             this.groupList[index].name = message.name;
-            this.groupList[index].picture = message.picture;
           }
-          this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
+          this.$refs.createOrRenameGroupDialog.groupRenamed(message.name);
           break;
       }
     }

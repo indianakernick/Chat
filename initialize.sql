@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS Session (
 CREATE TABLE IF NOT EXISTS Groop (
     group_id SERIAL NOT NULL,
     name TEXT NOT NULL,
-    picture TEXT,
 
     PRIMARY KEY (group_id),
 

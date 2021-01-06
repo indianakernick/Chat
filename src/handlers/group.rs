@@ -14,7 +14,6 @@ enum Response {
 #[derive(Deserialize)]
 pub struct CreateGroupRequest {
     name: String,
-    picture: String,
 }
 
 pub const CREATE_GROUP_LIMIT: u64 =
@@ -31,14 +30,6 @@ pub async fn create_group(pool: Pool, session_id: String, request: CreateGroupRe
         )));
     }
 
-    if !db::valid_url(&request.picture) {
-        return Ok(Box::new(warp::reply::json(
-            &Response::Error {
-                message: "Invalid url"
-            }
-        )));
-    }
-
     // Someone without an account could check if a group name exists but I don't
     // see why that would be a problem.
     let user_id = match db::session_user_id(pool.clone(), &session_id).await? {
@@ -46,7 +37,7 @@ pub async fn create_group(pool: Pool, session_id: String, request: CreateGroupRe
         None => return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED))
     };
 
-    let group_id = match db::create_group(pool.clone(), request.name, request.picture).await? {
+    let group_id = match db::create_group(pool.clone(), request.name).await? {
         Some(id) => id,
         None => {
             return Ok(Box::new(warp::reply::json(

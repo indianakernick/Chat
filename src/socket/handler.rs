@@ -10,7 +10,7 @@ use super::upgrade::{ConnID, Sender, Group, Groups};
 #[serde(tag="type")]
 #[serde(rename_all="snake_case")]
 enum ClientMessage {
-    PostMessage { content: String, channel_id: db::ChannelID },
+    CreateMessage { content: String, channel_id: db::ChannelID },
     RequestRecentMessages { channel_id: db::ChannelID },
     CreateChannel { name: String },
     RequestChannels,
@@ -97,6 +97,7 @@ enum ServerMessage<'a> {
     UserList { users: Vec<User> },
     // Perhaps include the user's name and picture in this too
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
+    UserRenamed { user_id: db::UserID, name: &'a String, picture: &'a String },
     GroupRenamed { name: String, picture: String },
 }
 
@@ -160,7 +161,7 @@ impl Group {
     fn send_user_status(&self, user_id: db::UserID, status: UserStatus) {
         self.send_all(ServerMessage::UserStatusChanged {
             user_id,
-            status
+            status,
         });
     }
 
@@ -170,6 +171,14 @@ impl Group {
 
     pub fn send_user_offline(&self, user_id: db::UserID) {
         self.send_user_status(user_id, UserStatus::Offline);
+    }
+
+    pub fn send_user_renamed(&self, user_id: db::UserID, name: &String, picture: &String) {
+        self.send_all(ServerMessage::UserRenamed {
+            user_id,
+            name,
+            picture,
+        })
     }
 }
 
@@ -199,8 +208,8 @@ impl<'a> MessageContext<'a> {
         };
 
         let result = match client_message {
-            ClientMessage::PostMessage { content, channel_id } =>
-                self.post_message(content, channel_id).await,
+            ClientMessage::CreateMessage { content, channel_id } =>
+                self.create_message(content, channel_id).await,
             ClientMessage::RequestRecentMessages { channel_id } =>
                 self.request_recent_messages(channel_id).await,
             ClientMessage::CreateChannel { name } =>
@@ -226,7 +235,7 @@ impl<'a> MessageContext<'a> {
         }
     }
 
-    async fn post_message(&self, content: String, channel_id: db::ChannelID)
+    async fn create_message(&self, content: String, channel_id: db::ChannelID)
         -> Result<(), PoolError>
     {
         let time = SystemTime::now();

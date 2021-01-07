@@ -31,6 +31,7 @@ impl warp::reject::Reject for Error {}
 
 // TODO: Converting this error to a rejection might not be the right move.
 // Should instead convert these types of errors to replies.
+// Maybe a try! macro that checks for Err and returns a reply
 impl From<Error> for warp::Rejection {
     fn from(e: Error) -> warp::Rejection {
         warp::reject::custom(e)

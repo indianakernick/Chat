@@ -9,6 +9,7 @@ export default class ImageCompositor {
   }
 
   composite(imageUrl, callback) {
+    if (imageUrl.length === 0) return;
     const image = new Image();
     image.style.display = "none";
     document.body.appendChild(image);

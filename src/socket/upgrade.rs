@@ -216,4 +216,13 @@ impl Context {
             }
         }
     }
+
+    pub async fn rename_user(&self, groups: Vec<db::GroupID>, user_id: db::UserID, name: &String, picture: &String) {
+        let guard = self.groups.read().await;
+        for group_id in groups.iter() {
+            if let Some(group) = guard.get(group_id) {
+                group.send_user_renamed(user_id, name, picture);
+            }
+        }
+    }
 }

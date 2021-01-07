@@ -52,7 +52,7 @@ export default {
         if (userInfo.name.length > 0) {
           notif = new Notification(userInfo.name, {
             body: message.content,
-            icon: userInfo.picture
+            icon: userInfo.picture48
           });
         } else {
           notif = new Notification("", {

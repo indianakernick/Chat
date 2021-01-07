@@ -39,7 +39,7 @@ pub struct CreateInviteRequest {
 pub const CREATE_INVITE_LIMIT: u64 =
     ("{'group_id':}".len() + db::GroupID::FORMATTED_SIZE_DECIMAL) as u64;
 
-pub async fn create_invite(pool: Pool, session_id: db::SessionID, request: CreateInviteRequest)
+pub async fn create_invite(session_id: db::SessionID, request: CreateInviteRequest, pool: Pool)
     -> Result<Box<dyn warp::Reply>, warp::Rejection>
 {
     let user_id = match db::session_user_id(pool.clone(), &session_id).await? {

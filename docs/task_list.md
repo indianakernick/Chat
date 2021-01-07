@@ -45,7 +45,7 @@
 - [x] **[4]** Rename groups (including changing the picture)
     - Any member of a group can change the name or picture of that group.
     - The new name must be unique.
-- [ ] **[4]** Rename users (including changing the picture)
+- [x] **[4]** Rename users (including changing the picture)
     - A user can change their name or picture.
     - The new name must be unique.
 - [ ] **[5]** Delete messages

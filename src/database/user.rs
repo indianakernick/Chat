@@ -68,3 +68,32 @@ pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, Poo
         picture: row.get(2),
     }).collect())
 }
+
+pub async fn rename_user(pool: Pool, user_id: UserID, name: &String, picture: &String) -> Result<bool, Error> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        UPDATE Usr
+        SET name = $2, picture = $3
+        WHERE user_id = $1
+        AND NOT EXISTS (
+            SELECT 1
+            FROM Usr
+            WHERE name = $2
+            AND user_id != $1
+        )
+    ").await?;
+    Ok(conn.execute(&stmt, &[&user_id, name, picture]).await? > 0)
+}
+
+/// Get a list of all groups that a user has sent messages to.
+///
+/// Messages from users that have left a group still rename in that group.
+pub async fn user_all_groups(pool: Pool, user_id: UserID) -> Result<Vec<GroupID>, Error> {
+    // TODO: Add an extra column to membership to keep this information
+    // Or simplify the design and delete messages after a user has left a group
+    super::user_groups(pool, user_id)
+        .await
+        .map(|groups|
+            groups.iter().map(|g| g.group_id).collect()
+        )
+}

@@ -24,6 +24,7 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/Popper.vue");
     println!("cargo:rerun-if-changed=client/src/components/StatusMessage.vue");
     println!("cargo:rerun-if-changed=client/src/components/UserList.vue");
+    println!("cargo:rerun-if-changed=client/src/components/UserRenameDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/UserTitle.vue");
 
     println!("cargo:rerun-if-changed=client/src/pages/channel/App.vue");

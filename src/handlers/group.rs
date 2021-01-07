@@ -4,10 +4,9 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize)]
 #[serde(tag="type")]
+#[serde(rename_all="snake_case")]
 enum Response {
-    #[serde(rename="error")]
     Error { message: &'static str },
-    #[serde(rename="success")]
     Success { group_id: db::GroupID },
 }
 

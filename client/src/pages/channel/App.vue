@@ -46,7 +46,7 @@
     </div>
 
     <div class="user-column narrow-column">
-      <UserTitle :userInfo="userInfo"/>
+      <UserTitle :userInfo="userInfo" @renameUser="showRenameUserDialog"/>
       <UserList
         :userList="userList"
         :userInfoCache="userInfoCache"
@@ -72,6 +72,7 @@
     ref="createOrRenameGroupDialog"
   />
   <InviteDialog :groupId="currentGroupId" :groupName="currentGroupName" ref="inviteDialog"/>
+  <UserRenameDialog ref="renameUserDialog"/>
 </template>
 
 <script>
@@ -88,6 +89,7 @@ import GroupCreateOrRenameDialog from "@/components/GroupCreateOrRenameDialog.vu
 import ChannelCreateOrRenameDialog from "@/components/ChannelCreateOrRenameDialog.vue";
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
+import UserRenameDialog from "@/components/UserRenameDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
 import { comp32, comp48, comp64 } from "@/assets/js/ImageCompositor";
 import { reactive, watchEffect } from "vue";
@@ -112,18 +114,13 @@ export default {
     GroupCreateOrRenameDialog,
     ChannelCreateOrRenameDialog,
     ChannelDeleteDialog,
-    NoGroupsDialog
+    NoGroupsDialog,
+    UserRenameDialog
   },
 
   data() {
     for (const user of USER_LIST) {
-      userInfoCache.cache[user.user_id] = { name: user.name, picture: "", picture32: "" };
-      comp48.composite(user.picture, url => {
-        this.userInfoCache.cache[user.user_id].picture = url;
-      });
-      comp32.composite(user.picture, url => {
-        this.userInfoCache.cache[user.user_id].picture32 = url;
-      });
+      userInfoCache.setUserInfo(user.user_id, user.name, user.picture);
     }
 
     const groupList = GROUP_LIST.map(this.initializeReactiveGroup);
@@ -236,6 +233,11 @@ export default {
       this.$refs.inviteDialog.show();
     },
 
+    showRenameUserDialog(name, picture) {
+      if (!this.connected) return;
+      this.$refs.renameUserDialog.show(name, picture);
+    },
+
     // TODO: It might be better to watch the names and update the title when
     //  necessary
     updateTitle() {
@@ -271,7 +273,7 @@ export default {
       if (!this.connected) return;
       this.messageLists[this.currentChannelId].sendMessage(content);
       this.socket.send(JSON.stringify({
-        type: "post_message",
+        type: "create_message",
         content: content,
         channel_id: this.currentChannelId
       }));
@@ -510,6 +512,10 @@ export default {
 
         case "user_status_changed":
           this.$refs.userList.userStatusChanged(message.user_id, message.status);
+          break;
+
+        case "user_renamed":
+          this.userInfoCache.setUserInfo(message.user_id, message.name, message.picture);
           break;
 
         case "group_renamed":

@@ -80,10 +80,10 @@ pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error
 pub fn create_invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "invite" / "create")
         .and(warp::post())
-        .and(with_state(pool))
         .and(warp::cookie("session_id"))
         .and(warp::body::content_length_limit(handlers::CREATE_INVITE_LIMIT))
         .and(warp::body::json())
+        .and(with_state(pool))
         .and_then(handlers::create_invite)
         .recover(rejection)
 }
@@ -93,6 +93,18 @@ pub fn user(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp:
         .and(warp::get())
         .and(with_state(pool))
         .and_then(handlers::user)
+        .recover(rejection)
+}
+
+pub fn rename_user(pool: Pool, socket_ctx: socket::Context) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("api" / "user")
+        .and(warp::put())
+        .and(warp::cookie("session_id"))
+        .and(warp::body::content_length_limit(handlers::RENAME_USER_LIMIT))
+        .and(warp::body::json())
+        .and(with_state(pool))
+        .and(with_state(socket_ctx))
+        .and_then(handlers::rename_user)
         .recover(rejection)
 }
 

@@ -2,7 +2,7 @@
   <div class="message" :class="{'sending': sending}">
     <img
       class="user-picture"
-      :src="userInfo.picture"
+      :src="userInfo.picture48"
       alt="User picture"
       width="48"
       height="48"
@@ -22,7 +22,9 @@ import Anonymous from "@/assets/anonymous.png";
 
 export const DELETED_USER_INFO = {
   name: "<deleted user>",
-  picture: Anonymous,
+  picture: "",
+  picture32: "",
+  picture48: Anonymous,
   deleted: true
 };
 

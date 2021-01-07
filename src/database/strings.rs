@@ -1,13 +1,11 @@
 pub const MAX_CHANNEL_NAME_LENGTH: usize = 32;
 pub const MAX_GROUP_NAME_LENGTH: usize = 32;
 pub const MAX_URL_LENGTH: usize = 2048;
+pub const MAX_USER_NAME_LENGTH: usize = 64;
 
 pub fn valid_channel_name(name: &String) -> bool {
     // A byte limit instead of a character limit is tempting...
-    if name.is_empty() {
-        return false;
-    }
-    if name.len() > 4 * MAX_CHANNEL_NAME_LENGTH {
+    if name.is_empty() || name.len() > 4 * MAX_CHANNEL_NAME_LENGTH {
         return false;
     }
 
@@ -26,25 +24,19 @@ pub fn valid_channel_name(name: &String) -> bool {
     return true;
 }
 
+fn within_char_limit(string: &String, max_chars: usize) -> bool {
+    string.len() <= 4 * max_chars && string.chars().count() <= max_chars
+}
+
 pub fn valid_group_name(name: &String) -> bool {
-    if name.is_empty() {
-        return false;
-    }
-    if name.len() > 4 * MAX_GROUP_NAME_LENGTH {
-        return false;
-    }
-    return name.chars().count() <= MAX_GROUP_NAME_LENGTH;
+    !name.is_empty() && within_char_limit(name, MAX_GROUP_NAME_LENGTH)
 }
 
 pub fn valid_url(url: &String) -> bool {
-    if url.is_empty() {
-        return true;
-    }
-    if url.len() > 4 * MAX_URL_LENGTH {
-        return false;
-    }
-    if url.chars().count() > MAX_URL_LENGTH {
-        return false;
-    }
-    return reqwest::Url::parse(url).is_ok();
+    within_char_limit(url, MAX_URL_LENGTH) && reqwest::Url::parse(url).is_ok()
+}
+
+// TODO: Enforce this on user creation somehow. Or don't...
+pub fn valid_user_name(name: &String) -> bool {
+    !name.is_empty() && within_char_limit(name, MAX_USER_NAME_LENGTH)
 }

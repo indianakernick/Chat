@@ -39,9 +39,7 @@ Google API console
 https://console.developers.google.com/apis/credentials?project=chat-297602
 
 Create anonymous image
-curl "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y&s=512" -o anonymous_512.jpg
-gm convert anonymous_512.jpg -resize 48x48 anonymous_48_big.png
-gm convert anonymous_512.jpg -resize 32x32 anonymous_32_big.png
-pngcrush -brute -rem text anonymous_48_big.png 0_48.png
-pngcrush -brute -rem text anonymous_32_big.png 0_32.png
-rm anonymous_512.jpg anonymous_48_big.png anonymous_32_big.png
+curl "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y&s=768" -o anonymous_big.jpg
+gm convert anonymous_big.jpg -resize 48x48 anonymous_big.png
+pngcrush -brute -rem text anonymous_big.png anonymous.png
+rm anonymous_big.jpg anonymous_big.png

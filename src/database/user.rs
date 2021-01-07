@@ -9,23 +9,26 @@ pub type UserID = i32;
 pub struct User {
     pub user_id: UserID,
     pub name: String,
+    pub picture: String,
 }
 
 #[derive(Serialize)]
 pub struct AnonUser {
     pub name: String,
+    pub picture: String,
 }
 
 pub async fn user(pool: Pool, user_id: UserID) -> Result<Option<AnonUser>, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
-        SELECT name
+        SELECT name, picture
         FROM Usr
         WHERE user_id = $1
     ").await?;
     Ok(conn.query_opt(&stmt, &[&user_id]).await?.map(|row| {
         AnonUser {
             name: row.get(0),
+            picture: row.get(1)
         }
     }))
 }
@@ -53,7 +56,7 @@ pub async fn user_id_from_google(pool: Pool, claims: &crate::handlers::Claims) -
 pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, PoolError> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
-        SELECT Usr.user_id, name
+        SELECT Usr.user_id, name, picture
         FROM Usr
         JOIN Membership ON Membership.user_id = Usr.user_id
         WHERE Membership.group_id = $1
@@ -62,5 +65,6 @@ pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, Poo
     Ok(conn.query(&stmt, &[&group_id]).await?.iter().map(|row| User {
         user_id: row.get(0),
         name: row.get(1),
+        picture: row.get(2),
     }).collect())
 }

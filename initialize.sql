@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS Usr (
     user_id SERIAL NOT NULL,
     name TEXT NOT NULL,
+    picture TEXT NOT NULL,
     google_id TEXT,
 
     PRIMARY KEY (user_id),
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS Session (
 CREATE TABLE IF NOT EXISTS Groop (
     group_id SERIAL NOT NULL,
     name TEXT NOT NULL,
+    picture TEXT NOT NULL,
 
     PRIMARY KEY (group_id),
 

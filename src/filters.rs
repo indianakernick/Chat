@@ -69,9 +69,10 @@ pub fn invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "group" / "create")
         .and(warp::post())
-        .and(warp::filters::multipart::form())
         .and(with_state(pool))
         .and(warp::cookie("session_id"))
+        .and(warp::body::content_length_limit(handlers::CREATE_GROUP_LIMIT))
+        .and(warp::body::json())
         .and_then(handlers::create_group)
         .recover(rejection)
 }
@@ -148,18 +149,6 @@ pub fn css() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection>
         .and(warp::fs::dir("client/dist/css"))
         .map(cache_long)
         .recover(rejection)
-}
-
-pub fn img() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        warp::path!("img" / "group" / ".gitignore").map(|| warp::http::StatusCode::NOT_FOUND)
-    .or(
-        warp::path!("img" / "user" / ".gitignore").map(|| warp::http::StatusCode::NOT_FOUND)
-    ).or(
-        warp::path("img")
-            .and(warp::get())
-            .and(warp::fs::dir("img"))
-            .map(cache_long)
-    ).recover(rejection)
 }
 
 // This is technically a handler so maybe it doesn't belong in this file.

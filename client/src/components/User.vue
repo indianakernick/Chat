@@ -2,7 +2,7 @@
   <div class="user-list-item" :class="{'offline': offline}">
     <img
       class="user-picture"
-      :src="'/img/user/' + userInfo.user_id + '_32.png'"
+      :src="userInfo.picture32"
       alt="User picture"
       width="32"
       height="32"

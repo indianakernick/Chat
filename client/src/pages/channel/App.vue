@@ -88,16 +88,11 @@ import ChannelCreateOrRenameDialog from "@/components/ChannelCreateOrRenameDialo
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
+import { comp32, comp48, comp64 } from "@/assets/js/ImageCompositor";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
 const HIDDEN_MAX_RETRY_DELAY = 32000;
-
-/*
-const comp64 = new ImageCompositor(64, "#e9ecef"); // $group-item-back
-const comp48 = new ImageCompositor(48, "#e9ecef"); // $user-picture-back
-const comp32 = new ImageCompositor(32, "#e9ecef"); // $user-picture-back
-*/
 
 export default {
   name: "App",
@@ -120,9 +115,22 @@ export default {
 
   data() {
     for (const user of USER_LIST) {
-      userInfoCache.cache[user.user_id] = {
-        user_id: user.user_id, name: user.name
-      };
+      userInfoCache.cache[user.user_id] = { name: user.name, picture: "", picture32: "" };
+      comp48.composite(user.picture, url => {
+        this.userInfoCache.cache[user.user_id].picture = url;
+      });
+      comp32.composite(user.picture, url => {
+        this.userInfoCache.cache[user.user_id].picture32 = url;
+      });
+    }
+
+    const groupList = [];
+    for (const group of GROUP_LIST) {
+      const length = groupList.length;
+      groupList.push({ group_id: group.group_id, name: group.name, picture: "" });
+      comp64.composite(group.picture, url => {
+        this.groupList[length].picture = url;
+      });
     }
 
     return {
@@ -131,7 +139,7 @@ export default {
       userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,
       userList: USER_LIST,
-      groupList: GROUP_LIST,
+      groupList: groupList,
       channelList: CHANNEL_LIST,
       messageLists: {},
       retryDelay: INITIAL_RETRY_DELAY,
@@ -194,9 +202,9 @@ export default {
       this.$refs.createOrRenameGroupDialog.showCreate();
     },
 
-    showRenameGroupDialog(name) {
+    showRenameGroupDialog(name, picture) {
       if (!this.connected) return;
-      this.$refs.createOrRenameGroupDialog.showRename(name);
+      this.$refs.createOrRenameGroupDialog.showRename(name, picture);
     },
 
     showInviteDialog() {
@@ -264,11 +272,12 @@ export default {
       }));
     },
 
-    renameGroup(name) {
+    renameGroup(name, picture) {
       if (!this.connected) return;
       this.socket.send(JSON.stringify({
         type: "rename_group",
-        name: name
+        name: name,
+        picture: picture
       }));
     },
 
@@ -478,8 +487,9 @@ export default {
           );
           if (index !== -1) {
             this.groupList[index].name = message.name;
+            this.groupList[index].picture = message.picture;
           }
-          this.$refs.createOrRenameGroupDialog.groupRenamed(message.name);
+          this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
           break;
       }
     }

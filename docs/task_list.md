@@ -27,21 +27,6 @@
       to write a lot of CSS yourself.
     - Progress has been made but the login page and also the dialog boxes need
       some work.
-- [ ] **[3]** Host images
-    - Host group and user images on the server instead of just storing URLs.
-    - The server would take images from a source, resize them to the appropriate
-      size, optimize them, and composite translucent images onto a solid
-      background.
-    - This also means that we can set the cache control headers and allow users
-      to upload their own images (instead of using a URL).
-    - The client would be simplified because it wouldn't need to worry about
-      what the image URLs actually are. The image URL could be derived directly
-      from the user ID or group ID.
-    - So that the server doesn't need to worry about resizing and compositing
-      images, we would probably want to do that on the client. That's pretty
-      easy to do in JavaScript. Image optimization should be left to the server.
-    - A real website would use a CDN but those cost money and this is a pet
-      project so who cares.
 - [ ] **[3]** Handle *lots* of messages
     - Currently, the user isn't able to scroll back past the 50 most recent
       messages.
@@ -109,6 +94,23 @@
       [`TextEncoder`](https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder)
       and
       [`TextDecoder`](https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder)
+- [ ] **[6]** Host images
+    - Host group and user images on the server instead of just storing URLs.
+    - The server would take images from a source, resize them to the appropriate
+      size, optimize them, and composite translucent images onto a solid
+      background.
+    - This also means that we can set the cache control headers and allow users
+      to upload their own images (instead of using a URL).
+    - The client would be simplified because it wouldn't need to worry about
+      what the image URLs actually are. The image URL could be derived directly
+      from the user ID or group ID.
+    - So that the server doesn't need to worry about resizing and compositing
+      images, we would probably want to do that on the client. That's pretty
+      easy to do in JavaScript. Image optimization should be left to the server.
+    - A real website would use a CDN but those cost money and this is a pet
+      project so who cares.
+    - **Tried it. Turns out not to be such a great idea...** See 2021-01-07.md. Was previously at
+      **[3]**.
 
 Priority **[6]** probably won't be implemented. Notifications just seems like a
 massive pain.

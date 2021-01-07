@@ -1,9 +1,6 @@
-use bytes::Buf;
 use crate::database as db;
-use futures::TryStreamExt;
 use deadpool_postgres::Pool;
 use serde::{Serialize, Deserialize};
-use warp::filters::multipart::{Part, FormData};
 
 #[derive(Serialize)]
 #[serde(tag="type")]
@@ -14,18 +11,14 @@ enum Response {
     Success { group_id: db::GroupID },
 }
 
-fn valid_request(parts: &Vec<Part>) -> bool {
-    if parts.len() != 2 {
-        return false;
-    }
-    if parts[0].name() != "name" {
-        return false;
-    }
-    if parts[1].name() != "picture" {
-        return false;
-    }
-    true
+#[derive(Deserialize)]
+pub struct CreateGroupRequest {
+    name: String,
+    picture: String,
 }
+
+pub const CREATE_GROUP_LIMIT: u64 =
+    ("{'name':'','picture':''}".len() + 4 * db::MAX_GROUP_NAME_LENGTH + 4 * db::MAX_URL_LENGTH) as u64;
 
 fn error_response(message: &'static str) -> Box<dyn warp::Reply> {
     Box::new(warp::reply::json(
@@ -33,57 +26,28 @@ fn error_response(message: &'static str) -> Box<dyn warp::Reply> {
     ))
 }
 
-pub async fn create_group(form: FormData, pool: Pool, session_id: String)
+pub async fn create_group(pool: Pool, session_id: String, request: CreateGroupRequest)
     -> Result<Box<dyn warp::Reply>, warp::Rejection>
 {
-    let parts = form.try_collect::<Vec<_>>().await;
-    let mut parts = match parts {
-        Ok(parts) => parts,
-        Err(_) => return Ok(error_response("request_invalid"))
-    };
-
-    if !valid_request(&parts) {
-        return Ok(error_response("request_invalid"));
+    if !db::valid_group_name(&request.name) {
+        return Ok(error_response("name_invalid"));
     }
 
+    if !db::valid_url(&request.picture) {
+        return Ok(error_response("picture_invalid"));
+    }
+
+    // Someone without an account could check if a group name exists but I don't
+    // see why that would be a problem.
     let user_id = match db::session_user_id(pool.clone(), &session_id).await? {
         Some(id) => id,
         None => return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED))
     };
 
-    let name_buf = match parts[0].data().await {
-        Some(Ok(buf)) => buf,
-        Some(Err(_)) | None => return Ok(error_response("name_invalid"))
-    };
-
-    let name = match String::from_utf8(name_buf.bytes().into()) {
-        Ok(name) => name,
-        Err(_) => return Ok(error_response("name_invalid"))
-    };
-
-    if !db::valid_group_name(&name) {
-        return Ok(error_response("name_invalid"));
-    }
-
-    let picture_buf = match parts[1].data().await {
-        Some(Ok(buf)) => buf,
-        Some(Err(_)) | None => return Ok(error_response("picture_invalid"))
-    };
-
-    let opt_picture_buf = match crate::utils::optimize_png(picture_buf.bytes()) {
-        Some(picture) => picture,
-        None => return Ok(error_response("picture_invalid"))
-    };
-
-    let group_id = match db::create_group(pool.clone(), name).await? {
+    let group_id = match db::create_group(pool.clone(), request.name, request.picture).await? {
         Some(id) => id,
         None => return Ok(error_response("name_exists"))
     };
-
-    let path = format!("img/group/{}_64.png", group_id);
-    if let Err(_) = tokio::fs::write(path, opt_picture_buf.as_slice()).await {
-        return Ok(error_response("fs"));
-    }
 
     let (channel_id, joined) = futures::future::join(
         db::create_channel(pool.clone(), group_id, &"general".to_owned()),

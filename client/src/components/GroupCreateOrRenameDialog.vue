@@ -26,20 +26,20 @@
         Must be 1-32 characters long, and unique
       </small>
 
-      <label for="group-picture-input">Group picture</label>
+      <label for="group-picture-input">Group image URL</label>
       <input
         id="group-picture-input"
         class="form-control"
         :class="invalidPicture ? 'is-invalid' : ''"
-        type="file"
-        accept="image/*"
-        required
+        type="url"
+        maxlength="2048"
         :readonly="waiting"
-        @change="changePicture"
+        placeholder="http://somesite/someimage.png"
+        v-model="picture"
       />
-
-      <img class="group-list-item" width="64" height="64" :src="pictureSrc"/>
-
+      <small class="form-text text-muted">
+        Must be 1-2048 characters, or empty
+      </small>
     </template>
 
     <template v-slot:footer>
@@ -51,7 +51,6 @@
 
 <script>
 import ModalDialog from "./ModalDialog.vue";
-import { comp64 } from "@/assets/js/ImageCompositor.js";
 
 export default {
   name: "GroupCreateDialog",
@@ -69,9 +68,7 @@ export default {
       waiting: false,
       invalidName: false,
       invalidPicture: false,
-      rename: false,
-      pictureSrc: "",
-      pictureBlob: null
+      rename: false
     }
   },
 
@@ -105,14 +102,16 @@ export default {
       });
     },
 
-    showRename(name) {
+    showRename(name, picture) {
       this.show(true);
       this.name = this.originalName = name;
+      this.picture = picture;
       this.$nextTick(() => {
         const input = document.getElementById("group-name-input");
         input.focus();
         input.value = name;
         input.select();
+        document.getElementById("group-picture-input").value = picture;
       });
     },
 
@@ -123,7 +122,7 @@ export default {
     submitForm() {
       this.waiting = true;
       if (this.rename) {
-        this.$emit("renameGroup", this.name);
+        this.$emit("renameGroup", this.name, this.picture);
       } else {
         this.createGroup();
       }
@@ -145,12 +144,14 @@ export default {
 
       req.responseType = "json";
       req.open("POST", "/api/group/create");
-      const form = new FormData();
-      form.append("name", this.name);
-      form.append("picture", this.pictureBlob);
-      req.send(form);
+      req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      req.send(JSON.stringify({
+        name: this.name,
+        picture: this.picture
+      }));
     },
 
+    // This is identical to the error function below
     handleError(message) {
       this.waiting = false;
       switch (message) {
@@ -159,16 +160,8 @@ export default {
           this.invalidName = true;
           this.invalidPicture = false;
           break;
-
         case "picture_invalid":
           this.invalidName = false;
-          this.invalidPicture = true;
-          break;
-
-        case "request_invalid":
-        case "fs":
-          // Not really sure what to do in this situation
-          this.invalidName = true;
           this.invalidPicture = true;
           break;
       }
@@ -177,12 +170,12 @@ export default {
     handleSuccess(groupId) {
       this.shown = false;
       this.$emit("createGroup", {
-        group_id: groupId, name: this.name
+        group_id: groupId, name: this.name, picture: this.picture
       });
     },
 
-    groupRenamed(name) {
-      if (this.waiting && this.name === name) {
+    groupRenamed(name, picture) {
+      if (this.waiting && this.name === name && this.picture === picture) {
         this.shown = false;
       } else {
         this.originalName = name;
@@ -198,23 +191,12 @@ export default {
             this.invalidName = true;
             this.invalidPicture = false;
             break;
+          case "picture_invalid":
+            this.invalidName = false;
+            this.invalidPicture = true;
+            break;
         }
       }
-    },
-
-    changePicture(e) {
-      if (e.target.files.length === 0) {
-        URL.revokeObjectURL(this.pictureSrc);
-        this.pictureSrc = "";
-        return;
-      }
-      const originalURL = URL.createObjectURL(e.target.files[0]);
-      comp64.composite(originalURL, blob => {
-        URL.revokeObjectURL(originalURL);
-        URL.revokeObjectURL(this.pictureSrc);
-        this.pictureSrc = URL.createObjectURL(blob);
-        this.pictureBlob = blob;
-      });
     }
   }
 };

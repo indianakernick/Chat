@@ -2,7 +2,7 @@
   <div class="message" :class="{'sending': sending}">
     <img
       class="user-picture"
-      :src="'/img/user/' + userInfo.user_id + '_48.png'"
+      :src="userInfo.picture"
       alt="User picture"
       width="48"
       height="48"
@@ -18,9 +18,12 @@
 </template>
 
 <script>
+import Anonymous from "@/assets/anonymous.png";
+
 export const DELETED_USER_INFO = {
-  user_id: 0,
-  name: "<deleted user>"
+  name: "<deleted user>",
+  picture: Anonymous,
+  deleted: true
 };
 
 const timeFormatManager = {
@@ -128,7 +131,7 @@ export default {
     timeFormatManager.initialize();
     return {
       formattedTime: timeFormatManager.formatTime(this),
-      deleted: this.userInfo.user_id === 0
+      deleted: this.userInfo.hasOwnProperty("deleted")
     }
   },
 

@@ -60,7 +60,6 @@ async fn main() {
         .or(filters::favicon())
         .or(filters::js())
         .or(filters::css())
-        .or(filters::img())
         .recover(filters::leaked_rejection);
 
     warp::serve(routes.with(warp::log("chat")))

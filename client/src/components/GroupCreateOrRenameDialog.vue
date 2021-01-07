@@ -26,7 +26,7 @@
         Must be 1-32 characters long, and unique
       </small>
 
-      <label for="group-picture-input">Group image</label>
+      <label for="group-picture-input">Group picture</label>
       <input
         id="group-picture-input"
         class="form-control"
@@ -51,9 +51,7 @@
 
 <script>
 import ModalDialog from "./ModalDialog.vue";
-import ImageCompositor from "@/assets/js/ImageCompositor.js";
-
-const comp64 = new ImageCompositor(64, "#e9ecef"); // $group-item-back
+import { comp64 } from "@/assets/js/ImageCompositor.js";
 
 export default {
   name: "GroupCreateDialog",
@@ -107,8 +105,6 @@ export default {
       });
     },
 
-    // TODO: Do we really need to pass in the name?
-    // Why not use a prop?
     showRename(name) {
       this.show(true);
       this.name = this.originalName = name;

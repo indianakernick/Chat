@@ -19,3 +19,7 @@ export default class ImageCompositor {
     this.image.src = imageUrl;
   }
 }
+
+export const comp64 = new ImageCompositor(64, "#e9ecef"); // $group-item-back
+export const comp48 = new ImageCompositor(48, "#e9ecef"); // $user-picture-back
+export const comp32 = new ImageCompositor(32, "#e9ecef"); // $user-picture-back

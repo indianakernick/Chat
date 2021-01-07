@@ -18,7 +18,7 @@
         v-model="name"
       />
       <small class="form-text text-muted">
-        Must be 1-64 characters long, and unique
+        Must be 1-64 characters, and unique
       </small>
 
       <label for="user-picture-input">User picture URL</label>
@@ -33,7 +33,7 @@
         v-model="picture"
       />
       <small class="form-text text-muted">
-        Must be 1-2048 characters, or empty
+        Must be 1-2048 characters
       </small>
     </template>
 

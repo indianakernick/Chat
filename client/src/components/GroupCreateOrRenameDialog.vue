@@ -23,7 +23,7 @@
         v-model="name"
       />
       <small class="form-text text-muted">
-        Must be 1-32 characters long, and unique
+        Must be 1-32 characters, and unique
       </small>
 
       <label for="group-picture-input">Group image URL</label>
@@ -38,7 +38,7 @@
         v-model="picture"
       />
       <small class="form-text text-muted">
-        Must be 1-2048 characters, or empty
+        Must be 1-2048 characters
       </small>
     </template>
 

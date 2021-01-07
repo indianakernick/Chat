@@ -29,7 +29,7 @@
         />
       </div>
       <small class="form-text text-muted">
-        Must be 1-32 characters long, unique within the group, and cannot contain spaces, # or @
+        Must be 1-32 characters, unique within the group, and cannot contain spaces, # or @
       </small>
     </template>
 

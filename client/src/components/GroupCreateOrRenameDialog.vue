@@ -135,9 +135,9 @@ export default {
         if (this.waiting) {
           console.log(req.response);
           if (req.response.type === "error") {
-            this.handleError(req.response.message);
+            this.error(req.response.message);
           } else if (req.response.type === "success") {
-            this.handleSuccess(req.response.group_id);
+            this.success(req.response.group_id);
           }
         }
       };
@@ -151,23 +151,24 @@ export default {
       }));
     },
 
-    // This is identical to the error function below
-    handleError(message) {
-      this.waiting = false;
-      switch (message) {
-        case "name_invalid":
-        case "name_exists":
-          this.invalidName = true;
-          this.invalidPicture = false;
-          break;
-        case "picture_invalid":
-          this.invalidName = false;
-          this.invalidPicture = true;
-          break;
+    error(message) {
+      if (this.waiting) {
+        this.waiting = false;
+        switch (message) {
+          case "name_invalid":
+          case "name_exists":
+            this.invalidName = true;
+            this.invalidPicture = false;
+            break;
+          case "picture_invalid":
+            this.invalidName = false;
+            this.invalidPicture = true;
+            break;
+        }
       }
     },
 
-    handleSuccess(groupId) {
+    success(groupId) {
       this.shown = false;
       this.$emit("createGroup", {
         group_id: groupId, name: this.name, picture: this.picture
@@ -179,23 +180,6 @@ export default {
         this.shown = false;
       } else {
         this.originalName = name;
-      }
-    },
-
-    error(code) {
-      if (this.waiting) {
-        this.waiting = false;
-        switch (code) {
-          case "name_invalid":
-          case "name_exists":
-            this.invalidName = true;
-            this.invalidPicture = false;
-            break;
-          case "picture_invalid":
-            this.invalidName = false;
-            this.invalidPicture = true;
-            break;
-        }
       }
     }
   }

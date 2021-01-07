@@ -13,7 +13,7 @@
     <div class="dropdown-button" @click="$emit('invite')">Invite to group</div>
     <div
       class="dropdown-button"
-      @click="$emit('renameGroup', currentGroupName, 'https://not.actually/obsolete')"
+      @click="$emit('renameGroup', currentGroupName, currentGroupPicture)"
     >Rename group</div>
     <div class="dropdown-button">Leave group</div>
     <div class="dropdown-button">Delete group</div>
@@ -31,7 +31,8 @@ export default {
   },
 
   props: {
-    currentGroupName: String
+    currentGroupName: String,
+    currentGroupPicture: String
   },
 
   emits: [

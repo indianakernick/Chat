@@ -93,13 +93,14 @@ pub async fn rename_group(pool: Pool, group_id: GroupID, name: &String, picture:
     let conn = pool.get().await?;
     let stmt = conn.prepare("
         UPDATE Groop
-        SET name = $2
+        SET name = $2, picture = $3
         WHERE group_id = $1
         AND NOT EXISTS (
             SELECT 1
             FROM Groop
             WHERE name = $2
+            AND group_id != $1
         )
     ").await?;
-    Ok(conn.execute(&stmt, &[&group_id, name]).await? > 0)
+    Ok(conn.execute(&stmt, &[&group_id, name, picture]).await? > 0)
 }

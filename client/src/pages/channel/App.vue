@@ -10,6 +10,7 @@
     <div class="channel-column narrow-column">
       <GroupTitle
         :currentGroupName="currentGroupName"
+        :currentGroupPicture="currentGroupPicture"
         @createChannel="showCreateChannelDialog"
         @invite="showInviteDialog"
         @renameGroup="showRenameGroupDialog"
@@ -89,6 +90,7 @@ import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
 import { comp32, comp48, comp64 } from "@/assets/js/ImageCompositor";
+import { reactive, watchEffect } from "vue";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -124,20 +126,16 @@ export default {
       });
     }
 
-    const groupList = [];
-    for (const group of GROUP_LIST) {
-      const length = groupList.length;
-      groupList.push({ group_id: group.group_id, name: group.name, picture: "" });
-      comp64.composite(group.picture, url => {
-        this.groupList[length].picture = url;
-      });
-    }
+    const groupList = GROUP_LIST.map(this.initializeReactiveGroup);
 
     return {
       currentGroupId: GROUP_ID,
       currentChannelId: CHANNEL_ID,
       userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,
+      // userList should probably a simple list of IDs so we can fetch
+      // everything from the cache.
+      // oh but there's the online status...
       userList: USER_LIST,
       groupList: groupList,
       channelList: CHANNEL_LIST,
@@ -160,11 +158,22 @@ export default {
   },
 
   computed: {
+    // should probably get the group name and picture as one object
     currentGroupName() {
       if (this.groupList.length > 0) {
         return this.groupList.find(group =>
           group.group_id === this.currentGroupId
         ).name;
+      } else {
+        return "";
+      }
+    },
+
+    currentGroupPicture() {
+      if (this.groupList.length > 0) {
+        return this.groupList.find(group =>
+          group.group_id === this.currentGroupId
+        ).picture;
       } else {
         return "";
       }
@@ -182,6 +191,21 @@ export default {
   },
 
   methods: {
+    initializeReactiveGroup(group) {
+      const reactiveGroup = reactive({
+        group_id: group.group_id,
+        name: group.name,
+        picture: group.picture,
+        picture64: ""
+      });
+      watchEffect(() => {
+        comp64.composite(reactiveGroup.picture, url => {
+          reactiveGroup.picture64 = url;
+        });
+      });
+      return reactiveGroup;
+    },
+
     showCreateChannelDialog() {
       if (!this.connected) return;
       this.$refs.createOrRenameChannelDialog.showCreate();
@@ -212,11 +236,17 @@ export default {
       this.$refs.inviteDialog.show();
     },
 
+    // TODO: It might be better to watch the names and update the title when
+    //  necessary
+    updateTitle() {
+      document.title = this.currentGroupName + "#" + this.currentChannelName;
+    },
+
     selectChannel(channelId) {
       if (this.currentChannelId === channelId) return;
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${this.currentGroupId}/${channelId}`);
-      document.title = this.currentGroupName + "#" + this.currentChannelName;
+      this.updateTitle();
     },
 
     selectGroup(groupId) {
@@ -232,7 +262,7 @@ export default {
     createGroup(group) {
       if (!this.connected) return;
       this.socket.close(1000);
-      this.groupList.push(group);
+      this.groupList.push(this.initializeReactiveGroup(group));
       this.currentGroupId = group.group_id;
       this.retryConnection();
     },
@@ -466,6 +496,7 @@ export default {
           }
           this.$refs.createOrRenameChannelDialog.channelRenamed(message.channel_id, message.name);
           this.$refs.deleteChannelDialog.channelRenamed(message.channel_id, message.name);
+          this.updateTitle();
           break;
         }
 
@@ -490,6 +521,7 @@ export default {
             this.groupList[index].picture = message.picture;
           }
           this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
+          this.updateTitle();
           break;
       }
     }

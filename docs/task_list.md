@@ -21,7 +21,7 @@
     - There are a handful of TODOs relating to code quality and cleanliness.
     - The socket code on both the client and server is getting worse with every
       new feature.
-- [ ] **[3]** User interface polish
+- [-] **[3]** User interface polish
     - As of writing, the UI is kind of ugly and boring.
     - Remember that Bootstrap isn't meant to solve everything. You'll still need
       to write a lot of CSS yourself.
@@ -42,7 +42,7 @@
 - [x] **[4]** Rename channels
     - Any member of a group can rename channels within the group.
     - The new channel name must be unique within the group.
-- [ ] **[4]** Rename groups (including changing the picture)
+- [x] **[4]** Rename groups (including changing the picture)
     - Any member of a group can change the name or picture of that group.
     - The new name must be unique.
 - [ ] **[4]** Rename users (including changing the picture)
@@ -109,8 +109,8 @@
       easy to do in JavaScript. Image optimization should be left to the server.
     - A real website would use a CDN but those cost money and this is a pet
       project so who cares.
-    - **Tried it. Turns out not to be such a great idea...** See 2021-01-07.md. Was previously at
-      **[3]**.
+    - **Tried it. Turns out not to be such a great idea...** See 2021-01-07.md.
+      Was previously at **[3]**.
 
 Priority **[6]** probably won't be implemented. Notifications just seems like a
 massive pain.

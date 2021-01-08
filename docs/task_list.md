@@ -106,7 +106,7 @@ Features that I probably won't implement but, I don't know, maybe.
     - The most bare-minimum subset of markdown.
     - Bold, italic, inline-code, link. That's it.
 
-## Possible simplifications
+## Simplifications
 
 Things like will probably make things easier for myself in some way. This often
 means sacrificing a feature or two. A real app wouldn't make these sacrifices.
@@ -120,3 +120,6 @@ me while taking something away from the user.
     - This would result in there being a one-to-one relationship between
       connections and users so the `UserID` could be merged with the `ConnID`.
 - [ ] Messages by a user are anonymized when they leave a group
+- [x] Use a `textarea` instead of `contenteditable` for message sender
+    - Users could still format messages using markdown but they won't be able to
+      see the formatting until the message is sent.

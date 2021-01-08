@@ -59,16 +59,19 @@ export default {
       this.userStatusChanged(USER_ID, online ? "online" : "offline");
     },
 
-    userList(users) {
-      this.onlineUserList = [];
-      this.offlineUserList = [];
-      for (const user of users) {
-        if (user.status === "online") {
-          this.onlineUserList.push(user.user_id);
-        } else if (user.status === "offline") {
-          this.offlineUserList.push(user.user_id);
+    userList: {
+      handler(users) {
+        this.onlineUserList = [];
+        this.offlineUserList = [];
+        for (const user of users) {
+          if (user.status === "online") {
+            this.onlineUserList.push(user.user_id);
+          } else if (user.status === "offline") {
+            this.offlineUserList.push(user.user_id);
+          }
         }
-      }
+      },
+      deep: true
     }
   },
 

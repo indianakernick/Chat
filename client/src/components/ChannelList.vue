@@ -71,8 +71,11 @@ export default {
   },
 
   watch: {
-    channelList() {
-      this.initDropdowns();
+    channelList: {
+      handler() {
+        this.initDropdowns();
+      },
+      deep: true
     }
   },
 

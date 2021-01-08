@@ -66,9 +66,11 @@ export default {
   },
 
   watch: {
-    // TODO: This doesn't seem to run when groups are added
-    groupList() {
-      this.initTooltips();
+    groupList: {
+      handler() {
+        this.initTooltips();
+      },
+      deep: true
     }
   },
 

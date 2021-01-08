@@ -105,3 +105,18 @@ Features that I probably won't implement but, I don't know, maybe.
 - [ ] Markdown message formatting
     - The most bare-minimum subset of markdown.
     - Bold, italic, inline-code, link. That's it.
+
+## Possible simplifications
+
+Things like will probably make things easier for myself in some way. This often
+means sacrificing a feature or two. A real app wouldn't make these sacrifices.
+These are sort of the opposite of _maybe features_. They make things easier for
+me while taking something away from the user.
+
+- [ ] Users can only connect to a group once
+    - A user couldn't have multiple tabs open with the same group in them.
+- [ ] Users can only connect to any group once
+    - A user couldn't have multiple tabs open with different groups in them.
+    - This would result in there being a one-to-one relationship between
+      connections and users so the `UserID` could be merged with the `ConnID`.
+- [ ] Messages by a user are anonymized when they leave a group

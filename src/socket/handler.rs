@@ -98,7 +98,7 @@ enum ServerMessage<'a> {
     // Perhaps include the user's name and picture in this too
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
     UserRenamed { user_id: db::UserID, name: &'a String, picture: &'a String },
-    GroupRenamed { name: String, picture: String },
+    GroupRenamed { group_id: db::GroupID, name: String, picture: String },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -460,10 +460,26 @@ impl<'a> MessageContext<'a> {
             return Ok(());
         }
 
-        group.send_all(ServerMessage::GroupRenamed {
+        let users = db::group_user_ids(self.pool.clone(), self.group_id).await?;
+
+        let message = serde_json::to_string(&ServerMessage::GroupRenamed {
+            group_id: self.group_id,
             name,
             picture
-        });
+        }).unwrap();
+
+        // TODO: Data structures
+        // Need to send this to all users that are members of the group.
+        // They may be logged into another group.
+        for (_, group) in groups_guard.iter() {
+            for user_id in users.iter() {
+                if let Some(conn_ids) = group.online_users.get(user_id) {
+                    for conn_id in conn_ids.iter() {
+                        send_message(&group.connections[conn_id], message.clone());
+                    }
+                }
+            }
+        }
 
         Ok(())
     }

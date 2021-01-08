@@ -483,9 +483,9 @@ export default {
           if (index !== -1) {
             this.channelList.splice(index, 1);
             this.checkCurrentChannelValid();
+            this.$refs.deleteChannelDialog.channelDeleted(message.channel_id);
+            this.$refs.createOrRenameChannelDialog.channelDeleted(message.channel_id);
           }
-          this.$refs.deleteChannelDialog.channelDeleted(message.channel_id);
-          this.$refs.createOrRenameChannelDialog.channelDeleted(message.channel_id);
           break;
         }
 
@@ -495,10 +495,10 @@ export default {
           );
           if (index !== -1) {
             this.channelList[index].name = message.name;
+            this.$refs.createOrRenameChannelDialog.channelRenamed(message.channel_id, message.name);
+            this.$refs.deleteChannelDialog.channelRenamed(message.channel_id, message.name);
+            this.updateTitle();
           }
-          this.$refs.createOrRenameChannelDialog.channelRenamed(message.channel_id, message.name);
-          this.$refs.deleteChannelDialog.channelRenamed(message.channel_id, message.name);
-          this.updateTitle();
           break;
         }
 
@@ -520,14 +520,16 @@ export default {
 
         case "group_renamed":
           const index = this.groupList.findIndex(group =>
-            group.group_id === this.currentGroupId
+            group.group_id === message.group_id
           );
           if (index !== -1) {
             this.groupList[index].name = message.name;
             this.groupList[index].picture = message.picture;
+            if (message.group_id === this.currentGroupId) {
+              this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
+              this.updateTitle();
+            }
           }
-          this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
-          this.updateTitle();
           break;
       }
     }

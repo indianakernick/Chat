@@ -69,6 +69,18 @@ pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, Poo
     }).collect())
 }
 
+pub async fn group_user_ids(pool: Pool, group_id: GroupID) -> Result<Vec<UserID>, PoolError> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT Usr.user_id
+        FROM Usr
+        JOIN Membership ON Membership.user_id = Usr.user_id
+        WHERE Membership.group_id = $1
+        ORDER BY Usr.user_id
+    ").await?;
+    Ok(conn.query(&stmt, &[&group_id]).await?.iter().map(|row| row.get(0)).collect())
+}
+
 pub async fn rename_user(pool: Pool, user_id: UserID, name: &String, picture: &String) -> Result<bool, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("

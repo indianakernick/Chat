@@ -1,8 +1,8 @@
 <template>
   <div class="message-sender">
     <!--
-    A real app would probably use a div with contenteditable but it's really
-    difficult to get it to behave nicely.
+    SIMPLIFIED: A real app would probably use a div with contenteditable but
+    it's really difficult to get it to behave nicely.
     https://medium.com/content-uneditable/contenteditable-the-good-the-bad-and-the-ugly-261a38555e9c
     -->
     <textarea

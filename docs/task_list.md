@@ -4,6 +4,9 @@
       skills, some things I might do better next time (better planning from the
       start and also keeping notes of my progress).
     - This has a high priority but it must be completed last.
+    - Some differences between this and a real app. The things that were
+      simplified in order to stop this project from taking a year.
+      *"a real app would do this"*
 - [ ] **[1]** Documentation
     - Describe how the app works. The technical details that make it function.
     - A low hanging fruit is the ER diagram.
@@ -75,16 +78,21 @@
       arrives.
     - [`Notification on mdn`](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API).
     - [`Notification standard`](https://notifications.spec.whatwg.org/)
-- [ ] **[6]** Background notifications
+
+## Maybe features
+
+Features that I probably won't implement but, I don't know, maybe.
+
+- [ ] Background notifications
     - Users should get desktop notifications for messages sent in all groups
       that they’re a member of.
     - We'd need to use a service worker to maintain an SSE connection. The whole
       thing would be completely separate from the web socket code that we have.
-- [ ] **[6]** Full featured notifications
+- [ ] Full featured notifications
     - To really implement this feature properly, we would probably need to add
       ability to mention users and configure notifications (e.g. just get
       notifications for mentions).
-- [ ] **[6]** Binary format to replace JSON
+- [ ] Binary format to replace JSON
     - Using a binary format would improve server performance and reduce
       bandwidth usage.
     - This might increase client complexity and it's unclear whether this will
@@ -94,6 +102,6 @@
       [`TextEncoder`](https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder)
       and
       [`TextDecoder`](https://developer.mozilla.org/en-US/docs/Web/API/TextDecoder)
-
-Priority **[6]** probably won't be implemented. Notifications just seems like a
-massive pain.
+- [ ] Markdown message formatting
+    - The most bare-minimum subset of markdown.
+    - Bold, italic, inline-code, link. That's it.

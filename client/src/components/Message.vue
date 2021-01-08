@@ -21,7 +21,7 @@
 import Anonymous from "@/assets/anonymous.png";
 
 export const DELETED_USER_INFO = {
-  name: "<deleted user>",
+  name: "<anonymous>",
   picture: "",
   picture32: "",
   picture48: Anonymous,

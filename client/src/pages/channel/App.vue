@@ -91,7 +91,7 @@ import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
 import UserRenameDialog from "@/components/UserRenameDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
-import { comp32, comp48, comp64 } from "@/assets/js/ImageCompositor";
+import { comp64 } from "@/assets/js/ImageCompositor";
 import { reactive, watchEffect } from "vue";
 
 const INITIAL_RETRY_DELAY = 125;
@@ -146,6 +146,10 @@ export default {
     if (Notification.permission === "default") {
       Notification.requestPermission();
     }
+
+    watchEffect(() => {
+      document.title = this.currentGroupName + "#" + this.currentChannelName;
+    });
 
     if (this.groupList.length > 0) {
       this.openConnection();
@@ -238,17 +242,10 @@ export default {
       this.$refs.renameUserDialog.show(name, picture);
     },
 
-    // TODO: It might be better to watch the names and update the title when
-    //  necessary
-    updateTitle() {
-      document.title = this.currentGroupName + "#" + this.currentChannelName;
-    },
-
     selectChannel(channelId) {
       if (this.currentChannelId === channelId) return;
       this.currentChannelId = channelId;
       window.history.replaceState(null, "", `/channel/${this.currentGroupId}/${channelId}`);
-      this.updateTitle();
     },
 
     selectGroup(groupId) {
@@ -497,7 +494,6 @@ export default {
             this.channelList[index].name = message.name;
             this.$refs.createOrRenameChannelDialog.channelRenamed(message.channel_id, message.name);
             this.$refs.deleteChannelDialog.channelRenamed(message.channel_id, message.name);
-            this.updateTitle();
           }
           break;
         }
@@ -527,7 +523,6 @@ export default {
             this.groupList[index].picture = message.picture;
             if (message.group_id === this.currentGroupId) {
               this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
-              this.updateTitle();
             }
           }
           break;

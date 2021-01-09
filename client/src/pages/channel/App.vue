@@ -35,6 +35,7 @@
           v-for="channel in channelList"
           :key="channel.channel_id"
           v-show="currentChannelId === channel.channel_id"
+          :shown="currentChannelId === channel.channel_id"
           :ref="list => list ? messageLists[channel.channel_id] = list : delete messageLists[channel.channel_id]"
           :userInfo="userInfo"
           :userInfoCache="userInfoCache"

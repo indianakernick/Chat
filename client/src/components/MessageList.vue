@@ -1,15 +1,13 @@
 <template>
-  <template v-if="loaded && messages.length > 0">
-    <div>
-      <Message
-        v-for="message in messages"
-        :timestamp="message.timestamp"
-        :userInfo="message.userInfo"
-        :content="message.content"
-        :sending="message.sending"
-      />
-    </div>
-  </template>
+  <div v-if="loaded && messages.length > 0">
+    <Message
+      v-for="message in messages"
+      :timestamp="message.timestamp"
+      :userInfo="message.userInfo"
+      :content="message.content"
+      :sending="message.sending"
+    />
+  </div>
   <StatusMessage v-else :status="status"/>
 </template>
 
@@ -28,7 +26,8 @@ export default {
 
   props: {
     userInfo: Object,
-    userInfoCache: Object
+    userInfoCache: Object,
+    shown: Boolean
   },
 
   data() {
@@ -48,7 +47,7 @@ export default {
         content: message.content,
         sending: false
       });
-      if (document.visibilityState === "hidden" && Notification.permission === "granted") {
+      if ((!this.shown || document.visibilityState === "hidden") && Notification.permission === "granted") {
         let notif;
         if (userInfo.name.length > 0) {
           notif = new Notification(userInfo.name, {

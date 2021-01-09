@@ -28,6 +28,8 @@ pub struct Group {
 
 pub type GroupMap = HashMap<db::GroupID, Group>;
 pub type Groups = Arc<RwLock<GroupMap>>;
+pub type UserGroupMap = HashMap<db::UserID, Vec<db::GroupID>>;
+pub type UserGroups = Arc<RwLock<UserGroupMap>>;
 
 impl Group {
     /// Create a new group and insert a connection
@@ -42,36 +44,39 @@ impl Group {
         Ok(Self { channels, connections, online_users })
     }
 
-    /// Insert a new connection into the group
-    fn insert_connection(&mut self, conn_ctx: &ConnectionContext, ch_tx: Sender) {
+    /// Insert a new connection into the group.
+    /// Returns true if the user has one connection to the group.
+    fn insert_connection(&mut self, conn_ctx: &ConnectionContext, ch_tx: Sender) -> bool {
         let conn_ids = self.online_users.entry(conn_ctx.user_id).or_default();
         conn_ids.push(conn_ctx.conn_id);
+        let mut joined_group = false;
         if conn_ids.len() == 1 {
             self.send_user_online(conn_ctx.user_id);
+            joined_group = true;
         }
         self.connections.insert(conn_ctx.conn_id, ch_tx);
+        joined_group
     }
 
     /// Remove the current connection from the group.
-    /// Returns true if the group becomes empty after the connection was
-    /// removed.
+    /// Returns true if the user has no connections to the group.
     fn remove_connection(&mut self, conn_ctx: &ConnectionContext) -> bool {
         self.connections.remove(&conn_ctx.conn_id);
         if self.connections.is_empty() {
+            return true;
+        }
+        let mut user_entry = match self.online_users.entry(conn_ctx.user_id) {
+            Entry::Occupied(entry) => entry,
+            Entry::Vacant(_) => panic!(),
+        };
+        let conn_ids = user_entry.get_mut();
+        if conn_ids.len() == 1 {
+            user_entry.remove();
+            self.send_user_offline(conn_ctx.user_id);
             true
         } else {
-            let mut user_entry = match self.online_users.entry(conn_ctx.user_id) {
-                Entry::Occupied(entry) => entry,
-                Entry::Vacant(_) => panic!(),
-            };
-            let conn_ids = user_entry.get_mut();
-            if conn_ids.len() == 1 {
-                user_entry.remove();
-                self.send_user_offline(conn_ctx.user_id);
-            } else {
-                let index = conn_ids.iter().position(|id| *id == conn_ctx.conn_id).unwrap();
-                conn_ids.swap_remove(index);
-            }
+            let index = conn_ids.iter().position(|id| *id == conn_ctx.conn_id).unwrap();
+            conn_ids.swap_remove(index);
             false
         }
     }
@@ -81,13 +86,15 @@ impl Group {
 pub struct Context {
     pool: Pool,
     groups: Groups,
+    user_groups: UserGroups,
 }
 
 impl Context {
     pub fn new(pool: Pool) -> Self {
         Self {
             pool,
-            groups: Groups::default()
+            groups: Groups::default(),
+            user_groups: UserGroups::default(),
         }
     }
 
@@ -96,12 +103,24 @@ impl Context {
     async fn insert_connection(&self, conn_ctx: &ConnectionContext, ch_tx: Sender)
         -> Result<(), Error>
     {
+        let joined_group;
         match self.groups.write().await.entry(conn_ctx.group_id) {
             Entry::Occupied(mut entry) => {
-                entry.get_mut().insert_connection(&conn_ctx, ch_tx);
+                joined_group = entry.get_mut().insert_connection(&conn_ctx, ch_tx);
             }
             Entry::Vacant(entry) => {
                 entry.insert(Group::new(&conn_ctx, self.pool.clone(), ch_tx).await?);
+                joined_group = true;
+            }
+        }
+        if joined_group {
+            match self.user_groups.write().await.entry(conn_ctx.group_id) {
+                Entry::Occupied(mut entry) => {
+                    entry.get_mut().push(conn_ctx.group_id);
+                },
+                Entry::Vacant(entry) => {
+                    entry.insert(vec![conn_ctx.group_id]);
+                }
             }
         }
         Ok(())
@@ -110,13 +129,30 @@ impl Context {
     /// Remove a connection from the group map. Also removes the group if the
     /// group becomes empty.
     async fn remove_connection(&self, conn_ctx: &ConnectionContext) {
+        let left_group;
         match self.groups.write().await.entry(conn_ctx.group_id) {
             Entry::Occupied(mut entry) => {
-                if entry.get_mut().remove_connection(&conn_ctx) {
+                if entry.get_mut().connections.len() == 1 {
                     entry.remove();
+                    left_group = true;
+                } else {
+                    left_group = entry.get_mut().remove_connection(&conn_ctx);
                 }
             },
             Entry::Vacant(_) => panic!()
+        }
+        if left_group {
+            match self.user_groups.write().await.entry(conn_ctx.group_id) {
+                Entry::Occupied(mut entry) => {
+                    if entry.get_mut().len() == 1 {
+                        entry.remove();
+                    } else {
+                        let pos = entry.get_mut().iter().position(|id| *id == conn_ctx.group_id).unwrap();
+                        entry.get_mut().swap_remove(pos);
+                    }
+                },
+                Entry::Vacant(_) => panic!()
+            }
         }
     }
 
@@ -128,8 +164,6 @@ impl Context {
         // expires between loading the page and running the JavaScript. Another
         // possibility is someone directly accessing this endpoint but failing to
         // provide the cookie.
-        // TODO: Maybe need to have a slightly longer expiration to account for the
-        // time it takes to load the page and open the socket connection.
         let user_id = match db::session_user_id(ctx.pool.clone(), &session_id).await? {
             Some(id) => id,
             None => return Ok(Box::new(warp::http::StatusCode::INTERNAL_SERVER_ERROR))
@@ -181,6 +215,7 @@ impl Context {
             group_id: conn_ctx.group_id,
             conn_id: conn_ctx.conn_id,
             groups: &self.groups,
+            user_groups: &self.user_groups,
             pool: &self.pool,
         };
 
@@ -201,26 +236,17 @@ impl Context {
     }
 
     pub async fn kick(self, user_id: db::UserID) {
-        let guard = self.groups.read().await;
-        // TODO: Need to rethink the data structures
-        // Maybe put this in the socket context
-        // HashMap<db::UserID, Vec<(db::GroupID, ConnID)>>
-        // but then how to we get the users within a group
-        for (_, group) in guard.iter() {
-            if let Some(conn_ids) = group.online_users.get(&user_id) {
-                for conn_id in conn_ids.iter() {
-                    if let Err(_) = group.connections[conn_id].send(Ok(Message::close_with(4000u16, "kick"))) {
-
-                    }
-                }
-            }
+        let groups_guard = self.groups.read().await;
+        let user_groups_guard = self.user_groups.read().await;
+        for group_id in user_groups_guard[&user_id].iter() {
+            groups_guard[group_id].kick_user(user_id);
         }
     }
 
     pub async fn rename_user(&self, groups: Vec<db::GroupID>, user_id: db::UserID, name: &String, picture: &String) {
-        let guard = self.groups.read().await;
+        let groups_guard = self.groups.read().await;
         for group_id in groups.iter() {
-            if let Some(group) = guard.get(group_id) {
+            if let Some(group) = groups_guard.get(group_id) {
                 group.send_user_renamed(user_id, name, picture);
             }
         }

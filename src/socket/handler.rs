@@ -4,7 +4,7 @@ use std::time::SystemTime;
 use crate::database as db;
 use serde::{Serialize, Deserialize};
 use deadpool_postgres::{Pool, PoolError};
-use super::upgrade::{ConnID, Sender, Group, Groups};
+use super::upgrade::{ConnID, Sender, Group, Groups, UserGroups};
 
 #[derive(Deserialize)]
 #[serde(tag="type")]
@@ -180,6 +180,13 @@ impl Group {
             picture,
         })
     }
+
+    pub fn kick_user(&self, user_id: db::UserID) {
+        let message = Message::close_with(4000u16, "kick");
+        for conn_id in self.online_users[&user_id].iter() {
+            if self.connections[conn_id].send(Ok(message.clone())).is_err() {}
+        }
+    }
 }
 
 pub struct MessageContext<'a> {
@@ -187,6 +194,7 @@ pub struct MessageContext<'a> {
     pub group_id: db::GroupID,
     pub conn_id: ConnID,
     pub groups: &'a Groups,
+    pub user_groups: &'a UserGroups,
     pub pool: &'a Pool,
 }
 
@@ -468,15 +476,16 @@ impl<'a> MessageContext<'a> {
             picture
         }).unwrap();
 
-        // TODO: Data structures
         // Need to send this to all users that are members of the group.
         // They may be logged into another group.
-        for (_, group) in groups_guard.iter() {
-            for user_id in users.iter() {
-                if let Some(conn_ids) = group.online_users.get(user_id) {
-                    for conn_id in conn_ids.iter() {
-                        send_message(&group.connections[conn_id], message.clone());
-                    }
+
+        let user_groups_guard = self.user_groups.read().await;
+
+        for user_id in users.iter() {
+            for group_id in user_groups_guard[&user_id].iter() {
+                let group = &groups_guard[group_id];
+                for conn_id in group.online_users[&user_id].iter() {
+                    send_message(&group.connections[conn_id], message.clone());
                 }
             }
         }

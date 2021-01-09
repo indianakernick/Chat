@@ -48,7 +48,11 @@
     </div>
 
     <div class="user-column narrow-column">
-      <UserTitle :userInfo="userInfo" @renameUser="showRenameUserDialog"/>
+      <UserTitle
+        :userInfo="userInfo"
+        @renameUser="showRenameUserDialog"
+        @deleteUser="showDeleteUserDialog"
+      />
       <UserList
         :userList="userList"
         :userInfoCache="userInfoCache"
@@ -76,6 +80,7 @@
   <InviteDialog :groupId="currentGroupId" :groupName="currentGroupName" ref="inviteDialog"/>
   <UserRenameDialog ref="renameUserDialog"/>
   <GroupDeleteDialog ref="deleteGroupDialog"/>
+  <UserDeleteDialog ref="deleteUserDialog"/>
 </template>
 
 <script>
@@ -94,6 +99,7 @@ import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
 import UserRenameDialog from "@/components/UserRenameDialog.vue";
 import GroupDeleteDialog from "@/components/GroupDeleteDialog.vue";
+import UserDeleteDialog from "@/components/UserDeleteDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
 import { comp64 } from "@/assets/js/ImageCompositor";
 import { reactive, watchEffect } from "vue";
@@ -120,7 +126,8 @@ export default {
     ChannelDeleteDialog,
     NoGroupsDialog,
     UserRenameDialog,
-    GroupDeleteDialog
+    GroupDeleteDialog,
+    UserDeleteDialog
   },
 
   data() {
@@ -254,6 +261,11 @@ export default {
     showRenameUserDialog(name, picture) {
       if (!this.connected) return;
       this.$refs.renameUserDialog.show(name, picture);
+    },
+
+    showDeleteUserDialog() {
+      if (!this.connected) return;
+      this.$refs.deleteUserDialog.show();
     },
 
     selectChannel(channelId) {
@@ -526,6 +538,19 @@ export default {
 
         case "user_renamed":
           this.userInfoCache.setUserInfo(message.user_id, message.name, message.picture);
+          break;
+
+        case "user_deleted":
+          for (const channelId in this.messageLists) {
+            this.messageLists[channelId].deleteUser(message.user_id);
+          }
+          const index = this.userList.findIndex(user =>
+            user.user_id === message.user_id
+          );
+          if (index !== -1) {
+            this.userList.splice(index, 1);
+          }
+          this.userInfoCache.removeUserInfo(message.user_id);
           break;
 
         case "group_renamed": {

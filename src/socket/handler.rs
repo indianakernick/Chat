@@ -99,6 +99,7 @@ enum ServerMessage<'a> {
     // Perhaps include the user's name and picture in this too
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
     UserRenamed { user_id: db::UserID, name: &'a String, picture: &'a String },
+    UserDeleted { user_id: db::UserID },
     GroupRenamed { group_id: db::GroupID, name: String, picture: String },
     GroupDeleted { group_id: db::GroupID },
 }
@@ -197,6 +198,10 @@ impl Group {
         for conn_id in self.online_users[&user_id].iter() {
             send_message(&self.connections[conn_id], message.clone());
         }
+    }
+
+    pub fn send_delete_user(&self, user_id: db::UserID) {
+        self.send_all(ServerMessage::UserDeleted { user_id });
     }
 }
 

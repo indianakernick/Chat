@@ -132,8 +132,7 @@ export default {
   data() {
     timeFormatManager.initialize();
     return {
-      formattedTime: timeFormatManager.formatTime(this),
-      deleted: this.userInfo.hasOwnProperty("deleted")
+      formattedTime: timeFormatManager.formatTime(this)
     }
   },
 
@@ -144,6 +143,12 @@ export default {
   watch: {
     timestamp() {
       this.formattedTime = timeFormatManager.formatTime(this);
+    }
+  },
+
+  computed: {
+    deleted() {
+      return this.userInfo.hasOwnProperty("deleted");
     }
   }
 };

@@ -43,8 +43,23 @@ pub async fn rename_user(session_id: db::SessionID, request: RenameUserRequest, 
         return Ok(Box::new("name_exists"));
     }
 
-    let groups = db::user_all_groups(pool, user_id).await?;
+    let groups = db::user_group_ids(pool, user_id).await?;
     socket_ctx.rename_user(groups, user_id, &request.name, &request.picture).await;
+
+    return Ok(Box::new(warp::http::StatusCode::NO_CONTENT))
+}
+
+pub async fn delete_user(session_id: db::SessionID, pool: Pool, socket_ctx: socket::Context)
+    -> Result<Box<dyn warp::Reply>, warp::Rejection>
+{
+    let user_id = match db::session_user_id(pool.clone(), &session_id).await? {
+        Some(id) => id,
+        None => return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED))
+    };
+
+    let groups = db::user_group_ids(pool.clone(), user_id).await?;
+    db::delete_user(pool, user_id).await?;
+    socket_ctx.delete_user(groups, user_id).await;
 
     return Ok(Box::new(warp::http::StatusCode::NO_CONTENT))
 }

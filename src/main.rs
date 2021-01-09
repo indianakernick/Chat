@@ -56,6 +56,7 @@ async fn main() {
         .or(filters::create_invite(pool.clone()))
         .or(filters::user(pool.clone()))
         .or(filters::rename_user(pool.clone(), socket_ctx.clone()))
+        .or(filters::delete_user(pool.clone(), socket_ctx.clone()))
         .or(filters::socket(socket_ctx))
         .or(filters::auth_success(pool.clone(), client, cert_cache))
         .or(filters::auth_fail())

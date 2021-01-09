@@ -118,6 +118,16 @@ pub fn rename_user(pool: Pool, socket_ctx: socket::Context) -> impl Filter<Extra
         .recover(rejection)
 }
 
+pub fn delete_user(pool: Pool, socket_ctx: socket::Context) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("api" / "user")
+        .and(warp::delete())
+        .and(warp::cookie("session_id"))
+        .and(with_state(pool))
+        .and(with_state(socket_ctx))
+        .and_then(handlers::delete_user)
+        .recover(rejection)
+}
+
 pub fn socket(socket_ctx: socket::Context) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("api" / "socket" / GroupID)
         .and(warp::ws())

@@ -89,12 +89,12 @@ export default {
     },
 
     moveUser(from, to, userId) {
-      let index = from.indexOf(userId);
-      if (index !== -1) {
+      let index = binarySearch(from, item => userId - item);
+      if (index < from.length && from[index] === userId) {
         from.splice(index, 1);
-        index = binarySearch(to, item => userId - item);
-        to.splice(index, 0, userId);
       }
+      index = binarySearch(to, item => userId - item);
+      to.splice(index, 0, userId);
     },
 
     userStatusChanged(userId, status) {

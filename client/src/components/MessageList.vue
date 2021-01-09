@@ -16,6 +16,7 @@
 <script>
 import Message from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
+import { DELETED_USER_INFO } from "./Message.vue";
 
 export default {
   name: "MessageList",
@@ -108,6 +109,15 @@ export default {
 
     setNoMessageStatus() {
       this.status = "This channel has no messages";
+    },
+
+    deleteUser(userId) {
+      const deleted = this.userInfoCache.getUserInfo(userId);
+      for (const message of this.messages) {
+        if (message.userInfo === deleted) {
+          message.userInfo = DELETED_USER_INFO;
+        }
+      }
     }
   }
 };

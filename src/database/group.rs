@@ -73,6 +73,19 @@ pub async fn user_groups(pool: Pool, user_id: UserID) -> Result<Vec<Group>, Erro
     }).collect())
 }
 
+/// Get the list of group IDs that a user is a member of.
+pub async fn user_group_ids(pool: Pool, user_id: UserID) -> Result<Vec<GroupID>, Error> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        SELECT Groop.group_id
+        FROM Groop
+        JOIN Membership ON Membership.group_id = Groop.group_id
+        WHERE Membership.user_id = $1
+        ORDER BY Groop.group_id
+    ").await?;
+    Ok(conn.query(&stmt, &[&user_id]).await?.iter().map(|row| row.get(0)).collect())
+}
+
 /// Determine whether a user is a member of a group
 pub async fn group_member(pool: Pool, user_id: UserID, group_id: GroupID)
     -> Result<bool, Error>

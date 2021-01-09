@@ -51,5 +51,9 @@ export default {
       this.cache[userId].name = name;
       this.cache[userId].picture = picture;
     }
+  },
+
+  removeUserInfo(userId) {
+    delete this.cache[userId];
   }
 };

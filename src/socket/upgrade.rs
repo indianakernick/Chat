@@ -268,4 +268,13 @@ impl Context {
             }
         }
     }
+
+    pub async fn delete_user(self, groups: Vec<db::GroupID>, user_id: db::UserID) {
+        let groups_guard = self.groups.read().await;
+        for group_id in groups.iter() {
+            if let Some(group) = groups_guard.get(group_id) {
+                group.send_delete_user(user_id);
+            }
+        }
+    }
 }

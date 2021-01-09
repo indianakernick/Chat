@@ -11,7 +11,7 @@
   >
     <div class="dropdown-button" @click="$emit('renameUser', userInfo.name, userInfo.picture)">Change name</div>
     <div class="dropdown-button" @click="logout">Logout</div>
-    <div class="dropdown-button">Delete account</div>
+    <div class="dropdown-button" @click="$emit('deleteUser')">Delete account</div>
   </Popper>
 </template>
 
@@ -26,7 +26,8 @@ export default {
   },
 
   emits: [
-    "renameUser"
+    "renameUser",
+    "deleteUser"
   ],
 
   props: {

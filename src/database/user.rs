@@ -105,3 +105,18 @@ pub async fn delete_user(pool: Pool, user_id: UserID) -> Result<bool, Error> {
     ").await?;
     Ok(conn.execute(&stmt, &[&user_id]).await? > 0)
 }
+
+pub async fn anonymize_messages(pool: Pool, user_id: UserID, group_id: GroupID) -> Result<bool, Error> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        UPDATE Message
+        SET author = NULL
+        WHERE author = $1
+        AND channel_id IN (
+            SELECT channel_id
+            FROM Channel
+            WHERE group_id = $2
+        )
+    ").await?;
+    Ok(conn.execute(&stmt, &[&user_id, &group_id]).await? > 0)
+}

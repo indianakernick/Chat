@@ -74,6 +74,7 @@ pub async fn leave_group(group_id: db::GroupID, session_id: db::SessionID, pool:
     };
 
     db::leave_group(pool.clone(), user_id, group_id).await?;
+    db::anonymize_messages(pool, user_id, group_id).await?;
     socket_ctx.kick_user_from_group(user_id, group_id).await;
     socket_ctx.delete_user(vec![group_id], user_id).await;
 

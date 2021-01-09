@@ -153,7 +153,11 @@ export default {
     }
 
     watchEffect(() => {
-      document.title = this.currentGroupName + "#" + this.currentChannelName;
+      const group = this.currentGroupName;
+      const channel = this.currentChannelName;
+      if (group.length && channel.length) {
+        document.title = group + "#" + channel;
+      }
     });
 
     if (this.groupList.length > 0) {

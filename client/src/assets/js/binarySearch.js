@@ -1,16 +1,33 @@
-function binarySearchImpl(array, compare, begin, end) {
+function binarySearchInsertImpl(array, compare, begin, end) {
   if (begin === end) return begin;
   const middle = begin + ((end - begin) >>> 1);
   const order = compare(array[middle]);
   if (order < 0) {
-    return binarySearchImpl(array, compare, begin, middle);
+    return binarySearchInsertImpl(array, compare, begin, middle);
   } else if (order > 0) {
-    return binarySearchImpl(array, compare, middle + 1, end);
+    return binarySearchInsertImpl(array, compare, middle + 1, end);
   } else {
     return middle;
   }
 }
 
-export default function(array, compare) {
-  return binarySearchImpl(array, compare, 0, array.length);
+function binarySearchFindImpl(array, compare, begin, end) {
+  if (begin === end) return null;
+  const middle = begin + ((end - begin) >>> 1);
+  const order = compare(array[middle]);
+  if (order < 0) {
+    return binarySearchFindImpl(array, compare, begin, middle);
+  } else if (order > 0) {
+    return binarySearchFindImpl(array, compare, middle + 1, end);
+  } else {
+    return middle;
+  }
+}
+
+export function binarySearchInsert(array, compare) {
+  return binarySearchInsertImpl(array, compare, 0, array.length);
+}
+
+export function binarySearchFind(array, compare) {
+  return binarySearchFindImpl(array, compare, 0, array.length);
 }

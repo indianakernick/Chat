@@ -56,7 +56,6 @@
       <UserList
         :userList="userList"
         :userInfoCache="userInfoCache"
-        :connected="connected"
         ref="userList"
       />
     </div>
@@ -103,6 +102,7 @@ import UserDeleteDialog from "@/components/UserDeleteDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
 import { comp64 } from "@/assets/js/ImageCompositor";
 import { reactive, watchEffect } from "vue";
+import { binarySearchFind, binarySearchInsert } from "@/assets/js/binarySearch.js";
 
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
@@ -131,8 +131,11 @@ export default {
   },
 
   data() {
+    const userList = [];
     for (const user of USER_LIST) {
       userInfoCache.setUserInfo(user.user_id, user.name, user.picture);
+      const status = user.user_id === USER_ID ? "online" : "offline";
+      userList.push({user_id: user.user_id, status: status});
     }
 
     const groupList = GROUP_LIST.map(this.initializeReactiveGroup);
@@ -142,10 +145,7 @@ export default {
       currentChannelId: CHANNEL_ID,
       userInfo: userInfoCache.cache[USER_ID],
       userInfoCache: userInfoCache,
-      // userList should probably a simple list of IDs so we can fetch
-      // everything from the cache.
-      // oh but there's the online status...
-      userList: USER_LIST,
+      userList: userList,
       groupList: groupList,
       channelList: CHANNEL_LIST,
       messageLists: {},
@@ -204,6 +204,13 @@ export default {
       } else {
         return "";
       }
+    }
+  },
+
+  watch: {
+    connected(online) {
+      const index = binarySearchFind(this.userList, item => USER_ID - item.user_id);
+      this.userList[index].status = online ? "online" : "offline";
     }
   },
 
@@ -390,10 +397,6 @@ export default {
       this.socket.send('{"type":"request_channels"}');
     },
 
-    requestOnline() {
-      this.socket.send('{"type":"request_online"}');
-    },
-
     requestUsers() {
       this.socket.send('{"type":"request_users"}');
     },
@@ -431,7 +434,7 @@ export default {
       this.socket.onopen = () => {
         this.connected = true;
         this.requestRecent();
-        this.requestOnline();
+        this.requestUsers();
       };
     },
 
@@ -524,17 +527,25 @@ export default {
           break;
         }
 
-        case "online_user_list":
-          this.$refs.userList.onlineUsers(message.users);
+        case "user_list": {
+          const userList = [];
+          for (const user of message.users) {
+            userInfoCache.setUserInfo(user.user_id, user.name, user.picture);
+            userList.push({user_id: user.user_id, status: user.status});
+          }
+          this.userList = userList;
           break;
+        }
 
-        case "user_list":
-          this.userList = message.users;
+        case "user_status_changed": {
+          const index = binarySearchInsert(this.userList, item => message.user_id - item.user_id);
+          if (index < this.userList.length && this.userList[index].user_id === message.user_id) {
+            this.userList[index].status = message.status;
+          } else if (message.status === "online") {
+            this.userList.splice(index, 0, { user_id: message.user_id, status: message.status });
+          }
           break;
-
-        case "user_status_changed":
-          this.$refs.userList.userStatusChanged(message.user_id, message.status);
-          break;
+        }
 
         case "user_renamed":
           this.userInfoCache.setUserInfo(message.user_id, message.name, message.picture);
@@ -544,10 +555,8 @@ export default {
           for (const channelId in this.messageLists) {
             this.messageLists[channelId].deleteUser(message.user_id);
           }
-          const index = this.userList.findIndex(user =>
-            user.user_id === message.user_id
-          );
-          if (index !== -1) {
+          const index = binarySearchFind(this.userList, item => message.user_id - item.user_id);
+          if (index !== null) {
             this.userList.splice(index, 1);
           }
           this.userInfoCache.removeUserInfo(message.user_id);

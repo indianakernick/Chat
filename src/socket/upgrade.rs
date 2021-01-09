@@ -235,7 +235,7 @@ impl Context {
         debug!("Socket disconnected: {}", conn_ctx.conn_id);
     }
 
-    pub async fn kick_user(self, user_id: db::UserID) {
+    pub async fn kick_user(&self, user_id: db::UserID) {
         let groups_guard = self.groups.read().await;
         let user_groups_guard = self.user_groups.read().await;
         for group_id in user_groups_guard[&user_id].iter() {
@@ -252,7 +252,7 @@ impl Context {
         }
     }
 
-    pub async fn delete_group(self, users: Vec<db::UserID>, deleted_group_id: db::GroupID) {
+    pub async fn delete_group(&self, users: Vec<db::UserID>, deleted_group_id: db::GroupID) {
         let groups_guard = self.groups.read().await;
         let user_groups_guard = self.user_groups.read().await;
         for user_id in users.iter() {
@@ -269,7 +269,7 @@ impl Context {
         }
     }
 
-    pub async fn delete_user(self, groups: Vec<db::GroupID>, user_id: db::UserID) {
+    pub async fn delete_user(&self, groups: Vec<db::GroupID>, user_id: db::UserID) {
         let groups_guard = self.groups.read().await;
         for group_id in groups.iter() {
             if let Some(group) = groups_guard.get(group_id) {

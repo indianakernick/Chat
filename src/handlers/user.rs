@@ -59,6 +59,7 @@ pub async fn delete_user(session_id: db::SessionID, pool: Pool, socket_ctx: sock
 
     let groups = db::user_group_ids(pool.clone(), user_id).await?;
     db::delete_user(pool, user_id).await?;
+    socket_ctx.kick_user(user_id).await;
     socket_ctx.delete_user(groups, user_id).await;
 
     return Ok(Box::new(warp::http::StatusCode::NO_CONTENT))

@@ -51,23 +51,16 @@
 - [x] **[4]** Rename users (including changing the picture)
     - A user can change their name or picture.
     - The new name must be unique.
-- [ ] **[5]** Delete messages
-    - A user can select a message that they wrote and delete it
-    - Messages from deleted users cannot be deleted because no-one owns them.
-      Although you could say that anyone can delete them...
-- [ ] **[5]** Edit messages
-    - A user can select a message that they wrote and edit it.
-    - Messages from deleted users cannot be edited because no-one owns them.
-- [ ] **[5]** Delete user
+- [x] **[5]** Delete user
     - All of a user's messages would need to be updated on each client. This
       would probably use the same mechanism as the "edit message" feature so if
       we implement one of these features, we should implement them both.
-- [ ] **[5]** Delete group
+- [x] **[5]** Delete group
     - This will delete all messages and forcefully kick all clients.
 - [ ] **[5]** Leave group
     - There could be multiple clients logged into the same user so all clients
       would need to be forcefully kicked.
-    - The user's messages in the group will remain intact.
+    - The user's messages in the group will be anonymized.
 - [x] **[5]** Logout
     - This would essentially involve deleting the session cookie and then load
       the login page.
@@ -105,6 +98,13 @@ Features that I probably won't implement but, I don't know, maybe.
 - [ ] Markdown message formatting
     - The most bare-minimum subset of markdown.
     - Bold, italic, inline-code, link. That's it.
+- [ ] Delete messages
+    - A user can select a message that they wrote and delete it
+    - Messages from deleted users cannot be deleted because no-one owns them.
+      Although you could say that anyone can delete them...
+- [ ] Edit messages
+    - A user can select a message that they wrote and edit it.
+    - Messages from deleted users cannot be edited because no-one owns them.
 
 ## Simplifications
 

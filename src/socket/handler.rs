@@ -16,7 +16,6 @@ enum ClientMessage {
     RequestChannels,
     DeleteChannel { channel_id: db::ChannelID },
     RenameChannel { channel_id: db::ChannelID, name: String },
-    RequestOnline,
     RequestUsers,
     RenameGroup { name: String, picture: String },
 }
@@ -41,7 +40,6 @@ struct GenericRecentMessage {
 enum UserStatus {
     Online,
     Offline,
-    // Left,
 }
 
 #[derive(Serialize)]
@@ -92,11 +90,7 @@ enum ServerMessage<'a> {
     ChannelList { channels: &'a Vec<db::Channel> },
     ChannelDeleted { channel_id: db::ChannelID },
     ChannelRenamed { channel_id: db::ChannelID, name: &'a String },
-    // Might remove OnlineUserList and include this information in the HTML
-    // bundle or fetch the UserList on startup.
-    OnlineUserList { users: Vec<db::UserID> },
     UserList { users: Vec<User> },
-    // Perhaps include the user's name and picture in this too
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
     UserRenamed { user_id: db::UserID, name: &'a String, picture: &'a String },
     UserDeleted { user_id: db::UserID },
@@ -242,8 +236,6 @@ impl<'a> MessageContext<'a> {
                 self.request_channels().await,
             ClientMessage::DeleteChannel { channel_id } =>
                 self.delete_channel(channel_id).await,
-            ClientMessage::RequestOnline =>
-                self.request_online().await,
             ClientMessage::RequestUsers =>
                 self.request_users().await,
             ClientMessage::RenameChannel { channel_id, name } =>
@@ -390,21 +382,6 @@ impl<'a> MessageContext<'a> {
 
         group.send_all(ServerMessage::ChannelDeleted {
             channel_id
-        });
-
-        Ok(())
-    }
-
-    async fn request_online(&self) -> Result<(), PoolError> {
-        let groups_guard = self.groups.read().await;
-        let group = &groups_guard[&self.group_id];
-
-        let users = group.online_users.iter()
-            .map(|(user_id, _)| user_id)
-            .cloned()
-            .collect();
-        group.send_reply(self.conn_id, ServerMessage::OnlineUserList {
-            users
         });
 
         Ok(())

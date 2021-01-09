@@ -26,7 +26,6 @@
 
 <script>
 import User from "./User.vue";
-import binarySearch from "@/assets/js/binarySearch.js";
 
 export default {
   name: "UserList",
@@ -38,10 +37,10 @@ export default {
   props: {
     userList: Array,
     userInfoCache: Object,
-    connected: Boolean
+    //connected: Boolean
   },
 
-  data() {
+  /*data() {
     let offline = [];
     for (const user of this.userList) {
       if (user.user_id !== USER_ID) {
@@ -52,14 +51,17 @@ export default {
       onlineUserList: [USER_ID],
       offlineUserList: offline
     }
-  },
+  },*/
 
-  watch: {
-    connected(online) {
-      this.userStatusChanged(USER_ID, online ? "online" : "offline");
-    },
+  //watch: {
+    //connected(online) {
+    //  this.userStatusChanged(USER_ID, online ? "online" : "offline");
+    //},
 
-    userList: {
+    /*userList: {
+      // This doesn't work because users don't have status set on them
+      // I don't really get this.
+      // Why did I write it int he first place.
       handler(users) {
         this.onlineUserList = [];
         this.offlineUserList = [];
@@ -73,9 +75,31 @@ export default {
       },
       deep: true
     }
-  },
+  },*/
 
-  methods: {
+  computed: {
+    onlineUserList() {
+      const list = [];
+      for (const user of this.userList) {
+        if (user.status === "online") {
+          list.push(user.user_id);
+        }
+      }
+      return list;
+    },
+
+    offlineUserList() {
+      const list = [];
+      for (const user of this.userList) {
+        if (user.status === "offline") {
+          list.push(user.user_id);
+        }
+      }
+      return list;
+    }
+  }
+
+  /*methods: {
     onlineUsers(users) {
       this.onlineUserList = [];
       this.offlineUserList = [];
@@ -107,8 +131,8 @@ export default {
           break;
       }
     }
-  }
-}
+  }*/
+};
 </script>
 
 <style lang="scss">

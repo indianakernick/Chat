@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :shown="shown" @submitForm="submitForm">
+  <ModalDialog :shown="shown" :backdrop="!nogroups" @submitForm="submitForm">
     <template v-slot:header>
       <template v-if="rename">
         Rename <em>{{ originalName }}</em>
@@ -68,7 +68,8 @@ export default {
       waiting: false,
       invalidName: false,
       invalidPicture: false,
-      rename: false
+      rename: false,
+      nogroups: false
     }
   },
 
@@ -91,7 +92,8 @@ export default {
       this.shown = true;
     },
 
-    showCreate() {
+    showCreate(nogroups) {
+      this.nogroups = nogroups;
       this.show(false);
       this.name = "";
       this.$nextTick(() => {

@@ -258,9 +258,9 @@ export default {
       this.$refs.deleteChannelDialog.show(channelId, name);
     },
 
-    showCreateGroupDialog() {
-      if (!this.connected) return;
-      this.$refs.createOrRenameGroupDialog.showCreate();
+    showCreateGroupDialog(nogroups = false) {
+      if (!this.connected && !nogroups) return;
+      this.$refs.createOrRenameGroupDialog.showCreate(nogroups);
     },
 
     showRenameGroupDialog(name, picture) {

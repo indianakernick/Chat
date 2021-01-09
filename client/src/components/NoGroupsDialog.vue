@@ -1,12 +1,5 @@
 <template>
-  <!--
-  TODO: This isn't quite right. We need to hide it after the button is pressed
-  and then show it again if the user clicks cancel on the next dialog. Putting
-  this dialog behind the next one means that the translucent backdrops stack.
-  Also, the backdrop for this particular dialog probably shouldn't be
-  translucent.
-  -->
-  <ModalDialog :shown="true" @submitForm="submitForm">
+  <ModalDialog :shown="true" :backdrop="false" @submitForm="$emit('createGroup', true)">
     <template v-slot:header>
       No groups!
     </template>
@@ -34,13 +27,7 @@ export default {
 
   emits: [
     "createGroup"
-  ],
-
-  methods: {
-    submitForm() {
-      this.$emit("createGroup");
-    }
-  }
+  ]
 };
 </script>
 

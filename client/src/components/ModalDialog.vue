@@ -6,7 +6,7 @@
   -->
 
   <transition name="fade">
-    <div v-if="shown" class="modal-mask">
+    <div v-if="shown" class="modal-mask" :class="{'no-backdrop': !backdrop}">
       <div class="modal-wrapper">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -39,7 +39,11 @@ export default {
   ],
 
   props: {
-    shown: Boolean
+    shown: Boolean,
+    backdrop: {
+      type: Boolean,
+      default: true
+    }
   },
 
   methods: {
@@ -70,6 +74,10 @@ export default {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   display: table;
+}
+
+.modal-mask.no-backdrop {
+  background-color: transparent;
 }
 
 .modal-wrapper {

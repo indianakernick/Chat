@@ -52,6 +52,7 @@ async fn main() {
         .or(filters::channel(pool.clone()))
         .or(filters::invite(pool.clone()))
         .or(filters::create_group(pool.clone()))
+        .or(filters::delete_group(pool.clone(), socket_ctx.clone()))
         .or(filters::create_invite(pool.clone()))
         .or(filters::user(pool.clone()))
         .or(filters::rename_user(pool.clone(), socket_ctx.clone()))

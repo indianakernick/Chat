@@ -33,7 +33,7 @@ pub async fn logout(pool: Pool, socket_ctx: socket::Context, session_id: db::Ses
 {
     if let Some(user_id) = db::session_user_id(pool.clone(), &session_id).await? {
         db::delete_user_sessions(pool, user_id).await?;
-        socket_ctx.kick(user_id).await;
+        socket_ctx.kick_user(user_id).await;
     }
     Ok(login(LoginQuery { redirect: "/".to_owned() }).await?)
 }

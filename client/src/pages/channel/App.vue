@@ -9,11 +9,13 @@
 
     <div class="channel-column narrow-column">
       <GroupTitle
+        :currentGroupId="currentGroupId"
         :currentGroupName="currentGroupName"
         :currentGroupPicture="currentGroupPicture"
         @createChannel="showCreateChannelDialog"
         @invite="showInviteDialog"
         @renameGroup="showRenameGroupDialog"
+        @deleteGroup="showDeleteGroupDialog"
       />
       <ChannelList
         :channelList="channelList"
@@ -73,6 +75,7 @@
   />
   <InviteDialog :groupId="currentGroupId" :groupName="currentGroupName" ref="inviteDialog"/>
   <UserRenameDialog ref="renameUserDialog"/>
+  <GroupDeleteDialog ref="deleteGroupDialog"/>
 </template>
 
 <script>
@@ -90,6 +93,7 @@ import ChannelCreateOrRenameDialog from "@/components/ChannelCreateOrRenameDialo
 import ChannelDeleteDialog from "@/components/ChannelDeleteDialog.vue";
 import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
 import UserRenameDialog from "@/components/UserRenameDialog.vue";
+import GroupDeleteDialog from "@/components/GroupDeleteDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
 import { comp64 } from "@/assets/js/ImageCompositor";
 import { reactive, watchEffect } from "vue";
@@ -115,7 +119,8 @@ export default {
     ChannelCreateOrRenameDialog,
     ChannelDeleteDialog,
     NoGroupsDialog,
-    UserRenameDialog
+    UserRenameDialog,
+    GroupDeleteDialog
   },
 
   data() {
@@ -230,6 +235,11 @@ export default {
     showRenameGroupDialog(name, picture) {
       if (!this.connected) return;
       this.$refs.createOrRenameGroupDialog.showRename(name, picture);
+    },
+
+    showDeleteGroupDialog(groupId, name) {
+      if (!this.connected) return;
+      this.$refs.deleteGroupDialog.show(groupId, name);
     },
 
     showInviteDialog() {
@@ -514,7 +524,7 @@ export default {
           this.userInfoCache.setUserInfo(message.user_id, message.name, message.picture);
           break;
 
-        case "group_renamed":
+        case "group_renamed": {
           const index = this.groupList.findIndex(group =>
             group.group_id === message.group_id
           );
@@ -523,9 +533,24 @@ export default {
             this.groupList[index].picture = message.picture;
             if (message.group_id === this.currentGroupId) {
               this.$refs.createOrRenameGroupDialog.groupRenamed(message.name, message.picture);
+              this.$refs.deleteGroupDialog.groupRenamed(message.name);
             }
           }
           break;
+        }
+
+        case "group_deleted": {
+          const index = this.groupList.findIndex(group =>
+            group.group_id === message.group_id
+          );
+          if (index !== -1) {
+            this.groupList.splice(index, 1);
+            if (message.group_id === this.currentGroupId) {
+              this.$refs.createOrRenameGroupDialog.groupDeleted();
+              this.$refs.deleteGroupDialog.groupDeleted();
+            }
+          }
+        }
       }
     }
   }

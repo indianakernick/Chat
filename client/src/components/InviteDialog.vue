@@ -72,7 +72,7 @@ export default {
       };
 
       req.responseType = "json";
-      req.open("POST", "/api/invite/create");
+      req.open("POST", "/api/invite");
       req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
       req.send(`{"group_id":${this.groupId}}`);
     },

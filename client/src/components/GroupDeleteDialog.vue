@@ -1,18 +1,15 @@
 <template>
   <ModalDialog :shown="shown" @submitForm="submitForm">
     <template v-slot:header>
-      Delete <em>#{{ name }}</em>
+      Delete <em>{{ name }}</em>
     </template>
 
     <template v-slot:body>
-      <span :class="errorMessage.length > 0 ? 'is-invalid' : ''">
-        Are you sure you want to delete <em>#{{ name }}</em>?
-        Doing so will delete all messages within the channel.
+      <span>
+        Are you sure you want to delete <em>{{ name }}</em>?
+        Doing so will delete all channels and all messages within the group.
         This operation cannot be undone.
       </span>
-      <div class="invalid-feedback">
-        {{ errorMessage }}
-      </div>
     </template>
 
     <template v-slot:footer>
@@ -26,32 +23,26 @@
 import ModalDialog from "./ModalDialog.vue";
 
 export default {
-  name: "ChannelDeleteDialog",
+  name: "GroupDeleteDialog",
 
   components: {
     ModalDialog
   },
 
-  emits: [
-    "deleteChannel"
-  ],
-
   data() {
     return {
-      channelId: -1,
+      groupId: 0,
       name: "",
       shown: false,
-      waiting: false,
-      errorMessage: ""
+      waiting: false
     }
   },
 
   methods: {
-    show(channelId, name) {
-      this.channelId = channelId;
+    show(groupId, name) {
+      this.groupId = groupId;
       this.name = name;
       this.waiting = false;
-      this.errorMessage = "";
       this.shown = true;
     },
 
@@ -61,24 +52,23 @@ export default {
 
     submitForm() {
       this.waiting = true;
-      this.$emit("deleteChannel", this.channelId);
-    },
 
-    channelDeleted(channelId) {
-      if (this.shown && channelId === this.channelId) {
+      const req = new XMLHttpRequest();
+
+      req.onload = () => {
         this.shown = false;
-      }
+      };
+
+      req.open("DELETE", `/api/group/${this.groupId}`);
+      req.send();
     },
 
-    channelRenamed(channelId, name) {
-      if (channelId === this.channelId) {
-        this.name = name;
-      }
+    groupRenamed(name) {
+      this.name = name;
     },
 
-    error() {
-      this.waiting = false;
-      this.errorMessage = "You cannot delete a channel if it is the only channel in the group";
+    groupDeleted() {
+      this.shown = false;
     }
   }
 };

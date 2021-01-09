@@ -2,6 +2,7 @@ pub const MAX_CHANNEL_NAME_LENGTH: usize = 32;
 pub const MAX_GROUP_NAME_LENGTH: usize = 32;
 pub const MAX_URL_LENGTH: usize = 2048;
 pub const MAX_USER_NAME_LENGTH: usize = 64;
+pub const MAX_MESSAGE_LENGTH: usize = 1024;
 
 pub fn valid_channel_name(name: &String) -> bool {
     // A byte limit instead of a character limit is tempting...
@@ -39,4 +40,8 @@ pub fn valid_url(url: &String) -> bool {
 // TODO: Enforce this on user creation somehow. Or don't...
 pub fn valid_user_name(name: &String) -> bool {
     !name.is_empty() && within_char_limit(name, MAX_USER_NAME_LENGTH)
+}
+
+pub fn valid_message(message: &String) -> bool {
+    !message.is_empty() && within_char_limit(message, MAX_MESSAGE_LENGTH)
 }

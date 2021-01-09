@@ -71,6 +71,7 @@ enum ErrorCode {
     Json,
     Database,
     ChannelIdInvalid,
+    MessageInvalid,
     NameInvalid,
     NameExists,
     LoneChannel,
@@ -99,6 +100,7 @@ enum ServerMessage<'a> {
     UserStatusChanged { user_id: db::UserID, status: UserStatus },
     UserRenamed { user_id: db::UserID, name: &'a String, picture: &'a String },
     GroupRenamed { group_id: db::GroupID, name: String, picture: String },
+    GroupDeleted { group_id: db::GroupID },
 }
 
 fn as_timestamp(time: SystemTime) -> u64 {
@@ -187,6 +189,15 @@ impl Group {
             if self.connections[conn_id].send(Ok(message.clone())).is_err() {}
         }
     }
+
+    pub fn send_delete_group(&self, user_id: db::UserID, group_id: db::GroupID) {
+        let message = serde_json::to_string(&ServerMessage::GroupDeleted {
+            group_id
+        }).unwrap();
+        for conn_id in self.online_users[&user_id].iter() {
+            send_message(&self.connections[conn_id], message.clone());
+        }
+    }
 }
 
 pub struct MessageContext<'a> {
@@ -251,6 +262,11 @@ impl<'a> MessageContext<'a> {
 
         let groups_guard = self.groups.read().await;
         let group = &groups_guard[&self.group_id];
+
+        if !db::valid_message(&content) {
+            group.send_reply_error(self.conn_id, Request, MessageInvalid);
+            return Ok(());
+        }
 
         if !group.contains_channel(channel_id) {
             group.send_reply_error(self.conn_id, Request, ChannelIdInvalid);
@@ -482,10 +498,12 @@ impl<'a> MessageContext<'a> {
         let user_groups_guard = self.user_groups.read().await;
 
         for user_id in users.iter() {
-            for group_id in user_groups_guard[&user_id].iter() {
-                let group = &groups_guard[group_id];
-                for conn_id in group.online_users[&user_id].iter() {
-                    send_message(&group.connections[conn_id], message.clone());
+            if let Some(groups) = user_groups_guard.get(&user_id) {
+                for group_id in groups.iter() {
+                    let group = &groups_guard[group_id];
+                    for conn_id in group.online_users[&user_id].iter() {
+                        send_message(&group.connections[conn_id], message.clone());
+                    }
                 }
             }
         }

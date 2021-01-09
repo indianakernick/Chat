@@ -1,3 +1,4 @@
+use crate::socket;
 use crate::database as db;
 use deadpool_postgres::Pool;
 use serde::{Serialize, Deserialize};
@@ -19,13 +20,17 @@ pub struct CreateGroupRequest {
 pub const CREATE_GROUP_LIMIT: u64 =
     ("{'name':'','picture':''}".len() + 4 * db::MAX_GROUP_NAME_LENGTH + 4 * db::MAX_URL_LENGTH) as u64;
 
+// use status codes to differentiate between success and failure
+// 400 bad request
+// 201 created
+
 fn error_response(message: &'static str) -> Box<dyn warp::Reply> {
     Box::new(warp::reply::json(
         &Response::Error { message }
     ))
 }
 
-pub async fn create_group(pool: Pool, session_id: String, request: CreateGroupRequest)
+pub async fn create_group(session_id: String, request: CreateGroupRequest, pool: Pool)
     -> Result<Box<dyn warp::Reply>, warp::Rejection>
 {
     if !db::valid_group_name(&request.name) {
@@ -62,4 +67,22 @@ pub async fn create_group(pool: Pool, session_id: String, request: CreateGroupRe
     Ok(Box::new(warp::reply::json(
         &Response::Success { group_id }
     )))
+}
+
+pub async fn delete_group(group_id: db::GroupID, session_id: db::SessionID, pool: Pool, socket_ctx: socket::Context)
+    -> Result<impl warp::Reply, warp::Rejection>
+{
+    let user_id = match db::session_user_id(pool.clone(), &session_id).await? {
+        Some(id) => id,
+        None => return Ok(warp::http::StatusCode::UNAUTHORIZED)
+    };
+
+    if !db::group_member(pool.clone(), user_id, group_id).await? {
+        return Ok(warp::http::StatusCode::FORBIDDEN);
+    }
+
+    let users = db::group_user_ids(pool.clone(), group_id).await.map_err(|e| crate::error::Error::Database(e))?;
+    db::delete_group(pool.clone(), group_id).await?;
+    socket_ctx.delete_group(users, group_id).await;
+    Ok(warp::http::StatusCode::NO_CONTENT)
 }

@@ -67,18 +67,28 @@ pub fn invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = war
 }
 
 pub fn create_group(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("api" / "group" / "create")
+    warp::path!("api" / "group")
         .and(warp::post())
-        .and(with_state(pool))
         .and(warp::cookie("session_id"))
         .and(warp::body::content_length_limit(handlers::CREATE_GROUP_LIMIT))
         .and(warp::body::json())
+        .and(with_state(pool))
         .and_then(handlers::create_group)
         .recover(rejection)
 }
 
+pub fn delete_group(pool: Pool, socket_ctx: socket::Context) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("api" / "group" / GroupID)
+        .and(warp::delete())
+        .and(warp::cookie("session_id"))
+        .and(with_state(pool))
+        .and(with_state(socket_ctx))
+        .and_then(handlers::delete_group)
+        .recover(rejection)
+}
+
 pub fn create_invite(pool: Pool) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("api" / "invite" / "create")
+    warp::path!("api" / "invite")
         .and(warp::post())
         .and(warp::cookie("session_id"))
         .and(warp::body::content_length_limit(handlers::CREATE_INVITE_LIMIT))

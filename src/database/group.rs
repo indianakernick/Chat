@@ -104,3 +104,12 @@ pub async fn rename_group(pool: Pool, group_id: GroupID, name: &String, picture:
     ").await?;
     Ok(conn.execute(&stmt, &[&group_id, name, picture]).await? > 0)
 }
+
+pub async fn delete_group(pool: Pool, group_id: GroupID) -> Result<bool, Error> {
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        DELETE FROM Groop
+        WHERE group_id = $1
+    ").await?;
+    Ok(conn.execute(&stmt, &[&group_id]).await? > 0)
+}

@@ -143,7 +143,7 @@ export default {
       };
 
       req.responseType = "json";
-      req.open("POST", "/api/group/create");
+      req.open("POST", "/api/group");
       req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
       req.send(JSON.stringify({
         name: this.name,
@@ -181,6 +181,10 @@ export default {
       } else {
         this.originalName = name;
       }
+    },
+
+    groupDeleted() {
+      this.shown = false;
     }
   }
 };

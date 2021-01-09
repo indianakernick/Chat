@@ -114,7 +114,7 @@ impl Context {
             }
         }
         if joined_group {
-            match self.user_groups.write().await.entry(conn_ctx.group_id) {
+            match self.user_groups.write().await.entry(conn_ctx.user_id) {
                 Entry::Occupied(mut entry) => {
                     entry.get_mut().push(conn_ctx.group_id);
                 },
@@ -142,7 +142,7 @@ impl Context {
             Entry::Vacant(_) => panic!()
         }
         if left_group {
-            match self.user_groups.write().await.entry(conn_ctx.group_id) {
+            match self.user_groups.write().await.entry(conn_ctx.user_id) {
                 Entry::Occupied(mut entry) => {
                     if entry.get_mut().len() == 1 {
                         entry.remove();
@@ -235,7 +235,7 @@ impl Context {
         debug!("Socket disconnected: {}", conn_ctx.conn_id);
     }
 
-    pub async fn kick(self, user_id: db::UserID) {
+    pub async fn kick_user(self, user_id: db::UserID) {
         let groups_guard = self.groups.read().await;
         let user_groups_guard = self.user_groups.read().await;
         for group_id in user_groups_guard[&user_id].iter() {
@@ -248,6 +248,23 @@ impl Context {
         for group_id in groups.iter() {
             if let Some(group) = groups_guard.get(group_id) {
                 group.send_user_renamed(user_id, name, picture);
+            }
+        }
+    }
+
+    pub async fn delete_group(self, users: Vec<db::UserID>, deleted_group_id: db::GroupID) {
+        let groups_guard = self.groups.read().await;
+        let user_groups_guard = self.user_groups.read().await;
+        for user_id in users.iter() {
+            if let Some(groups) = user_groups_guard.get(&user_id) {
+                for group_id in groups.iter() {
+                    let group = &groups_guard[group_id];
+                    if *group_id == deleted_group_id {
+                        group.kick_user(*user_id);
+                    } else {
+                        group.send_delete_group(*user_id, deleted_group_id);
+                    }
+                }
             }
         }
     }

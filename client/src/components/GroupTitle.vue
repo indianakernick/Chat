@@ -16,7 +16,10 @@
       @click="$emit('renameGroup', currentGroupName, currentGroupPicture)"
     >Rename group</div>
     <div class="dropdown-button">Leave group</div>
-    <div class="dropdown-button">Delete group</div>
+    <div
+      class="dropdown-button"
+      @click="$emit('deleteGroup', currentGroupId, currentGroupName)"
+    >Delete group</div>
   </Popper>
 </template>
 
@@ -31,6 +34,7 @@ export default {
   },
 
   props: {
+    currentGroupId: Number,
     currentGroupName: String,
     currentGroupPicture: String
   },
@@ -38,7 +42,8 @@ export default {
   emits: [
     "createChannel",
     "invite",
-    "renameGroup"
+    "renameGroup",
+    "deleteGroup"
   ],
 
   created() {

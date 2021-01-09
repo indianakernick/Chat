@@ -57,7 +57,7 @@
       we implement one of these features, we should implement them both.
 - [x] **[5]** Delete group
     - This will delete all messages and forcefully kick all clients.
-- [ ] **[5]** Leave group
+- [x] **[5]** Leave group
     - There could be multiple clients logged into the same user so all clients
       would need to be forcefully kicked.
     - The user's messages in the group will be anonymized.
@@ -119,7 +119,7 @@ me while taking something away from the user.
     - A user couldn't have multiple tabs open with different groups in them.
     - This would result in there being a one-to-one relationship between
       connections and users so the `UserID` could be merged with the `ConnID`.
-- [ ] Messages by a user are anonymized when they leave a group
+- [x] Messages by a user are anonymized when they leave a group
 - [x] Use a `textarea` instead of `contenteditable` for message sender
     - Users could still format messages using markdown but they won't be able to
       see the formatting until the message is sent.

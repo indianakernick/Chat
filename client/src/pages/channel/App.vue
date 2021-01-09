@@ -228,8 +228,9 @@ export default {
         picture64: ""
       });
       watchEffect(() => {
-        comp64.composite(reactiveGroup.picture, url => {
-          reactiveGroup.picture64 = url;
+        comp64.composite(reactiveGroup.picture, blob => {
+          URL.revokeObjectURL(reactiveGroup.picture64);
+          reactiveGroup.picture64 = URL.createObjectURL(blob);
         });
       });
       return reactiveGroup;
@@ -592,6 +593,7 @@ export default {
             group.group_id === message.group_id
           );
           if (index !== -1) {
+            URL.revokeObjectURL(this.groupList[index].picture64);
             this.groupList.splice(index, 1);
             if (message.group_id === this.currentGroupId) {
               this.$refs.createOrRenameGroupDialog.groupDeleted();

@@ -15,11 +15,13 @@ export default {
       picture48: ""
     });
     watchEffect(() => {
-      comp32.composite(reactiveUser.picture, url => {
-        reactiveUser.picture32 = url;
+      comp32.composite(reactiveUser.picture, blob => {
+        URL.revokeObjectURL(reactiveUser.picture32);
+        reactiveUser.picture32 = URL.createObjectURL(blob);
       });
-      comp48.composite(reactiveUser.picture, url => {
-        reactiveUser.picture48 = url;
+      comp48.composite(reactiveUser.picture, blob => {
+        URL.revokeObjectURL(reactiveUser.picture48);
+        reactiveUser.picture48 = URL.createObjectURL(blob);
       });
     });
     return reactiveUser;
@@ -54,6 +56,10 @@ export default {
   },
 
   removeUserInfo(userId) {
-    delete this.cache[userId];
+    if (this.cache.hasOwnProperty(userId)) {
+      URL.revokeObjectURL(this.cache[userId].picture32);
+      URL.revokeObjectURL(this.cache[userId].picture48);
+      delete this.cache[userId];
+    }
   }
 };

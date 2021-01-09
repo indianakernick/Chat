@@ -15,7 +15,10 @@
       class="dropdown-button"
       @click="$emit('renameGroup', currentGroupName, currentGroupPicture)"
     >Rename group</div>
-    <div class="dropdown-button">Leave group</div>
+    <div
+      class="dropdown-button"
+      @click="$emit('leaveGroup', currentGroupId, currentGroupName)"
+    >Leave group</div>
     <div
       class="dropdown-button"
       @click="$emit('deleteGroup', currentGroupId, currentGroupName)"
@@ -43,7 +46,8 @@ export default {
     "createChannel",
     "invite",
     "renameGroup",
-    "deleteGroup"
+    "deleteGroup",
+    "leaveGroup"
   ],
 
   created() {

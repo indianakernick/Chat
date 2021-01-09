@@ -50,11 +50,11 @@ pub async fn rename_user(session_id: db::SessionID, request: RenameUserRequest, 
 }
 
 pub async fn delete_user(session_id: db::SessionID, pool: Pool, socket_ctx: socket::Context)
-    -> Result<Box<dyn warp::Reply>, warp::Rejection>
+    -> Result<impl warp::Reply, warp::Rejection>
 {
     let user_id = match db::session_user_id(pool.clone(), &session_id).await? {
         Some(id) => id,
-        None => return Ok(Box::new(warp::http::StatusCode::UNAUTHORIZED))
+        None => return Ok(warp::http::StatusCode::UNAUTHORIZED)
     };
 
     let groups = db::user_group_ids(pool.clone(), user_id).await?;
@@ -62,5 +62,20 @@ pub async fn delete_user(session_id: db::SessionID, pool: Pool, socket_ctx: sock
     socket_ctx.kick_user(user_id).await;
     socket_ctx.delete_user(groups, user_id).await;
 
-    return Ok(Box::new(warp::http::StatusCode::NO_CONTENT))
+    Ok(warp::http::StatusCode::NO_CONTENT)
+}
+
+pub async fn leave_group(group_id: db::GroupID, session_id: db::SessionID, pool: Pool, socket_ctx: socket::Context)
+    -> Result<impl warp::Reply, warp::Rejection>
+{
+    let user_id = match db::session_user_id(pool.clone(), &session_id).await? {
+        Some(id) => id,
+        None => return Ok(warp::http::StatusCode::UNAUTHORIZED)
+    };
+
+    db::leave_group(pool.clone(), user_id, group_id).await?;
+    socket_ctx.kick_user_from_group(user_id, group_id).await;
+    socket_ctx.delete_user(vec![group_id], user_id).await;
+
+    Ok(warp::http::StatusCode::NO_CONTENT)
 }

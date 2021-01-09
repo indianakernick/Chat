@@ -14,6 +14,7 @@ fn main() {
     println!("cargo:rerun-if-changed=client/src/components/ChannelTitle.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupCreateOrRenameDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupDeleteDialog.vue");
+    println!("cargo:rerun-if-changed=client/src/components/GroupLeaveDialog.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupList.vue");
     println!("cargo:rerun-if-changed=client/src/components/GroupTitle.vue");
     println!("cargo:rerun-if-changed=client/src/components/InviteDialog.vue");

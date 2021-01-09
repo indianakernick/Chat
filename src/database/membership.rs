@@ -61,3 +61,15 @@ pub async fn join_group(pool: Pool, user_id: UserID, group_id: GroupID)
     ").await?;
     Ok(conn.execute(&stmt, &[&user_id, &group_id]).await? > 0)
 }
+
+pub async fn leave_group(pool: Pool, user_id: UserID, group_id: GroupID)
+    -> Result<bool, Error>
+{
+    let conn = pool.get().await?;
+    let stmt = conn.prepare("
+        DELETE FROM Membership
+        WHERE user_id = $1
+        AND group_id = $2
+    ").await?;
+    Ok(conn.execute(&stmt, &[&user_id, &group_id]).await? > 0)
+}

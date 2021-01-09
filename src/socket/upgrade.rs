@@ -243,6 +243,11 @@ impl Context {
         }
     }
 
+    pub async fn kick_user_from_group(&self, user_id: db::UserID, group_id: db::GroupID) {
+        let groups_guard = self.groups.read().await;
+        groups_guard[&group_id].kick_user(user_id);
+    }
+
     pub async fn rename_user(&self, groups: Vec<db::GroupID>, user_id: db::UserID, name: &String, picture: &String) {
         let groups_guard = self.groups.read().await;
         for group_id in groups.iter() {

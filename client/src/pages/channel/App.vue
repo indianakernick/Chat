@@ -16,6 +16,7 @@
         @invite="showInviteDialog"
         @renameGroup="showRenameGroupDialog"
         @deleteGroup="showDeleteGroupDialog"
+        @leaveGroup="showLeaveGroupDialog"
       />
       <ChannelList
         :channelList="channelList"
@@ -81,6 +82,7 @@
   <UserRenameDialog ref="renameUserDialog"/>
   <GroupDeleteDialog ref="deleteGroupDialog"/>
   <UserDeleteDialog ref="deleteUserDialog"/>
+  <GroupLeaveDialog ref="leaveGroupDialog"/>
 </template>
 
 <script>
@@ -100,6 +102,7 @@ import NoGroupsDialog from "@/components/NoGroupsDialog.vue";
 import UserRenameDialog from "@/components/UserRenameDialog.vue";
 import GroupDeleteDialog from "@/components/GroupDeleteDialog.vue";
 import UserDeleteDialog from "@/components/UserDeleteDialog.vue";
+import GroupLeaveDialog from "@/components/GroupLeaveDialog.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
 import { comp64 } from "@/assets/js/ImageCompositor";
 import { reactive, watchEffect } from "vue";
@@ -128,7 +131,8 @@ export default {
     NoGroupsDialog,
     UserRenameDialog,
     GroupDeleteDialog,
-    UserDeleteDialog
+    UserDeleteDialog,
+    GroupLeaveDialog
   },
 
   data() {
@@ -259,6 +263,11 @@ export default {
     showDeleteGroupDialog(groupId, name) {
       if (!this.connected) return;
       this.$refs.deleteGroupDialog.show(groupId, name);
+    },
+
+    showLeaveGroupDialog(groupId, name) {
+      if (!this.connected) return;
+      this.$refs.leaveGroupDialog.show(groupId, name);
     },
 
     showInviteDialog() {

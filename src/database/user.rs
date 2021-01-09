@@ -18,6 +18,12 @@ pub struct AnonUser {
     pub picture: String,
 }
 
+pub struct GoogleUser {
+    pub google_id: String,
+    pub name: String,
+    pub picture: String,
+}
+
 pub async fn user(pool: Pool, user_id: UserID) -> Result<Option<AnonUser>, Error> {
     let conn = pool.get().await?;
     let stmt = conn.prepare("
@@ -33,9 +39,7 @@ pub async fn user(pool: Pool, user_id: UserID) -> Result<Option<AnonUser>, Error
     }))
 }
 
-// TODO: Maybe use a struct named GoogleUserInfo
-
-pub async fn user_id_from_google(pool: Pool, claims: &crate::handlers::Claims) -> Result<UserID, Error> {
+pub async fn user_id_from_google(pool: Pool, user: &GoogleUser) -> Result<UserID, Error> {
     let conn = pool.get().await?;
     // https://stackoverflow.com/a/6722460/4093378
     let stmt = conn.prepare("
@@ -50,7 +54,7 @@ pub async fn user_id_from_google(pool: Pool, claims: &crate::handlers::Claims) -
         SELECT user_id FROM Usr WHERE google_id = $1
         LIMIT 1
     ").await?;
-    Ok(conn.query_one(&stmt, &[&claims.sub, &claims.name, &claims.picture]).await?.get(0))
+    Ok(conn.query_one(&stmt, &[&user.google_id, &user.name, &user.picture]).await?.get(0))
 }
 
 pub async fn group_users(pool: Pool, group_id: GroupID) -> Result<Vec<User>, PoolError> {

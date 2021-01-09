@@ -152,12 +152,11 @@ pub fn auth_success(pool: Pool, client: reqwest::Client, cert_cache: handlers::C
 {
     warp::path!("api" / "auth")
         .and(warp::get())
+        .and(warp::query::<handlers::AuthSuccess>())
+        .and(with_state(pool))
         .and(with_state(client))
         .and(with_state(cert_cache))
-        .and(warp::query::<handlers::AuthSuccess>())
         .and_then(handlers::auth_success)
-        .and(with_state(pool))
-        .and_then(handlers::initialize_session)
         .recover(rejection)
 }
 

@@ -1,5 +1,7 @@
 use log::error;
 use crate::error::Error;
+use crate::database as db;
+use deadpool_postgres::Pool;
 use jsonwebtoken::errors::Error as JWTError;
 use jsonwebtoken::errors::ErrorKind as JWTErrorKind;
 
@@ -156,10 +158,6 @@ pub struct Claims {
     pub picture: String,
     pub given_name: String,
     pub family_name: String,
-
-    // TODO: I feel like this might not belong here
-    #[serde(skip)]
-    pub redirect: String,
 }
 
 fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, Error> {
@@ -199,8 +197,8 @@ fn decode_id_token(certs: &Certs, id_token: &str) -> Result<Claims, Error> {
     Err(JWTError::from(JWTErrorKind::InvalidAlgorithmName).into())
 }
 
-pub async fn auth_success(client: reqwest::Client, cache: CertificateCache, res: AuthSuccess)
-    -> Result<Claims, warp::Rejection>
+pub async fn auth_success(res: AuthSuccess, pool: Pool, client: reqwest::Client, cache: CertificateCache)
+    -> Result<impl warp::Reply, warp::Rejection>
 {
     if res.scope != "profile https://www.googleapis.com/auth/userinfo.profile" {
         return Err(warp::reject::not_found());
@@ -208,9 +206,21 @@ pub async fn auth_success(client: reqwest::Client, cache: CertificateCache, res:
     let token = request_id_token(&client, res.code).await?;
     let mut certs = cache.lock().await;
     update_cert_cache(&client, &mut *certs).await?;
-    let mut claims = decode_id_token(&certs, token.id_token.as_str())?;
-    claims.redirect = res.state;
-    Ok(claims)
+    let claims = decode_id_token(&certs, token.id_token.as_str())?;
+
+    let user = db::GoogleUser {
+        google_id: claims.sub,
+        name: claims.name,
+        picture: claims.picture,
+    };
+    let user_id = db::user_id_from_google(pool.clone(), &user).await?;
+    let session_id = db::create_session(pool, user_id).await?;
+
+    Ok(warp::reply::with_header(
+        warp::redirect(res.state.parse::<warp::http::Uri>().unwrap()),
+        "Set-Cookie",
+        format!("session_id={};Path=/;HttpOnly;Secure", session_id)
+    ))
 }
 
 pub async fn auth_fail(res: AuthFail) -> Result<impl warp::Reply, Infallible> {

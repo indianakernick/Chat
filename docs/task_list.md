@@ -30,11 +30,13 @@
       to write a lot of CSS yourself.
     - Progress has been made but the login page and also the dialog boxes need
       some work.
+    - This isn't the sort of task that can ever really be ticked off. It's
+      ongoing and there are always tweaks that can be made to the UI.
 - [ ] **[3]** Handle *lots* of messages
     - Currently, the user isn't able to scroll back past the 50 most recent
       messages.
     - Older messages should be removed as newer messages appear.
-- [ ] **[4]** Handle disconnected state better
+- [x] **[4]** Handle disconnected state better
     - Maybe a show a countdown when the client is trying to reconnect.
     - Maybe hide everything while disconnected.
     - Switching between groups involves disconnecting briefly so that will
@@ -42,6 +44,7 @@
     - A related issue is handling errors. If something unexpected happens like a
       a database error then we should show a generic "something went wrong"
       message.
+    - I explored this and I think the way we currently do it is pretty good.
 - [x] **[4]** Rename channels
     - Any member of a group can rename channels within the group.
     - The new channel name must be unique within the group.

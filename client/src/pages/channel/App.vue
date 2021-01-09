@@ -1,5 +1,9 @@
 <template>
-  <template v-if="groupList.length > 0">
+  <template v-if="status.length > 0">
+    <StatusMessage :status="status"/>
+  </template>
+
+  <template v-else-if="groupList.length > 0">
     <GroupList
       :groupList="groupList"
       :currentGroupId="currentGroupId"
@@ -103,6 +107,7 @@ import UserRenameDialog from "@/components/UserRenameDialog.vue";
 import GroupDeleteDialog from "@/components/GroupDeleteDialog.vue";
 import UserDeleteDialog from "@/components/UserDeleteDialog.vue";
 import GroupLeaveDialog from "@/components/GroupLeaveDialog.vue";
+import StatusMessage from "@/components/StatusMessage.vue";
 import userInfoCache from "@/assets/js/userInfoCache.js";
 import { comp64 } from "@/assets/js/ImageCompositor";
 import { reactive, watchEffect } from "vue";
@@ -132,7 +137,8 @@ export default {
     UserRenameDialog,
     GroupDeleteDialog,
     UserDeleteDialog,
-    GroupLeaveDialog
+    GroupLeaveDialog,
+    StatusMessage
   },
 
   data() {
@@ -155,7 +161,8 @@ export default {
       channelList: CHANNEL_LIST,
       messageLists: {},
       retryDelay: INITIAL_RETRY_DELAY,
-      connected: false
+      connected: false,
+      status: ""
     }
   },
 
@@ -454,7 +461,6 @@ export default {
         case "application":
         case "request":
           console.error("Server error:", code);
-          // TODO: This status message isn't shown
           this.status = "An error has occurred";
           this.socket.close(1000);
           break;

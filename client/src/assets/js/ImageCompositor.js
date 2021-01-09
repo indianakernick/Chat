@@ -12,7 +12,6 @@ export default class ImageCompositor {
     if (imageUrl.length === 0) return;
     const image = new Image();
     image.style.display = "none";
-    document.body.appendChild(image);
     image.referrerPolicy = "no-referrer";
     image.crossOrigin = "anonymous";
     image.onload = () => {

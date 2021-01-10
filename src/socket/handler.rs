@@ -12,6 +12,7 @@ use super::upgrade::{ConnID, Sender, Group, Groups, UserGroups};
 enum ClientMessage {
     CreateMessage { content: String, channel_id: db::ChannelID },
     RequestRecentMessages { channel_id: db::ChannelID },
+    RequestOldMessages { channel_id: db::ChannelID, message_id: db::MessageID },
     CreateChannel { name: String },
     RequestChannels,
     DeleteChannel { channel_id: db::ChannelID },
@@ -22,6 +23,7 @@ enum ClientMessage {
 
 #[derive(Serialize)]
 struct RecentMessage {
+    message_id: db::MessageID,
     timestamp: u64,
     author: db::UserID,
     content: String,
@@ -30,6 +32,7 @@ struct RecentMessage {
 
 #[derive(Serialize)]
 struct GenericRecentMessage {
+    message_id: db::MessageID,
     timestamp: u64,
     author: db::UserID,
     content: String,
@@ -83,9 +86,10 @@ use ErrorCode::*;
 #[serde(rename_all="snake_case")]
 enum ServerMessage<'a> {
     Error { category: ErrorCategory, code: ErrorCode },
-    MessageReceipt { timestamp: u64, channel_id: db::ChannelID },
+    MessageReceipt { message_id: db::MessageID, timestamp: u64, channel_id: db::ChannelID },
     RecentMessage(RecentMessage),
     RecentMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> },
+    OldMessageList { channel_id: db::ChannelID, messages: Vec<GenericRecentMessage> },
     ChannelCreated { channel_id: db::ChannelID, name: &'a String },
     ChannelList { channels: &'a Vec<db::Channel> },
     ChannelDeleted { channel_id: db::ChannelID },
@@ -230,6 +234,8 @@ impl<'a> MessageContext<'a> {
                 self.create_message(content, channel_id).await,
             ClientMessage::RequestRecentMessages { channel_id } =>
                 self.request_recent_messages(channel_id).await,
+            ClientMessage::RequestOldMessages { channel_id, message_id } =>
+                self.request_old_messages(channel_id, message_id).await,
             ClientMessage::CreateChannel { name } =>
                 self.create_channel(name).await,
             ClientMessage::RequestChannels =>
@@ -270,21 +276,25 @@ impl<'a> MessageContext<'a> {
             return Ok(());
         }
 
+        let message_id = db::create_message(self.pool.clone(), time, self.user_id, &content, channel_id).await?;
+
         let peer = ServerMessage::RecentMessage(RecentMessage {
+            message_id,
             timestamp,
             author: self.user_id,
-            content: content.clone(),
+            content,
             channel_id,
         });
 
         let echo = ServerMessage::MessageReceipt {
+            message_id,
             timestamp,
             channel_id,
         };
 
         group.send_peer_reply(self.conn_id, peer, echo);
 
-        db::create_message(self.pool.clone(), time, self.user_id, content, channel_id).await
+        Ok(())
     }
 
     async fn request_recent_messages(&self, channel_id: db::ChannelID)
@@ -304,9 +314,38 @@ impl<'a> MessageContext<'a> {
             channel_id,
             messages: rows.iter()
                 .map(|row| GenericRecentMessage {
-                    timestamp: as_timestamp(row.get(0)),
-                    author: row.get(1),
-                    content: row.get(2)
+                    message_id: row.get(0),
+                    timestamp: as_timestamp(row.get(1)),
+                    author: row.get(2),
+                    content: row.get(3)
+                })
+                .collect()
+        });
+
+        Ok(())
+    }
+
+    async fn request_old_messages(&self, channel_id: db::ChannelID, message_id: db::MessageID)
+        -> Result<(), PoolError>
+    {
+        let groups_guard = self.groups.read().await;
+        let group = &groups_guard[&self.group_id];
+
+        if !group.contains_channel(channel_id) {
+            group.send_reply_error(self.conn_id, Request, ChannelIdInvalid);
+            return Ok(());
+        }
+
+        let rows = db::old_messages(self.pool.clone(), channel_id, message_id).await?;
+
+        group.send_reply(self.conn_id, ServerMessage::OldMessageList {
+            channel_id,
+            messages: rows.iter()
+                .map(|row| GenericRecentMessage {
+                    message_id: row.get(0),
+                    timestamp: as_timestamp(row.get(1)),
+                    author: row.get(2),
+                    content: row.get(3)
                 })
                 .collect()
         });

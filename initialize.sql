@@ -57,11 +57,6 @@ CREATE TABLE IF NOT EXISTS Message (
 
     PRIMARY KEY (message_id),
 
-    -- Not sure if simply anonymizing the messages of deleted accounts is really
-    -- the right thing to do. There's a whole lot of legal stuff that I could
-    -- dig into about this.
-    -- https://www.reddit.com/r/discordapp/comments/d90yzq/a_small_rant_on_privacy_issues_disregarding_of/?utm_source=share&utm_medium=web2x&context=3
-    -- I think I'll just copy Discord!
     FOREIGN KEY (author)
         REFERENCES Usr (user_id)
         ON UPDATE NO ACTION

@@ -2,6 +2,7 @@
   <div v-if="loaded && messages.length > 0">
     <Message
       v-for="message in messages"
+      :key="message.message_id"
       :timestamp="message.timestamp"
       :userInfo="message.userInfo"
       :content="message.content"
@@ -15,6 +16,8 @@
 import Message from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
 import { DELETED_USER_INFO } from "./Message.vue";
+
+const MESSAGE_LIST_LIMIT = 50;
 
 export default {
   name: "MessageList",
@@ -34,20 +37,27 @@ export default {
     return {
       messages: [],
       status: "Loading...",
-      loaded: false
+      loaded: false,
+      loadingOld: false,
+      oldest: 0
     }
   },
 
   methods: {
-    recentMessage(message) {
-      const userInfo = this.userInfoCache.getUserInfo(message.author);
-      this.messages.push({
+    initializeMessage(message) {
+      return {
+        message_id: message.message_id,
         timestamp: message.timestamp,
-        userInfo: userInfo,
+        userInfo: this.userInfoCache.getUserInfo(message.author),
         content: message.content,
         sending: false
-      });
+      };
+    },
+
+    recentMessage(message) {
+      this.messages.push(this.initializeMessage(message));
       if ((!this.shown || document.visibilityState === "hidden") && Notification.permission === "granted") {
+        const userInfo = this.userInfoCache.getUserInfo(message.author);
         let notif;
         if (userInfo.name.length > 0) {
           notif = new Notification(userInfo.name, {
@@ -68,6 +78,7 @@ export default {
       for (const msg of this.messages) {
         if (msg.sending) {
           msg.sending = false;
+          msg.message_id = message.message_id;
           msg.timestamp = message.timestamp;
           return;
         }
@@ -75,23 +86,39 @@ export default {
       console.error("\"message receipt\" but all messages have been sent");
     },
 
-    recentMessageList(message) {
-      this.messages = message.messages.map(msg => {
-        return {
-          timestamp: msg.timestamp,
-          userInfo: this.userInfoCache.getUserInfo(msg.author),
-          content: msg.content,
-          sending: false
-        };
-      });
+    recentMessageList(messages) {
+      this.messages = messages.map(this.initializeMessage);
       if (this.messages.length === 0) {
         this.setNoMessageStatus();
       }
       this.loaded = true;
     },
 
+    oldMessageList(messages) {
+      if (messages.length < MESSAGE_LIST_LIMIT) {
+        this.oldest = this.messages[0].message_id;
+      } else {
+        const length = messages.length;
+        for (let i = 0; i !== length; ++i) {
+          this.messages.splice(i, 0, this.initializeMessage(messages[i]));
+        }
+      }
+      this.loadingOld = false;
+    },
+
+    oldestMessage() {
+      if (!this.loaded) return 0;
+      if (this.loadingOld) return 0;
+      if (this.oldest !== 0) return 0;
+      if (this.messages.length < MESSAGE_LIST_LIMIT) return 0;
+      if (this.messages[0].sending) return 0;
+      this.loadingOld = true;
+      return this.messages[0].message_id;
+    },
+
     sendMessage(content) {
       this.messages.push({
+        message_id: 0,
         // Initial "guess" for the timestamp.
         // This will be updated by the server.
         timestamp: new Date().valueOf() / 1000,

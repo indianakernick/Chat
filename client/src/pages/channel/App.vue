@@ -34,7 +34,10 @@
 
     <div class="message-column">
       <ChannelTitle :currentChannelName="currentChannelName"/>
-      <div class="message-list-container scrollable-container">
+      <div
+        class="message-list-container scrollable-container"
+        @scroll="scrollMessages"
+      >
         <MessageList
           class="scrollable-block"
           v-for="channel in channelList"
@@ -116,6 +119,7 @@ import { binarySearchFind, binarySearchInsert } from "@/assets/js/binarySearch.j
 const INITIAL_RETRY_DELAY = 125;
 const VISIBLE_MAX_RETRY_DELAY = 8000;
 const HIDDEN_MAX_RETRY_DELAY = 32000;
+const OLD_MESSAGES_SCROLL_PIXELS = 512;
 
 export default {
   name: "App",
@@ -411,6 +415,20 @@ export default {
       }
     },
 
+    scrollMessages(e) {
+      const target = e.target;
+      if (target.scrollTop + target.scrollHeight - target.clientHeight < OLD_MESSAGES_SCROLL_PIXELS) {
+        const oldestMessage = this.messageLists[this.currentChannelId].oldestMessage();
+        if (oldestMessage !== 0) {
+          this.requestOld(oldestMessage);
+        }
+      }
+    },
+
+    requestOld(messageId) {
+      this.socket.send(`{"type":"request_old_messages","channel_id":${this.currentChannelId},"message_id":${messageId}}`);
+    },
+
     requestChannels() {
       this.socket.send('{"type":"request_channels"}');
     },
@@ -500,7 +518,11 @@ export default {
           break;
 
         case "recent_message_list":
-          this.messageLists[message.channel_id].recentMessageList(message);
+          this.messageLists[message.channel_id].recentMessageList(message.messages);
+          break;
+
+        case "old_message_list":
+          this.messageLists[message.channel_id].oldMessageList(message.messages);
           break;
 
         case "channel_created":

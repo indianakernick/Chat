@@ -1,4 +1,4 @@
-- [ ] **[1]** Report
+- [x] **[1]** Report
     - Describe this whole project. The challenges and problems faced, how I
       overcame those challenges, the skills I learnt, how I applied those 
       skills, some things I might do better next time (better planning from the
@@ -7,7 +7,6 @@
     - Some differences between this and a real app. The things that were
       simplified in order to stop this project from taking a year.
       *"a real app would do this"*
-- [ ] **[1]** Documentation
     - Describe how the app works. The technical details that make it function.
     - A low hanging fruit is the ER diagram.
     - This may end up being part of the report or be a separate document.
@@ -20,19 +19,20 @@
 - [x] **[2]** Navigate between groups
     - Once the user is within one group, how do they go to another group? Adopt
       the discord approach and have a list down the side of the page.
-- [ ] **[3]** Refactoring
+- [-] **[3]** Refactoring
     - There are a handful of TODOs relating to code quality and cleanliness.
     - The socket code on both the client and server is getting worse with every
       new feature.
+    - This isn't the sort of task that can ever really be ticked off.
 - [-] **[3]** User interface polish
     - As of writing, the UI is kind of ugly and boring.
     - Remember that Bootstrap isn't meant to solve everything. You'll still need
       to write a lot of CSS yourself.
     - Progress has been made but the login page and also the dialog boxes need
       some work.
-    - This isn't the sort of task that can ever really be ticked off. It's
-      ongoing and there are always tweaks that can be made to the UI.
-- [ ] **[3]** Handle *lots* of messages
+    - Like refactoring, you can't really tick this off. It's ongoing and there
+      are always tweaks that can be made.
+- [x] **[3]** Handle *lots* of messages
     - Currently, the user isn't able to scroll back past the 50 most recent
       messages.
     - Older messages should be removed as newer messages appear.

@@ -17,7 +17,16 @@ import Message from "./Message.vue";
 import StatusMessage from "./StatusMessage.vue";
 import { DELETED_USER_INFO } from "./Message.vue";
 
-const MESSAGE_LIST_LIMIT = 50;
+const SERVER_MESSAGE_LIST_LIMIT = 50;
+const LOCAL_MESSAGE_LIST_LIMIT = 2 * SERVER_MESSAGE_LIST_LIMIT;
+
+function elementVisible(element) {
+  const rect = element.getBoundingClientRect();
+  return document.elementFromPoint(rect.left, rect.top) === element
+      || document.elementFromPoint(rect.right - 1, rect.top) === element
+      || document.elementFromPoint(rect.right - 1, rect.bottom - 1) === element
+      || document.elementFromPoint(rect.left, rect.bottom - 1) === element;
+}
 
 export default {
   name: "MessageList",
@@ -39,7 +48,7 @@ export default {
       status: "Loading...",
       loaded: false,
       loadingOld: false,
-      oldest: 0
+      haveOldest: false
     }
   },
 
@@ -80,10 +89,26 @@ export default {
           msg.sending = false;
           msg.message_id = message.message_id;
           msg.timestamp = message.timestamp;
+          this.purgeOldMessages();
           return;
         }
       }
       console.error("\"message receipt\" but all messages have been sent");
+    },
+
+    canPurgeOldest() {
+      return this.loaded
+        && !this.loadingOld
+        && this.messages.length > LOCAL_MESSAGE_LIST_LIMIT
+        && !this.messages[0].sending
+        && !elementVisible(this.$el.children[0]);
+    },
+
+    purgeOldMessages() {
+      while (this.canPurgeOldest()) {
+        this.messages.shift();
+        this.haveOldest = false;
+      }
     },
 
     recentMessageList(messages) {
@@ -95,13 +120,12 @@ export default {
     },
 
     oldMessageList(messages) {
-      if (messages.length < MESSAGE_LIST_LIMIT) {
-        this.oldest = this.messages[0].message_id;
-      } else {
-        const length = messages.length;
-        for (let i = 0; i !== length; ++i) {
-          this.messages.splice(i, 0, this.initializeMessage(messages[i]));
-        }
+      if (messages.length < SERVER_MESSAGE_LIST_LIMIT) {
+        this.haveOldest = true;
+      }
+      const length = messages.length;
+      for (let i = 0; i !== length; ++i) {
+        this.messages.splice(i, 0, this.initializeMessage(messages[i]));
       }
       this.loadingOld = false;
     },
@@ -109,8 +133,8 @@ export default {
     oldestMessage() {
       if (!this.loaded) return 0;
       if (this.loadingOld) return 0;
-      if (this.oldest !== 0) return 0;
-      if (this.messages.length < MESSAGE_LIST_LIMIT) return 0;
+      if (this.haveOldest) return 0;
+      if (this.messages.length < SERVER_MESSAGE_LIST_LIMIT) return 0;
       if (this.messages[0].sending) return 0;
       this.loadingOld = true;
       return this.messages[0].message_id;
@@ -126,6 +150,7 @@ export default {
         content: content,
         sending: true
       });
+      this.purgeOldMessages();
     },
 
     createEmpty() {

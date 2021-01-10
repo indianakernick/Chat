@@ -417,7 +417,9 @@ export default {
 
     scrollMessages(e) {
       const target = e.target;
-      if (target.scrollTop + target.scrollHeight - target.clientHeight < OLD_MESSAGES_SCROLL_PIXELS) {
+      if (target.scrollTop === 0) {
+        this.messageLists[this.currentChannelId].purgeOldMessages();
+      } else if (target.scrollTop + target.scrollHeight - target.clientHeight < OLD_MESSAGES_SCROLL_PIXELS) {
         const oldestMessage = this.messageLists[this.currentChannelId].oldestMessage();
         if (oldestMessage !== 0) {
           this.requestOld(oldestMessage);
